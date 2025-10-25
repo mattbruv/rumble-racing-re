@@ -17,16 +17,14 @@ impl FourCC {
     pub fn read_le<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
         let mut buf = [0u8; 4];
         reader.read_exact(&mut buf)?;
+        buf.reverse();
         Ok(Self(buf))
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkType {
-    Lrtc,
-    Vagp,
-    Data,
-    Head,
+    CTRL,
     // add more as needed
     Unknown(FourCC),
 }
@@ -34,10 +32,7 @@ pub enum ChunkType {
 impl From<FourCC> for ChunkType {
     fn from(code: FourCC) -> Self {
         match code.to_string().as_str() {
-            "LRTC" => ChunkType::Lrtc,
-            "VAGp" => ChunkType::Vagp,
-            "DATA" => ChunkType::Data,
-            "HEAD" => ChunkType::Head,
+            "CTRL" => ChunkType::CTRL,
             _ => ChunkType::Unknown(code),
         }
     }
@@ -46,10 +41,7 @@ impl From<FourCC> for ChunkType {
 impl From<ChunkType> for FourCC {
     fn from(chunk: ChunkType) -> Self {
         match chunk {
-            ChunkType::Lrtc => FourCC::from_str("LRTC"),
-            ChunkType::Vagp => FourCC::from_str("VAGp"),
-            ChunkType::Data => FourCC::from_str("DATA"),
-            ChunkType::Head => FourCC::from_str("HEAD"),
+            ChunkType::CTRL => FourCC::from_str("CTRL"),
             ChunkType::Unknown(code) => code,
         }
     }
