@@ -23,26 +23,25 @@ impl FourCC {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ChunkType {
+pub enum TopLevelChunk {
     CTRL,
-    // add more as needed
     Unknown(FourCC),
 }
 
-impl From<FourCC> for ChunkType {
+impl From<FourCC> for TopLevelChunk {
     fn from(code: FourCC) -> Self {
         match code.to_string().as_str() {
-            "CTRL" => ChunkType::CTRL,
-            _ => ChunkType::Unknown(code),
+            "CTRL" => TopLevelChunk::CTRL,
+            _ => TopLevelChunk::Unknown(code),
         }
     }
 }
 
-impl From<ChunkType> for FourCC {
-    fn from(chunk: ChunkType) -> Self {
+impl From<TopLevelChunk> for FourCC {
+    fn from(chunk: TopLevelChunk) -> Self {
         match chunk {
-            ChunkType::CTRL => FourCC::from_str("CTRL"),
-            ChunkType::Unknown(code) => code,
+            TopLevelChunk::CTRL => FourCC::from_str("CTRL"),
+            TopLevelChunk::Unknown(code) => code,
         }
     }
 }
