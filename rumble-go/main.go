@@ -53,6 +53,7 @@ func main() {
 }
 
 func readChunk(r io.ReadSeeker) (fourcc string, chunkSize uint32, data []byte, err error) {
+
 	var tag [4]byte
 	if _, err = io.ReadFull(r, tag[:]); err != nil {
 		return "", 0, nil, err
@@ -65,12 +66,20 @@ func readChunk(r io.ReadSeeker) (fourcc string, chunkSize uint32, data []byte, e
 
 	fourcc = string(tag[:])
 
+	pos, _ := r.Seek(0, io.SeekCurrent)
+
+	// If this is a FILL chunk on a 0x6000 boundary, just return no data
+	if fourcc == "FILL" && ((pos % 0x6000) == 0) {
+		return fourcc, 0, nil, err
+	}
+
 	// read chunk size in bytes (second u32)
 	if err = binary.Read(r, binary.LittleEndian, &chunkSize); err != nil {
 		return fourcc, 0, nil, err
 	}
 
 	dataSize := chunkSize - 8
+
 	data = make([]byte, dataSize)
 
 	if _, err = io.ReadFull(r, data); err != nil {
