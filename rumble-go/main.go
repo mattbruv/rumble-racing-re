@@ -43,7 +43,7 @@ func main() {
 			log.Fatalf("Error reading chunk at 0x%X: %v", pos, err)
 		}
 
-		fmt.Printf("Offset 0x%08X | FOURCC: %-4s | Size: %d bytes\n", pos, fourcc, size)
+		fmt.Printf("Offset 0x%08X | FOURCC: %-4s | Size: 0x%08X bytes\n", pos, fourcc, size)
 
 		// if i == 2 {
 		// 	break
@@ -79,7 +79,7 @@ func readChunk(r io.ReadSeeker) (fourcc string, chunkSize uint32, data []byte, e
 
 	// fmt.Println(hex.Dump(data))
 
-	fmt.Printf("Size (data): %d\n", len(data))
+	// fmt.Printf("Size (data): %d\n", len(data))
 	// fmt.Printf("Size (decimal): %d\n", chunkSize)
 
 	return fourcc, chunkSize, data, nil
