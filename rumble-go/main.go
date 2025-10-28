@@ -31,7 +31,7 @@ func main() {
 	for {
 		i += 1
 		pos, _ := file.Seek(0, io.SeekCurrent)
-		fourcc, data, err := readChunk(file)
+		fourcc, size, _, err := readChunk(file)
 		if err == io.EOF {
 			break
 		}
@@ -43,19 +43,19 @@ func main() {
 			log.Fatalf("Error reading chunk at 0x%X: %v", pos, err)
 		}
 
-		fmt.Printf("Offset 0x%08X | FOURCC: %-4s | Size: %d bytes\n", pos, fourcc, len(data))
+		fmt.Printf("Offset 0x%08X | FOURCC: %-4s | Size: %d bytes\n", pos, fourcc, size)
 
-		if i == 2 {
-			break
-		}
+		// if i == 2 {
+		// 	break
+		// }
 	}
 
 }
 
-func readChunk(r io.Reader) (fourcc string, data []byte, err error) {
+func readChunk(r io.ReadSeeker) (fourcc string, chunkSize uint32, data []byte, err error) {
 	var tag [4]byte
 	if _, err = io.ReadFull(r, tag[:]); err != nil {
-		return "", nil, err
+		return "", 0, nil, err
 	}
 
 	// Reverse FOURCC bytes since it's stored little-endian
@@ -65,11 +65,22 @@ func readChunk(r io.Reader) (fourcc string, data []byte, err error) {
 
 	fourcc = string(tag[:])
 
-	// read chunk length in bytes, u32
-	var size uint32
-	if err = binary.Read(r, binary.LittleEndian, &size); err != nil {
-		return "", nil, err
+	// read chunk size in bytes (second u32)
+	if err = binary.Read(r, binary.LittleEndian, &chunkSize); err != nil {
+		return fourcc, 0, nil, err
 	}
 
-	return fourcc, data, nil
+	dataSize := chunkSize - 8
+	data = make([]byte, dataSize)
+
+	if _, err = io.ReadFull(r, data); err != nil {
+		return fourcc, 0, nil, err
+	}
+
+	// fmt.Println(hex.Dump(data))
+
+	fmt.Printf("Size (data): %d\n", len(data))
+	// fmt.Printf("Size (decimal): %d\n", chunkSize)
+
+	return fourcc, chunkSize, data, nil
 }
