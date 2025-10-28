@@ -33,6 +33,7 @@ func main() {
 		pos, _ := file.Seek(0, io.SeekCurrent)
 		fourcc, size, _, err := readChunk(file)
 		if err == io.EOF {
+			fmt.Println("reached end of file!")
 			break
 		}
 		if err == io.ErrUnexpectedEOF {
@@ -44,6 +45,7 @@ func main() {
 		}
 
 		fmt.Printf("Offset 0x%08X | FOURCC: %-4s | Size: 0x%08X bytes\n", pos, fourcc, size)
+		// fmt.Println(hex.Dump(data))
 
 		// if i == 2 {
 		// 	break
