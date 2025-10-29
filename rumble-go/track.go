@@ -8,6 +8,7 @@ import (
 )
 
 type TrackFile struct {
+	FileName string
 	FileSize int64
 	Chunks   []Chunk
 }
@@ -21,7 +22,7 @@ func readTrackFile(file io.ReadSeeker) []Chunk {
 		pos, _ := file.Seek(0, io.SeekCurrent)
 		chunk, err := readChunk(file)
 		if err == io.EOF {
-			fmt.Println("reached end of file!")
+			// fmt.Println("reached end of file!")
 			break
 		}
 		if err == io.ErrUnexpectedEOF {
@@ -61,11 +62,12 @@ func ReadTrackFile(filename string) TrackFile {
 		log.Fatalf("Failed to get file info: %v", err)
 	}
 
-	fmt.Printf("File: %s\nSize: %d bytes\n\n", info.Name(), info.Size())
+	// fmt.Printf("File: %s\nSize: %d bytes\n\n", info.Name(), info.Size())
 
 	chunks := readTrackFile(file)
 
 	return TrackFile{
+		FileName: info.Name(),
 		FileSize: info.Size(),
 		Chunks:   chunks,
 	}
