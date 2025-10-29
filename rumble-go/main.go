@@ -1,9 +1,9 @@
 package main
 
 func main() {
-	chunks := ReadTrackFile("TRK/SE1.TRK")
+	track := ReadTrackFile("TRK/SE1.TRK")
 
-	for _, c := range chunks {
+	for _, c := range track.Chunks {
 		c.print(true)
 	}
 }

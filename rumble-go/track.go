@@ -7,6 +7,11 @@ import (
 	"os"
 )
 
+type TrackFile struct {
+	FileSize int64
+	Chunks   []Chunk
+}
+
 func readTrackFile(file io.ReadSeeker) []Chunk {
 
 	var chunks []Chunk
@@ -41,7 +46,7 @@ func readTrackFile(file io.ReadSeeker) []Chunk {
 	return chunks
 }
 
-func ReadTrackFile(filename string) []Chunk {
+func ReadTrackFile(filename string) TrackFile {
 	file, err := os.Open(filename)
 
 	if err != nil {
@@ -59,5 +64,9 @@ func ReadTrackFile(filename string) []Chunk {
 	fmt.Printf("File: %s\nSize: %d bytes\n\n", info.Name(), info.Size())
 
 	chunks := readTrackFile(file)
-	return chunks
+
+	return TrackFile{
+		FileSize: info.Size(),
+		Chunks:   chunks,
+	}
 }
