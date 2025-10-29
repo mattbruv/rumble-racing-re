@@ -2,19 +2,24 @@ package main
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
 )
 
 type Chunk struct {
+	Index           uint32
 	FourCC          string
 	ChunkSize       uint32
 	OffsetBeginning int64
 	Data            []byte
 }
 
-func (c *Chunk) print() {
-	fmt.Printf("%#x | %s | (%d / %#x bytes)\n", c.OffsetBeginning, c.FourCC, c.ChunkSize, c.ChunkSize)
+func (c *Chunk) print(doHex bool) {
+	fmt.Printf("idx: %d | %#x | %s | (%d / %#x bytes)\n", c.Index, c.OffsetBeginning, c.FourCC, c.ChunkSize, c.ChunkSize)
+	if doHex {
+		fmt.Println(hex.Dump(c.Data))
+	}
 }
 
 func readChunk(r io.ReadSeeker) (chunk Chunk, err error) {

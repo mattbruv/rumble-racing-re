@@ -11,9 +11,8 @@ func readTrackFile(file io.ReadSeeker) []Chunk {
 
 	var chunks []Chunk
 
-	i := 0
+	var i uint32
 	for {
-		i += 1
 		pos, _ := file.Seek(0, io.SeekCurrent)
 		chunk, err := readChunk(file)
 		if err == io.EOF {
@@ -28,7 +27,9 @@ func readTrackFile(file io.ReadSeeker) []Chunk {
 			log.Fatalf("Error reading chunk at 0x%X: %v", pos, err)
 		}
 
+		chunk.Index = i
 		chunks = append(chunks, chunk)
+		i++
 		// fmt.Printf("Offset 0x%08X | FOURCC: %-4s | Size: 0x%08X bytes\n", pos, chunk.FourCC, chunk.ChunkSize)
 		// fmt.Println(hex.Dump(data))
 
