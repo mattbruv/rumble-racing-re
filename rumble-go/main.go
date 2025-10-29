@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	filename := "TRK/BB2.TRK"
+	filename := "TRK/FE2.TRK"
 	file, err := os.Open(filename)
 
 	if err != nil {
@@ -55,7 +55,8 @@ func main() {
 	}
 
 	for i, c := range chunks {
-		fmt.Printf("Chunk %d: %s (%d bytes)\n", i, c.FourCC, c.ChunkSize)
+		fmt.Printf("Chunk %d ", i)
+		c.print()
 	}
 
 }

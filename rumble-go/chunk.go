@@ -2,16 +2,24 @@ package main
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 )
 
 type Chunk struct {
-	FourCC    string
-	ChunkSize uint32
-	Data      []byte
+	FourCC          string
+	ChunkSize       uint32
+	OffsetBeginning int64
+	Data            []byte
+}
+
+func (c *Chunk) print() {
+	fmt.Printf("%#x | %s | (%d / %#x bytes)\n", c.OffsetBeginning, c.FourCC, c.ChunkSize, c.ChunkSize)
 }
 
 func readChunk(r io.ReadSeeker) (chunk Chunk, err error) {
+	startPos, _ := r.Seek(0, io.SeekCurrent)
+
 	var tag [4]byte
 	if _, err = io.ReadFull(r, tag[:]); err != nil {
 		return Chunk{}, err
@@ -29,9 +37,10 @@ func readChunk(r io.ReadSeeker) (chunk Chunk, err error) {
 	// If this is a FILL chunk on a 0x6000 boundary, just return no data
 	if fourcc == "FILL" && ((pos % 0x6000) == 0) {
 		return Chunk{
-			FourCC:    fourcc,
-			ChunkSize: 0,
-			Data:      make([]byte, 0),
+			FourCC:          fourcc,
+			OffsetBeginning: startPos,
+			ChunkSize:       0,
+			Data:            make([]byte, 0),
 		}, err
 	}
 
@@ -57,9 +66,10 @@ func readChunk(r io.ReadSeeker) (chunk Chunk, err error) {
 	// fmt.Printf("Size (decimal): %d\n", chunkSize)
 
 	return Chunk{
-		FourCC:    fourcc,
-		ChunkSize: chunkSize,
-		Data:      data,
+		FourCC:          fourcc,
+		OffsetBeginning: startPos,
+		ChunkSize:       chunkSize,
+		Data:            data,
 	}, nil
 	// return fourcc, chunkSize, data, nil
 }
