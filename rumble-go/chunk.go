@@ -8,15 +8,15 @@ import (
 )
 
 type Chunk struct {
-	Index           uint32
-	FourCC          string
-	ChunkSize       uint32
-	OffsetBeginning int64
-	Data            []byte
+	Index      uint32
+	FourCC     string
+	ChunkSize  uint32
+	ChunkStart int64
+	Data       []byte
 }
 
 func (c *Chunk) print(doHex bool) {
-	fmt.Printf("idx: %d | %#x | %s | (%d / %#x bytes)\n", c.Index, c.OffsetBeginning, c.FourCC, c.ChunkSize, c.ChunkSize)
+	fmt.Printf("idx: %d | %#x | %s | (%d / %#x bytes)\n", c.Index, c.ChunkStart, c.FourCC, c.ChunkSize, c.ChunkSize)
 	if doHex {
 		fmt.Println(hex.Dump(c.Data))
 	}
@@ -42,10 +42,10 @@ func readChunk(r io.ReadSeeker) (chunk Chunk, err error) {
 	// If this is a FILL chunk on a 0x6000 boundary, just return no data
 	if fourcc == "FILL" && ((pos % 0x6000) == 0) {
 		return Chunk{
-			FourCC:          fourcc,
-			OffsetBeginning: startPos,
-			ChunkSize:       0,
-			Data:            make([]byte, 0),
+			FourCC:     fourcc,
+			ChunkStart: startPos,
+			ChunkSize:  0,
+			Data:       make([]byte, 0),
 		}, err
 	}
 
@@ -71,10 +71,10 @@ func readChunk(r io.ReadSeeker) (chunk Chunk, err error) {
 	// fmt.Printf("Size (decimal): %d\n", chunkSize)
 
 	return Chunk{
-		FourCC:          fourcc,
-		OffsetBeginning: startPos,
-		ChunkSize:       chunkSize,
-		Data:            data,
+		FourCC:     fourcc,
+		ChunkStart: startPos,
+		ChunkSize:  chunkSize,
+		Data:       data,
 	}, nil
 	// return fourcc, chunkSize, data, nil
 }
