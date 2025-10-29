@@ -15,6 +15,16 @@ type Chunk struct {
 	Data       []byte
 }
 
+func ParseSubChunks(c *Chunk) []Chunk {
+
+	switch c.FourCC {
+	case "SHOC":
+		return ParseShoc(c)
+	default:
+		panic(fmt.Sprintf("Parsing not implemented for chunk type '%s'", c.FourCC))
+	}
+}
+
 func (c *Chunk) print(doHex bool) {
 	fmt.Printf("idx: %d | %#x | %s | (%d / %#x bytes)\n", c.Index, c.ChunkStart, c.FourCC, c.ChunkSize, c.ChunkSize)
 	if doHex {

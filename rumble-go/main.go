@@ -19,6 +19,10 @@ func main() {
 	i := 0
 	for _, shoc := range shocs {
 		shoc.print(true)
+		subchunks := ParseSubChunks(&shoc)
+
+		println(len(subchunks))
+		break
 		i++
 	}
 	println(i)
