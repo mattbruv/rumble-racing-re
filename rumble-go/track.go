@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 )
 
 func readTrackFile(file io.ReadSeeker) []Chunk {
@@ -36,5 +37,26 @@ func readTrackFile(file io.ReadSeeker) []Chunk {
 		// }
 	}
 
+	return chunks
+}
+
+func ReadTrackFile(filename string) []Chunk {
+	file, err := os.Open(filename)
+
+	if err != nil {
+		log.Fatalf("Failed to open file: %v", err)
+	}
+
+	defer file.Close()
+
+	info, err := file.Stat()
+
+	if err != nil {
+		log.Fatalf("Failed to get file info: %v", err)
+	}
+
+	fmt.Printf("File: %s\nSize: %d bytes\n\n", info.Name(), info.Size())
+
+	chunks := readTrackFile(file)
 	return chunks
 }
