@@ -19,18 +19,8 @@ type TopLevelChunk interface {
 	Index() uint32
 }
 
-// func ParseSubChunks(c *Chunk) []Chunk {
-
-// 	switch c.FourCC {
-// 	case "SHOC":
-// 		return ParseShoc(c)
-// 	default:
-// 		panic(fmt.Sprintf("Parsing not implemented for chunk type '%s'", c.FourCC))
-// 	}
-// }
-
 func Print(c TopLevelChunk, doHex bool) {
-	fmt.Printf(" %d | %#x | %s | (%d / %#x bytes)\n", c.Index(), c.StartAddress(), c.FourCC(), c.TotalSize())
+	fmt.Printf(" %d | %#x | %s | (%d / %#x bytes)\n", c.Index(), c.StartAddress(), c.FourCC(), c.TotalSize(), c.TotalSize())
 	if doHex {
 		fmt.Println(hex.Dump(c.Data()))
 	}
