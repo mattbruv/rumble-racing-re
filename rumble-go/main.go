@@ -1,13 +1,11 @@
 package main
 
 import (
-	"os"
-	"path/filepath"
 	"rumble-reader/chunk"
 )
 
 func main() {
-	file := "./TRK/SE1.TRK"
+	file := "../data/SE1.TRK"
 	track := chunk.ReadTrackFile(file)
 	var shocs []chunk.Chunk
 
@@ -28,51 +26,4 @@ func main() {
 	}
 	println(i)
 
-}
-
-func stats() {
-
-	dir := "./TRK"
-
-	entries, err := os.ReadDir(dir)
-
-	if err != nil {
-		panic(err)
-	}
-
-	tags := map[string]uint32{}
-	i := 0
-	for _, entry := range entries {
-		path := filepath.Join(dir, entry.Name())
-
-		track := chunk.ReadTrackFile(path)
-		if track.FileName == "FE2.TRK" {
-			continue
-		}
-
-		i += 1
-
-		// println(track.FileSize, track.FileName)
-
-		for _, c := range track.Chunks {
-			tags[c.FourCC] = tags[c.FourCC] + 1
-			if c.FourCC == "FILL" {
-				empty := true
-				for _, b := range c.Data {
-					if b != 0 {
-						empty = false
-					}
-				}
-				if !empty {
-					println("FILL not empty at", track.FileName, c.ChunkStart)
-				}
-				// println("CTRL size:", len(c.Data)/4, c.Index, track.FileName)
-			}
-			// c.print(false)
-		}
-	}
-
-	for a, count := range tags {
-		println(a, count)
-	}
 }
