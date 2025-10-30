@@ -10,20 +10,20 @@ func main() {
 	var shocs []chunk.Chunk
 
 	for _, c := range track.Chunks {
-		if c.FourCC == "SHOC" {
+		if c.FourCC() == "SHOC" {
 			shocs = append(shocs, c)
 		}
 	}
 
-	i := 0
-	for _, shoc := range shocs {
-		shoc.Print(true)
-		subchunks := chunk.ParseSubChunks(&shoc)
+	// i := 0
+	// for _, shoc := range shocs {
+	// 	shoc.Print(true)
+	// 	subchunks := chunk.ParseSubChunks(&shoc)
 
-		println(len(subchunks))
-		break
-		i++
-	}
-	println(i)
+	// 	println(len(subchunks))
+	// 	break
+	// 	i++
+	// }
+	// println(i)
 
 }

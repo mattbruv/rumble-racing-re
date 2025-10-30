@@ -20,7 +20,7 @@ func readTrackFile(file io.ReadSeeker) []TopLevelChunk {
 	// var i uint32
 	for {
 		pos, _ := file.Seek(0, io.SeekCurrent)
-		chunk, err := readChunk(file)
+		chunk, err := readTopLevelChunk(file)
 		if err == io.EOF {
 			// fmt.Println("reached end of file!")
 			break

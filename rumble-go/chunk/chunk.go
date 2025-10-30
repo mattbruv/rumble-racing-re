@@ -10,7 +10,7 @@ import (
 type Chunk interface {
 	FourCC() string
 	TotalSize() uint32
-	StartAddress() int64
+	StartAddress() uint32
 	Data() []byte
 }
 
@@ -36,7 +36,7 @@ func Print(c TopLevelChunk, doHex bool) {
 	}
 }
 
-func readChunk(r io.ReadSeeker) (chunk TopLevelChunk, err error) {
+func readTopLevelChunk(r io.ReadSeeker) (chunk TopLevelChunk, err error) {
 	startPos, _ := r.Seek(0, io.SeekCurrent)
 
 	var tag [4]byte
