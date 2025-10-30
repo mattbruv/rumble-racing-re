@@ -97,7 +97,6 @@ func readSHOCChunk(r io.ReadSeeker, startPos uint32, index uint32) (*Shoc, error
 
 	return &Shoc{
 		index:        index,
-		fourCC:       "SHOC",
 		startAddress: startPos,
 		data:         data,
 	}, nil
@@ -108,7 +107,6 @@ func readFILLChunk(r io.ReadSeeker, startPos uint32, pos int64, index uint32) (T
 	if pos%0x6000 == 0 {
 		return &Fill{
 			index:        index,
-			fourCC:       "FILL",
 			startAddress: startPos,
 			data:         []byte{},
 		}, nil
@@ -129,7 +127,6 @@ func readFILLChunk(r io.ReadSeeker, startPos uint32, pos int64, index uint32) (T
 
 	return &Fill{
 		index:        index,
-		fourCC:       "FILL",
 		startAddress: startPos,
 		data:         data,
 	}, nil

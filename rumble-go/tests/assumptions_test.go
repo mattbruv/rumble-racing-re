@@ -10,10 +10,10 @@ func TestAllFillsEmpty(t *testing.T) {
 	for _, file := range files {
 		for i := range file.Track.TopLevelChunks {
 			chunk := file.Track.TopLevelChunks[i]
-			if chunk.FourCC == "FILL" {
-				for _, b := range chunk.Data {
+			if chunk.FourCC() == "FILL" {
+				for _, b := range chunk.Data() {
 					if b != 0 {
-						t.Fatal("Non zero byte in FILL:", chunk.ChunkStart, file.InternalName, file.TrackName)
+						t.Fatal("Non zero byte in FILL:", chunk.StartAddress(), file.InternalName, file.TrackName)
 					}
 				}
 			}
@@ -25,7 +25,7 @@ func TestAllFillsEmpty(t *testing.T) {
 func TestCtrlStart(t *testing.T) {
 	files := GetTestFiles()
 	for _, file := range files {
-		if file.Track.TopLevelChunks[0].FourCC != "CTRL" {
+		if file.Track.TopLevelChunks[0].FourCC() != "CTRL" {
 			t.Fatal("First chunk is not a CTRL!", file.InternalName, file.TrackName)
 		}
 	}
@@ -37,11 +37,11 @@ func TestChunkAfterFillAlwaysAligns6K(t *testing.T) {
 	for _, file := range files {
 
 		for i, chunk := range file.Track.TopLevelChunks {
-			if chunk.FourCC == "FILL" {
+			if chunk.FourCC() == "FILL" {
 				if i+1 < len(file.Track.TopLevelChunks) {
 					next := file.Track.TopLevelChunks[i+1]
-					if (next.ChunkStart % 0x6000) != 0 {
-						t.Fatal("No 0x6000 alignment after fill", next.FourCC, next.ChunkStart, file.InternalName, file.TrackName)
+					if (next.StartAddress() % 0x6000) != 0 {
+						t.Fatal("No 0x6000 alignment after fill", next.FourCC(), next.StartAddress(), file.InternalName, file.TrackName)
 					}
 				}
 			}

@@ -8,7 +8,7 @@ type Ctrl struct {
 }
 
 func (c *Ctrl) FourCC() string {
-	return c.fourCC
+	return "CTRL"
 }
 
 func (c *Ctrl) TotalSize() uint32 {

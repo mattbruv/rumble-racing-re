@@ -2,13 +2,12 @@ package chunk
 
 type Shoc struct {
 	index        uint32
-	fourCC       string
 	startAddress uint32
 	data         []byte
 }
 
 func (c *Shoc) FourCC() string {
-	return c.fourCC
+	return "SHOC"
 }
 
 func (c *Shoc) TotalSize() uint32 {
