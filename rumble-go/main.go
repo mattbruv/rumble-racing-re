@@ -3,12 +3,13 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"rumble-reader/chunk"
 )
 
 func main() {
 	file := "./TRK/SE1.TRK"
-	track := ReadTrackFile(file)
-	var shocs []Chunk
+	track := chunk.ReadTrackFile(file)
+	var shocs []chunk.Chunk
 
 	for _, c := range track.Chunks {
 		if c.FourCC == "SHOC" {
@@ -18,8 +19,8 @@ func main() {
 
 	i := 0
 	for _, shoc := range shocs {
-		shoc.print(true)
-		subchunks := ParseSubChunks(&shoc)
+		shoc.Print(true)
+		subchunks := chunk.ParseSubChunks(&shoc)
 
 		println(len(subchunks))
 		break
@@ -44,7 +45,7 @@ func stats() {
 	for _, entry := range entries {
 		path := filepath.Join(dir, entry.Name())
 
-		track := ReadTrackFile(path)
+		track := chunk.ReadTrackFile(path)
 		if track.FileName == "FE2.TRK" {
 			continue
 		}

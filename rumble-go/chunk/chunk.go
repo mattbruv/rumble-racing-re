@@ -1,4 +1,4 @@
-package main
+package chunk
 
 import (
 	"encoding/binary"
@@ -25,7 +25,7 @@ func ParseSubChunks(c *Chunk) []Chunk {
 	}
 }
 
-func (c *Chunk) print(doHex bool) {
+func (c *Chunk) Print(doHex bool) {
 	fmt.Printf("idx: %d | %#x | %s | (%d / %#x bytes)\n", c.Index, c.ChunkStart, c.FourCC, c.ChunkSize, c.ChunkSize)
 	if doHex {
 		fmt.Println(hex.Dump(c.Data))
