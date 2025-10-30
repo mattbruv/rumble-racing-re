@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// Is every FILL chunk zeroed out?
+// Every FILL chunk is zeroed out
 func TestAllFillsEmpty(t *testing.T) {
 	files := GetTestFiles()
 	for _, file := range files {
@@ -21,7 +21,7 @@ func TestAllFillsEmpty(t *testing.T) {
 	}
 }
 
-// does every track file start with a CTRL?
+// Every track file starts with a CTRL
 func TestCtrlStart(t *testing.T) {
 	files := GetTestFiles()
 	for _, file := range files {
@@ -31,7 +31,7 @@ func TestCtrlStart(t *testing.T) {
 	}
 }
 
-// does every chunk after FILL start on a 0x6000 boundary?
+// Every chunk after FILL starts on a 0x6000 boundary
 func TestChunkAfterFillAlwaysAligns6K(t *testing.T) {
 	files := GetTestFiles()
 	for _, file := range files {
