@@ -7,32 +7,36 @@ import (
 	"io"
 )
 
-type Chunk struct {
-	Index      uint32
-	FourCC     string
-	ChunkSize  uint32
-	ChunkStart int64
-	Data       []byte
+type Chunk interface {
+	FourCC() string
+	TotalSize() uint32
+	StartAddress() int64
+	Data() []byte
 }
 
-func ParseSubChunks(c *Chunk) []Chunk {
-
-	switch c.FourCC {
-	case "SHOC":
-		return ParseShoc(c)
-	default:
-		panic(fmt.Sprintf("Parsing not implemented for chunk type '%s'", c.FourCC))
-	}
+type TopLevelChunk interface {
+	Chunk
+	Index() uint32
 }
 
-func (c *Chunk) Print(doHex bool) {
-	fmt.Printf("idx: %d | %#x | %s | (%d / %#x bytes)\n", c.Index, c.ChunkStart, c.FourCC, c.ChunkSize, c.ChunkSize)
+// func ParseSubChunks(c *Chunk) []Chunk {
+
+// 	switch c.FourCC {
+// 	case "SHOC":
+// 		return ParseShoc(c)
+// 	default:
+// 		panic(fmt.Sprintf("Parsing not implemented for chunk type '%s'", c.FourCC))
+// 	}
+// }
+
+func Print(c TopLevelChunk, doHex bool) {
+	fmt.Printf(" %d | %#x | %s | (%d / %#x bytes)\n", c.Index(), c.StartAddress(), c.FourCC(), c.TotalSize())
 	if doHex {
-		fmt.Println(hex.Dump(c.Data))
+		fmt.Println(hex.Dump(c.Data()))
 	}
 }
 
-func readChunk(r io.ReadSeeker) (chunk Chunk, err error) {
+func readChunk(r io.ReadSeeker) (chunk TopLevelChunk, err error) {
 	startPos, _ := r.Seek(0, io.SeekCurrent)
 
 	var tag [4]byte
