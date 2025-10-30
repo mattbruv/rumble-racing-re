@@ -36,7 +36,7 @@ func Print(c TopLevelChunk, doHex bool) {
 	}
 }
 
-func readTopLevelChunk(r io.ReadSeeker) (TopLevelChunk, error) {
+func readTopLevelChunk(r io.ReadSeeker, chunkIndex uint32) (TopLevelChunk, error) {
 	startPosSigned, _ := r.Seek(0, io.SeekCurrent)
 	startPos := uint32(startPosSigned)
 
@@ -55,17 +55,17 @@ func readTopLevelChunk(r io.ReadSeeker) (TopLevelChunk, error) {
 
 	switch fourcc {
 	case "CTRL":
-		return readCTRLChunk(r, startPos)
+		return readCTRLChunk(r, startPos, chunkIndex)
 	case "SHOC":
-		return readSHOCChunk(r, startPos)
+		return readSHOCChunk(r, startPos, chunkIndex)
 	case "FILL":
-		return readFILLChunk(r, startPos, pos)
+		return readFILLChunk(r, startPos, pos, chunkIndex)
 	default:
 		panic("Unrecognized top level chunk: " + fourcc)
 	}
 }
 
-func readCTRLChunk(r io.ReadSeeker, startPos uint32) (TopLevelChunk, error) {
+func readCTRLChunk(r io.ReadSeeker, startPos uint32, index uint32) (TopLevelChunk, error) {
 	var chunkSize uint32
 	if err := binary.Read(r, binary.LittleEndian, &chunkSize); err != nil {
 		return nil, err
@@ -77,14 +77,14 @@ func readCTRLChunk(r io.ReadSeeker, startPos uint32) (TopLevelChunk, error) {
 	}
 
 	return &Ctrl{
-		index:        0,
+		index:        index,
 		fourCC:       "CTRL",
 		startAddress: startPos,
 		data:         data,
 	}, nil
 }
 
-func readSHOCChunk(r io.ReadSeeker, startPos uint32) (*Shoc, error) {
+func readSHOCChunk(r io.ReadSeeker, startPos uint32, index uint32) (*Shoc, error) {
 	var chunkSize uint32
 	if err := binary.Read(r, binary.LittleEndian, &chunkSize); err != nil {
 		return nil, err
@@ -96,17 +96,18 @@ func readSHOCChunk(r io.ReadSeeker, startPos uint32) (*Shoc, error) {
 	}
 
 	return &Shoc{
-		index:        0,
+		index:        index,
 		fourCC:       "SHOC",
 		startAddress: startPos,
 		data:         data,
 	}, nil
 }
 
-func readFILLChunk(r io.ReadSeeker, startPos uint32, pos int64) (TopLevelChunk, error) {
+func readFILLChunk(r io.ReadSeeker, startPos uint32, pos int64, index uint32) (TopLevelChunk, error) {
 	// Handle special case: fill tag ends on 0x6000 boundary
 	if pos%0x6000 == 0 {
 		return &Fill{
+			index:        index,
 			fourCC:       "FILL",
 			startAddress: startPos,
 			data:         []byte{},
@@ -127,6 +128,7 @@ func readFILLChunk(r io.ReadSeeker, startPos uint32, pos int64) (TopLevelChunk, 
 	}
 
 	return &Fill{
+		index:        index,
 		fourCC:       "FILL",
 		startAddress: startPos,
 		data:         data,

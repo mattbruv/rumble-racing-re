@@ -1,29 +1,27 @@
 package main
 
 import (
+	"fmt"
 	"rumble-reader/chunk"
 )
 
 func main() {
 	file := "../data/SE1.TRK"
 	track := chunk.ReadTrackFile(file)
-	var shocs []chunk.Chunk
+	// var shocs []chunk.Shoc
 
-	for _, c := range track.Chunks {
-		if c.FourCC() == "SHOC" {
-			shocs = append(shocs, c)
+	for _, c := range track.TopLevelChunks {
+		shoc, ok := c.(*chunk.Shoc)
+		if ok {
+			// shocs = append(shocs, *shoc)
+			fmt.Println(shoc.Index(), shoc.FourCC())
+		} else {
+			fmt.Println(c.Index(), c.FourCC())
 		}
 	}
 
-	// i := 0
 	// for _, shoc := range shocs {
-	// 	shoc.Print(true)
-	// 	subchunks := chunk.ParseSubChunks(&shoc)
-
-	// 	println(len(subchunks))
-	// 	break
-	// 	i++
+	// 	println(shoc.FourCC(), shoc.Index())
 	// }
-	// println(i)
 
 }

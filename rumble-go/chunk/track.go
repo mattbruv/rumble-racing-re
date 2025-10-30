@@ -8,19 +8,19 @@ import (
 )
 
 type TrackFile struct {
-	FileName string
-	FileSize int64
-	Chunks   []TopLevelChunk
+	FileName       string
+	FileSize       int64
+	TopLevelChunks []TopLevelChunk
 }
 
 func readTrackFile(file io.ReadSeeker) []TopLevelChunk {
 
 	var chunks []TopLevelChunk
 
-	// var i uint32
+	var chunkIndex uint32 = 0
 	for {
 		pos, _ := file.Seek(0, io.SeekCurrent)
-		chunk, err := readTopLevelChunk(file)
+		chunk, err := readTopLevelChunk(file, chunkIndex)
 		if err == io.EOF {
 			// fmt.Println("reached end of file!")
 			break
@@ -33,8 +33,8 @@ func readTrackFile(file io.ReadSeeker) []TopLevelChunk {
 			log.Fatalf("Error reading chunk at 0x%X: %v", pos, err)
 		}
 
-		// chunk.Index = i
 		chunks = append(chunks, chunk)
+		chunkIndex++
 		// i++
 		// fmt.Printf("Offset 0x%08X | FOURCC: %-4s | Size: 0x%08X bytes\n", pos, chunk.FourCC, chunk.ChunkSize)
 		// fmt.Println(hex.Dump(data))
@@ -67,8 +67,8 @@ func ReadTrackFile(filename string) TrackFile {
 	chunks := readTrackFile(file)
 
 	return TrackFile{
-		FileName: info.Name(),
-		FileSize: info.Size(),
-		Chunks:   chunks,
+		FileName:       info.Name(),
+		FileSize:       info.Size(),
+		TopLevelChunks: chunks,
 	}
 }
