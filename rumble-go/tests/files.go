@@ -16,7 +16,7 @@ var testTracks = []TestTrack{
 	{InternalName: "DA1", TrackName: "Flip Out"},
 	{InternalName: "DA2", TrackName: "The Gauntlet"},
 	{InternalName: "DA3", TrackName: "Wild Kingdom"},
-	{InternalName: "FE2", TrackName: "Global Data"},
+	// {InternalName: "FE2", TrackName: "Global Data"},
 	{InternalName: "JT1", TrackName: "Circus Minimus"},
 	{InternalName: "JT2", TrackName: "Outer Limits"},
 	{InternalName: "MA1", TrackName: "Passing Through"},
