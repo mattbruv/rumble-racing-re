@@ -1,0 +1,14 @@
+loading-screens/*
+data/*
+**/*.png
+../.DS_STORE
+ipums/
+target/
+*.lock
+*.AV
+*.TRK
+*.txt
+*.rdat
+*.dat
+*/.DS_STORE
+**/.DS_STORE
