@@ -26,14 +26,22 @@ func TestRdatDecompression(t *testing.T) {
 		t.Fatal("Error with SHOC Rdat decompression")
 	}
 
+	similar := 0
+
 	if !bytes.Equal(decompressed, target) {
 		os.WriteFile("./fail.bin", decompressed, 0644)
+		j := 0
 		for i, b := range decompressed {
 			if b != target[i] {
-				t.Logf("expected: %X but got %X at %d", target[i], b, i)
-				break
+				j++
+				if j < 5 {
+					t.Logf("expected: %X but got %X at %d", target[i], b, i)
+				}
+			} else {
+				similar++
 			}
 		}
+		t.Log("Matching bytes %:", float32(similar)/float32(len(target))*100)
 		t.Errorf("Decompression failed")
 	}
 }
