@@ -27,6 +27,7 @@ func TestRdatDecompression(t *testing.T) {
 	}
 
 	if !bytes.Equal(decompressed, target) {
+		os.WriteFile("./fail.bin", decompressed, 0644)
 		t.Errorf("Decompression failed")
 	}
 }
