@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"rumble-reader/chunk"
 	"rumble-reader/chunk/shoc"
 )
@@ -11,17 +9,26 @@ func main() {
 	file := "../data/FE2.TRK"
 	track := chunk.ReadTrackFile(file)
 
-	fmt.Println(track.FileName)
+	// fmt.Println(track.FileName)
+
 	for _, top := range track.TopLevelChunks {
 
 		c, ok := top.(*shoc.Shoc)
 		if ok {
 
 			s, ok := c.MetaData.(*shoc.Rdat)
+			// if ok {
+			// 	fmt.Println(s.OutBufferSize)
+			// 	// if s.OutBufferSize > max {
+			// 	// 	max = uint32(s.OutBufferSize)
+			// 	// }
+			// }
 			if ok {
 				if s.OutBufferSize == 9436 {
-					fmt.Println(c.StartAddress(), s.FourCC(), s.OutBufferSize)
-					os.WriteFile("./rdat-compressed.bin", s.Data(), 0644)
+					_, err := shoc.Decompress(s.Data(), int(s.OutBufferSize))
+					if err == nil {
+						// fmt.Println(len(data))
+					}
 				}
 			}
 		}
