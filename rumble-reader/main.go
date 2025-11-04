@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"rumble-reader/chunk/shoc"
 )
 
 func main() {
@@ -28,15 +27,20 @@ func main() {
 
 	// }
 
-	file := "./strings.rdat"
+	file := "../eeMemory.bin"
 	data, err := os.ReadFile(file)
-	data = data[4:]
+	// data = data[4:]
 	if err != nil {
 		panic(err)
 	}
 
-	res, foo := shoc.Decompress(data, 0x24dc)
-	fmt.Println(res, foo)
-	fmt.Println(hex.Dump(res))
+	slice := data[0x00f90980 : 0x00f90980+9436]
+	os.WriteFile("rdat-target.bin", slice, 0644)
+	fmt.Println(hex.Dump(slice))
+
+	// res, foo := shoc.Decompress(data, 0x24dc)
+	// fmt.Println(res, foo)
+	// fmt.Println(hex.Dump(res))
+	// os.WriteFile("decompressed.bin", res, 0644)
 
 }

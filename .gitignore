@@ -12,3 +12,4 @@ target/
 *.dat
 */.DS_STORE
 **/.DS_STORE
+eeMemory.bin
