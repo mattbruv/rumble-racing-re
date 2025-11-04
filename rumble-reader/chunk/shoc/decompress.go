@@ -1,131 +1,87 @@
 package shoc
 
-func Decompress(src []byte, dst []byte) (int, int) {
-	srcLen := len(src)
-	dstLen := len(dst)
+import "errors"
 
-	// Indices for current read/write positions
-	srcIdx := 0
-	dstIdx := 0
+// Decompress implements a reconstruction of the LZ/RLE decompression routine
+// inferred from the decompiled PowerPC code.
+// It runs until the input bytes are exhausted, without needing an output size.
+func Decompress(src []byte) ([]byte, error) {
+	var dst []byte
+	i := 0
 
-	for dstIdx < dstLen {
-		// --- Safety Check for Token Header ---
-		if srcIdx+2 > srcLen {
-			break // Ran out of source data for header
+	for i+1 < len(src) {
+		// Read 2-byte control word
+		b0 := src[i]
+		b1 := src[i+1]
+		i += 2
+		control := uint16(b0)<<8 | uint16(b1)
+
+		// --- Case 1: Special marker 0x8800 (RLE or literal block) ---
+		if (control & 0x8800) == 0x8800 {
+			mode := (b0 >> 4) & 7
+
+			if mode == 0 {
+				// Literal copy
+				count := int(control&0x7FF) | int(b1)
+				if i+count > len(src) {
+					return nil, errors.New("literal copy out of range")
+				}
+				dst = append(dst, src[i:i+count]...)
+				i += count
+			} else {
+				// Run-length repeat (repeat one previous byte)
+				offset := int(mode)
+				if offset <= 0 || offset > len(dst) {
+					return nil, errors.New("invalid repeat offset")
+				}
+				value := dst[len(dst)-offset]
+				repeatCount := int(b1) + 3
+
+				for r := 0; r < repeatCount; r++ {
+					dst = append(dst, value)
+				}
+			}
+
+			continue
 		}
 
-		// Read the two-byte token header
-		bVar8 := src[srcIdx]
-		bVar9 := src[srcIdx+1]
-		srcIdx += 2
-
-		token := uint16(bVar8)<<8 | uint16(bVar9)
-
-		// ------------------------------------------------------------------
-		// --- 1. Type 1: RLE/Literal Block (0x8800 Present)
-		// ------------------------------------------------------------------
-		if (token & 0x8800) == 0x8800 {
-			offset3Bits := (bVar8 >> 4) & 0x07
-
-			if offset3Bits == 0 {
-				// Sub-Case A: Literal Copy (Plain Data Copy)
-				length := int(token & 0x07FF)
-
-				// Adjust length if it exceeds the remaining source or destination
-				if srcIdx+length > srcLen {
-					length = srcLen - srcIdx
-				}
-				if dstIdx+length > dstLen {
-					length = dstLen - dstIdx
-				}
-
-				// Copy 'length' bytes directly using Go's built-in `copy`
-				// This is much faster than the byte-by-byte loop from the pseudocode.
-				bytesCopied := copy(dst[dstIdx:], src[srcIdx:srcIdx+length])
-
-				srcIdx += bytesCopied
-				dstIdx += bytesCopied
-			} else {
-				// Sub-Case B: Short RLE (Single-Byte Repeat)
-				offset6Bits := int(offset3Bits) | int((token>>5)&0x38)
-				length := int(bVar9) + 3
-
-				// Calculate the source index in the destination buffer (history)
-				srcPtrIdx := dstIdx - offset6Bits
-
-				if srcPtrIdx < 0 {
-					return srcIdx, dstIdx // Error: Invalid history reference
-				}
-
-				// Adjust length if it exceeds the remaining destination space
-				if dstIdx+length > dstLen {
-					length = dstLen - dstIdx
-				}
-
-				repeatedByte := dst[srcPtrIdx]
-
-				// Write the byte 'length' times
-				for i := 0; i < length; i++ {
-					dst[dstIdx] = repeatedByte
-					dstIdx++
-				}
+		// --- Case 2: LZ backreference ---
+		length := int((b0 >> 4) & 7)
+		if length == 7 {
+			// Extended length
+			if i >= len(src) {
+				return nil, errors.New("unexpected end of input in length extension")
 			}
+			length = int(src[i]) + 7
+			i++
+		}
+		length += 3
 
+		// Compute offset
+		offset := int(control&0x0FFF) | int(b1)
+		if offset <= 0 || offset > len(dst) {
+			return nil, errors.New("invalid LZ backreference offset")
+		}
+
+		start := len(dst) - offset
+		if start < 0 {
+			return nil, errors.New("negative LZ offset")
+		}
+
+		reverse := (control & 0x8000) != 0
+
+		if reverse {
+			// Reverse copy
+			for j := 0; j < length && start-j-1 >= 0; j++ {
+				dst = append(dst, dst[start-j-1])
+			}
 		} else {
-			// ------------------------------------------------------------------
-			// --- 2. Type 2: LZ77-Style Backward Reference
-			// ------------------------------------------------------------------
-			length7Bits := int((bVar8 >> 4) & 0x07)
-
-			// Check for extended length
-			if length7Bits == 0x07 {
-				if srcIdx >= srcLen {
-					break
-				}
-				length7Bits = int(src[srcIdx]) + 7
-				srcIdx++
-			}
-			length := length7Bits + 3
-
-			// 12-bit distance/offset
-			distance := int(token & 0x0FFF)
-
-			srcPtrIdx := dstIdx - distance
-
-			if srcPtrIdx < 0 {
-				return srcIdx, dstIdx // Error: Invalid history reference
-			}
-
-			// Adjust length if it exceeds the remaining destination space
-			if dstIdx+length > dstLen {
-				length = dstLen - dstIdx
-			}
-
-			// Check MSB for copy direction: (token & 0x8000) == 0
-			if (token & 0x8000) == 0 {
-				// Sub-Case A: Forward Copy (Standard LZ77)
-
-				// Must copy byte-by-byte to handle overlapping copies (e.g., repeating AB)
-				for i := 0; i < length; i++ {
-					// The source byte is taken from the current history (dst buffer)
-					dst[dstIdx] = dst[srcPtrIdx]
-					dstIdx++
-					srcPtrIdx++
-				}
-			} else {
-				// Sub-Case B: Backward/Reverse Copy
-				srcPtrIdx += 2 // Offset the source pointer by +2
-
-				// Copy in reverse order
-				for i := 0; i < length; i++ {
-					// Source index decreases as output index increases
-					dst[dstIdx] = dst[srcPtrIdx]
-					dstIdx++
-					srcPtrIdx--
-				}
+			// Forward copy
+			for j := 0; j < length && start+j < len(dst); j++ {
+				dst = append(dst, dst[start+j])
 			}
 		}
 	}
 
-	return srcIdx, dstIdx
+	return dst, nil
 }

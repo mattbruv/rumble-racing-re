@@ -1,25 +1,22 @@
 package main
 
 import (
-	"encoding/json"
+	"encoding/hex"
 	"fmt"
 	"os"
-	"rumble-reader/chunk"
+	"rumble-reader/chunk/shoc"
 )
 
-type SizeAndCount struct {
-	Size  int
-	Count uint32
-}
-
 func main() {
-	file := "../data/FE2.TRK"
-	track := chunk.ReadTrackFile(file)
-
-	m, _ := json.Marshal(track)
-
-	if err := os.WriteFile("../out.json", m, 0644); err != nil {
-		fmt.Println("Error writing file:", err)
+	file := "./strings.rdat"
+	data, err := os.ReadFile(file)
+	data = data[4:]
+	if err != nil {
+		panic(err)
 	}
+
+	res, foo := shoc.Decompress(data)
+	fmt.Println(res, foo)
+	fmt.Println(hex.Dump(res))
 
 }
