@@ -93,10 +93,10 @@ func Decompress(src []byte, outSize int) ([]byte, error) {
 
 			if reverse {
 				for j := 0; j < length; j++ {
-					offset := start + length - 1 - j
-					val := dst[offset]
+					lookup := start + length - 1 - j
+					val := dst[lookup]
 					dst = append(dst, val)
-					fmt.Printf("  [DST idx=%d], rev-offset=%d, len=%d, 0x%02X('%s') (reverse)\n", len(dst)-1, offset, length, val, printChar(val))
+					fmt.Printf("  [DST idx=%d], rev-offset=%d, len=%d, 0x%02X('%s') (reverse)\n", len(dst)-1, lookup, length, val, printChar(val))
 				}
 			} else {
 				for j := 0; j < length; j++ {
