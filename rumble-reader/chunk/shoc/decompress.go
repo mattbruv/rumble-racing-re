@@ -29,7 +29,7 @@ func Decompress(src []byte, outSize int) ([]byte, error) {
 		b1 := src[i+1]
 		i += 2
 
-		control := uint16(b0)<<8 | uint16(b1)
+		control := uint16(b0) << 8 // | uint16(b1)
 		fmt.Printf("[SRC idx=%d] b0=0x%02X('%s') b1=0x%02X('%s') Control: 0x%04X, DST idx=%d\n",
 			i-2, b0, printChar(b0), b1, printChar(b1), control, len(dst))
 
@@ -92,12 +92,21 @@ func Decompress(src []byte, outSize int) ([]byte, error) {
 				i, offset, length, reverse, len(dst), start)
 
 			if reverse {
+				temp := make([]byte, length)
 				for j := 0; j < length; j++ {
-					lookup := start + length - 1 - j
+					lookup := start - 1 + j
 					val := dst[lookup]
-					dst = append(dst, val)
+					temp[j] = val
+					// dst = append(dst, val)
 					fmt.Printf("  [DST idx=%d], rev-offset=%d, len=%d, 0x%02X('%s') (reverse)\n", len(dst)-1, lookup, length, val, printChar(val))
 				}
+
+				for j := 0; j < length/2; j++ {
+					temp[j], temp[length-1-j] = temp[length-1-j], temp[j]
+				}
+
+				// Append to dst
+				dst = append(dst, temp...)
 			} else {
 				for j := 0; j < length; j++ {
 					val := dst[start+j]
