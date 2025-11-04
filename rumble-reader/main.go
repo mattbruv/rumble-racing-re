@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"rumble-reader/chunk"
 	"rumble-reader/chunk/shoc"
 )
@@ -20,6 +21,7 @@ func main() {
 			if ok {
 				if s.OutBufferSize == 9436 {
 					fmt.Println(c.StartAddress(), s.FourCC(), s.OutBufferSize)
+					os.WriteFile("./rdat-compressed.bin", s.Data(), 0644)
 				}
 			}
 		}
