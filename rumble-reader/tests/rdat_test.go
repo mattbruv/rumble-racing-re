@@ -28,6 +28,12 @@ func TestRdatDecompression(t *testing.T) {
 
 	if !bytes.Equal(decompressed, target) {
 		os.WriteFile("./fail.bin", decompressed, 0644)
+		for i, b := range decompressed {
+			if b != target[i] {
+				t.Logf("expected: %X but got %X at %d", target[i], b, i)
+				break
+			}
+		}
 		t.Errorf("Decompression failed")
 	}
 }
