@@ -19,24 +19,24 @@ Reading [this reddit post](https://www.reddit.com/r/ffmpeg/comments/1heju1a/help
 Probably stands for 'Track', and 'Audio/Video'.
 `.TRK` files seem to contain all of the unique map data for each track, while `.AV` seems to be audio/video data. Internal map names seemed to be grouped by similarity. Internal name mappings can be seen below. Each internal map has a `.TRK`, `.AV`, and `.LSC` file. `FE` is a special case, as it seems to be globally used assets.
 
-| Internal | Name            |
-| -------- | --------------- |
-| BB1      | Sun Burn        |
-| BB2      | Surf And Turf   |
-| BL1      | So Refined      |
-| BL2      | Coal Cuts       |
-| DA1      | Flip Out        |
-| DA2      | The Gauntlet    |
-| DA3      | Wild Kingdom    |
-| FE       | Global Data     |
-| JT1      | Circus Minimus  |
-| JT2      | Outer Limits    |
-| MA1      | Passing Through |
-| MA2      | Falls Down      |
-| MP1      | Touch And Go    |
-| MP2      | Car Go          |
-| SE1      | True Grits      |
-| SE2      | Over Easy       |
+| Internal | Meaning           | Name            |
+| -------- | ----------------- | --------------- |
+| `BB1`    | Beach Blast       | Sun Burn        |
+| `BB2`    | Beach Blast       | Surf And Turf   |
+| `BL1`    | Bad Lands         | So Refined      |
+| `BL2`    | Bad Lands         | Coal Cuts       |
+| `DA1`    | Daytona           | Flip Out        |
+| `DA2`    | Daytona           | The Gauntlet    |
+| `DA3`    | Daytona           | Wild Kingdom    |
+| `FE`     |                   | Global Data     |
+| `JT1`    | Joke Tracks       | Circus Minimus  |
+| `JT2`    | Joke Tracks       | Outer Limits    |
+| `MA1`    | Mountain Air      | Passing Through |
+| `MA2`    | Mountain Air      | Falls Down      |
+| `MP1`    | Metropolis        | Touch And Go    |
+| `MP2`    | Metropolis        | Car Go          |
+| `SE1`    | Southern Exposure | True Grits      |
+| `SE2`    | Southern Exposure | Over Easy       |
 
 `.TRK` and `.AV` files are a special binary format created by EA games. They are seemingly optimized and aligned for compression and for quickly streaming data from disc to PS2 RAM.
 
