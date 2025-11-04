@@ -34,7 +34,7 @@ func TestRdatDecompression(t *testing.T) {
 		for i, b := range decompressed {
 			if b != target[i] {
 				j++
-				if j < 5 {
+				if j < 20 {
 					t.Logf("expected: %X but got %X at %d", target[i], b, i)
 				}
 			} else {
