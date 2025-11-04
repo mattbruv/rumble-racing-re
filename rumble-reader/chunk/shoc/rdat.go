@@ -1,9 +1,13 @@
 package shoc
 
-import "encoding/json"
+import (
+	"encoding/binary"
+	"encoding/json"
+)
 
 type Rdat struct {
-	data []byte
+	OutBufferSize uint32
+	data          []byte
 }
 
 func (s *Rdat) FourCC() string {
@@ -15,8 +19,13 @@ func (s *Rdat) Data() []byte {
 }
 
 func parseRdat(data []byte) *Rdat {
+
+	size := binary.LittleEndian.Uint32(data[0:4])
+	data = data[4:]
+
 	return &Rdat{
-		data: data,
+		OutBufferSize: size,
+		data:          data,
 	}
 }
 
