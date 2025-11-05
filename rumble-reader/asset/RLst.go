@@ -5,66 +5,55 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"strings"
 )
 
 type RLst struct {
-	Entries []RLstEntry
+	Count   uint32
+	Entries []ResourceEntry
 }
 
-type RLstEntry struct {
-	ID      uint32
-	TypeTag string
-	Index   uint32
-	Path    string
+type ResourceEntry struct {
+	TypeTag       string
+	ResourceIndex uint32
+	ResourceName  string
 }
 
-func ParseRLst(buf []byte) (*RLst, error) {
-	var parsed RLst
-	r := bytes.NewReader(buf)
+func ParseRLst(data []byte) (*RLst, error) {
+	r := bytes.NewReader(data)
 
-	i := 0
-	for {
-		var id uint32
-		if err := binary.Read(r, binary.LittleEndian, &id); err != nil {
-			if err == io.EOF {
-				break
-			}
-			return &parsed, nil
-		}
+	var count uint32
+	if err := binary.Read(r, binary.LittleEndian, &count); err != nil {
+		return nil, fmt.Errorf("failed to read count: %w", err)
+	}
 
+	entries := make([]ResourceEntry, 0, count)
+	for i := uint32(0); i < count; i++ {
 		var tag [4]byte
 		if _, err := io.ReadFull(r, tag[:]); err != nil {
-			return &parsed, nil
+			return nil, fmt.Errorf("failed to read tag (entry %d): %w", i, err)
 		}
 
 		var index uint32
 		if err := binary.Read(r, binary.LittleEndian, &index); err != nil {
-			return &parsed, nil
+			return nil, fmt.Errorf("failed to read index (entry %d): %w", i, err)
 		}
 
-		// Read null-terminated path string
-		pathBytes := make([]byte, 0, 128)
-		for {
-			b, err := r.ReadByte()
-			if err != nil {
-				return nil, fmt.Errorf("read path: %w", err)
-			}
-			if b == 0 {
-				break
-			}
-			pathBytes = append(pathBytes, b)
+		var nameBytes [24]byte
+		if _, err := io.ReadFull(r, nameBytes[:]); err != nil {
+			return nil, fmt.Errorf("failed to read name (entry %d): %w", i, err)
 		}
-		path := string(pathBytes)
 
-		entry := RLstEntry{
-			ID:      id,
-			TypeTag: string(tag[:]),
-			Index:   index,
-			Path:    path,
+		name := string(nameBytes[:])
+		name = strings.TrimRight(name, "\x00") // strip null padding
+
+		entry := ResourceEntry{
+			TypeTag:       string(tag[:]),
+			ResourceIndex: index,
+			ResourceName:  name,
 		}
-		parsed.Entries = append(parsed.Entries, entry)
-		i++
+		entries = append(entries, entry)
 	}
 
-	return &parsed, nil
+	return &RLst{Count: count, Entries: entries}, nil
 }

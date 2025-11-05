@@ -49,7 +49,7 @@ func main() {
 									}
 
 									for _, e := range parsed.Entries {
-										fmt.Println(e.Path, e.TypeTag)
+										fmt.Println(e.ResourceName, e.TypeTag)
 
 									}
 
