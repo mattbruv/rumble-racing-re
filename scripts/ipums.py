@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import subprocess
 
@@ -26,5 +27,6 @@ for file in lsc_files:
           str(file),
           str(out_file)
       ])
+      os.remove(file)
     except:
        pass

@@ -16,20 +16,23 @@ func main() {
 
 	for _, entry := range rlst.Entries {
 
-		if entry.TypeTag == "CarI" {
+		// tag := entry.TypeTag
 
-			asset, err := f.GetResource(entry)
+		// extract IPums
+		// if tag == "CarI" || tag == "Cimg" {
 
-			if err != nil {
-				panic(err)
-			}
+		asset, err := f.GetResource(entry)
 
-			if len(asset.RawData()) > 0 {
-				os.WriteFile("../ipums/"+entry.ResourceName, asset.RawData(), 0644)
-				fmt.Println(entry.ResourceName)
-				// fmt.Println(hex.Dump(asset.RawData()))
-			}
+		if err != nil {
+			panic(err)
 		}
+
+		if len(asset.RawData()) > 0 {
+			os.WriteFile("../ipums/"+entry.TypeTag+"_"+entry.ResourceName, asset.RawData(), 0644)
+			fmt.Println(entry.ResourceName)
+			// fmt.Println(hex.Dump(asset.RawData()))
+		}
+		// }
 
 	}
 
