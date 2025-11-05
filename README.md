@@ -63,42 +63,42 @@ Currently the chunks do not appear to be nested or recursive, but rather sequent
   - `SDAT` uncompressed, raw data
   - `Rdat` compressed data. Working on reverse engineering the compression algorithm [here](./rumble-reader/chunk/shoc/decompress.go).
 
-Each SHOC entry contains some information for some data type which is used by the game.
+Each SHOC entry contains some data which makes up a game asset.
 I am currently working through understanding how `SHOC`s are related to each other, and how to pull out this data.
-Their FourCC data types are listed here as follows, along with the address of the function that processes this data:
+The game asset FourCC types are listed here as follows, along with the address of the function that processes this data:
 
-| FourCC | Parsing Function Address       |
-| ------ | ------------------------------ |
-| `ico`  | FUN_001a7560                   |
-| `TxtR` | FUN_001a73e0                   |
-| `RleD` | FUN_001a7370                   |
-| `Mclc` | FUN_001a7330                   |
-| `Gimg` | FUN_001a72f0                   |
-| `CarI` | FUN_001a7310                   |
-| `Cimg` | FUN_001a72d0                   |
-| `Timg` | FUN_001a72b0                   |
-| `Limg` | FUN_001a7290                   |
-| `Mask` | FUN_001a7270                   |
-| `Bimg` | FUN_001a7250                   |
-| `txf2` | FUN_001a7340                   |
-| `Cvkb` | FUN_001abb80                   |
-| `Cvkh` | FUN_001abb80                   |
-| `Cshd` | FUN_001abb80                   |
-| `Ceng` | FUN_001abb80                   |
-| `Cnet` | FUN_0017e080                   |
-| `sfn`  | FUN_0012b920                   |
-| `gmd`  | FUN_00160da0                   |
-| `obf`  | FUN_00160de0                   |
-| `txf`  | FUN_001644f0,<br>FUN_00121230, |
-| `Ctos` | FUN_00125a10                   |
-| `Cfun` | FUN_001272e0                   |
-| `Csac` | FUN_00127550                   |
-| `RPNS` | FUN_0016c590                   |
-| `Cact` | FUN_0016c3a0                   |
-| `o3da` | FUN_0016a2a0                   |
-| `o3d`  | FUN_0016a0e0                   |
-| `Cctr` | FUN_00121230                   |
-| `RLst` | thunk_FUN_00121230             |
-| `rscE` | FUN_00121230                   |
-| `rscB` | FUN_00121230                   |
-|        |                                |
+| FourCC | Game Asset Purpose                                     | Parsing Function               |
+| ------ | ------------------------------------------------------ | ------------------------------ |
+| `ico`  |                                                        | FUN_001a7560                   |
+| `TxtR` | Text/String List                                       | FUN_001a73e0                   |
+| `RleD` |                                                        | FUN_001a7370                   |
+| `Mclc` |                                                        | FUN_001a7330                   |
+| `Gimg` | General(?) Image, variable size (IPU format)           | FUN_001a72f0                   |
+| `CarI` | Car Image, 128 × 80 (IPU format)                       | FUN_001a7310                   |
+| `Cimg` | Cup Image, 128 × 96 (IPU format)                       | FUN_001a72d0                   |
+| `Timg` | Track Image, 128 × 80 (IPU format)                     | FUN_001a72b0                   |
+| `Limg` |                                                        | FUN_001a7290                   |
+| `Mask` |                                                        | FUN_001a7270                   |
+| `Bimg` | Background Image, 512x448 (IPU format)                 | FUN_001a7250                   |
+| `txf2` |                                                        | FUN_001a7340                   |
+| `Cvkb` |                                                        | FUN_001abb80                   |
+| `Cvkh` |                                                        | FUN_001abb80                   |
+| `Cshd` |                                                        | FUN_001abb80                   |
+| `Ceng` |                                                        | FUN_001abb80                   |
+| `Cnet` |                                                        | FUN_0017e080                   |
+| `sfn`  |                                                        | FUN_0012b920                   |
+| `gmd`  |                                                        | FUN_00160da0                   |
+| `obf`  |                                                        | FUN_00160de0                   |
+| `txf`  |                                                        | FUN_001644f0,<br>FUN_00121230, |
+| `Ctos` |                                                        | FUN_00125a10                   |
+| `Cfun` |                                                        | FUN_001272e0                   |
+| `Csac` |                                                        | FUN_00127550                   |
+| `RPNS` |                                                        | FUN_0016c590                   |
+| `Cact` |                                                        | FUN_0016c3a0                   |
+| `o3da` |                                                        | FUN_0016a2a0                   |
+| `o3d`  |                                                        | FUN_0016a0e0                   |
+| `Cctr` |                                                        | FUN_00121230                   |
+| `RLst` | Resource List, metadata about game assets in this file | thunk_FUN_00121230             |
+| `rscE` |                                                        | FUN_00121230                   |
+| `rscB` |                                                        | FUN_00121230                   |
+|        |                                                        |                                |
