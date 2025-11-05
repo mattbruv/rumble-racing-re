@@ -14,19 +14,24 @@ func main() {
 
 	rlst, _ := f.GetResourceList()
 
-	for i, entry := range rlst.Entries {
-		fmt.Println(i, entry.ResourceName, entry.TypeTag)
+	for _, entry := range rlst.Entries {
+
+		if entry.TypeTag == "CarI" {
+
+			if entry.ResourceIndex == 0 {
+				continue
+			}
+
+			asset, err := f.GetResource(entry)
+
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println(asset.GetType())
+			fmt.Println(hex.Dump(asset.RawData()))
+		}
+
 	}
-
-	first := rlst.Entries[189]
-
-	fmt.Println(first.ResourceName)
-	asset, err := f.GetResource(first)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(asset.GetType())
-	fmt.Println(hex.Dump(asset.RawData()))
 
 }

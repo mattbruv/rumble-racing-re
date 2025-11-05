@@ -142,16 +142,36 @@ func (t TrackFile) getHeadersForType(assetType string) []shoc.SHDR {
 	return headers
 }
 
+func (t TrackFile) getHeaderForResource(res asset.ResourceEntry) *shoc.SHDR {
+	for _, chunk := range t.TopLevelChunks {
+		// get SHOC
+		shc, ok := chunk.(*shoc.Shoc)
+		if ok {
+			// Get Headers
+			header, ok := shc.MetaData.(*shoc.SHDR)
+			if ok {
+				if header.AssetType == res.TypeTag {
+					fmt.Println("target", res.TypeTag, res.ResourceIndex, "comparing", header.AssetType, header.AssetIndex)
+					if header.AssetIndex == res.ResourceIndex {
+						fmt.Println("FOUND!", "target", res.TypeTag, res.ResourceIndex, "comparing", header.AssetType, header.AssetIndex)
+						return header
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 	var chunks []shoc.Shoc
 
 	var assetData []byte
 
-	fmt.Println(header.AssetIndex, header.AssetType, header.ShocIndex)
-
-	// Find the first SHOC associated with this header, and then
-	// collect all shocks until totalSize >= headerTotalSize
 	hdrShoc := t.TopLevelChunks[header.ShocIndex]
+	fmt.Println("getting data for:", header.AssetType, header.AssetIndex, "| header address:", hdrShoc.StartAddress())
+
 	fmt.Println("Header shoc:", hdrShoc.StartAddress(), header.ShocIndex)
 
 	shocCount := 1
@@ -187,25 +207,13 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 }
 
 func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error) {
-
 	fmt.Println("attempting to get", resource.ResourceName, resource.TypeTag, "at resource index", resource.ResourceIndex)
-	headers := t.getHeadersForType(resource.TypeTag)
-
-	for _, header := range headers {
-		fmt.Println("test header:", header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
-
-		if header.AssetIndex == resource.ResourceIndex-1 {
-			addr := (t.TopLevelChunks[header.ShocIndex].StartAddress())
-			fmt.Println("header found!", header.ShocIndex, addr)
-			data := t.getDataForHeader(header)
-			switch resource.TypeTag {
-			case "TxtR":
-				return asset.ParseTxtR(data)
-			default:
-				return asset.ParseGenericAsset(data, resource.TypeTag)
-			}
-		}
+	header := t.getHeaderForResource(resource)
+	data := t.getDataForHeader(*header)
+	switch resource.TypeTag {
+	case "TxtR":
+		return asset.ParseTxtR(data)
+	default:
+		return asset.ParseGenericAsset(data, resource.TypeTag)
 	}
-
-	return nil, fmt.Errorf("asset not found")
 }

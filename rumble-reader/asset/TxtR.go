@@ -23,7 +23,7 @@ func (t *TxtR) RawData() []byte {
 	return t.rawData
 }
 
-// ParseEntries parses a byte buffer containing multiple null-terminated strings.
+// ParseTxtR parses a byte buffer containing multiple null-terminated strings.
 // Each string starts with a decimal number, followed by a space, then some text.
 // Example input (as bytes):
 //
