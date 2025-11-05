@@ -20,7 +20,7 @@ func readTrackFile(file io.ReadSeeker) []TopLevelChunk {
 	var chunkIndex uint32 = 0
 	for {
 		pos, _ := file.Seek(0, io.SeekCurrent)
-		chunk, err := readTopLevelChunk(file, chunkIndex)
+		chunkObj, err := readTopLevelChunk(file, chunkIndex)
 		if err == io.EOF {
 			// fmt.Println("reached end of file!")
 			break
@@ -33,7 +33,12 @@ func readTrackFile(file io.ReadSeeker) []TopLevelChunk {
 			log.Fatalf("Error reading chunk at 0x%X: %v", pos, err)
 		}
 
-		chunks = append(chunks, chunk)
+		// Do not append empty FILL chunks, who cares about them.
+		_, ok := chunkObj.(*Fill)
+
+		if !ok {
+			chunks = append(chunks, chunkObj)
+		}
 		chunkIndex++
 	}
 

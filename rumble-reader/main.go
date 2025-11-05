@@ -1,53 +1,58 @@
 package main
 
 import (
+	"fmt"
+	"rumble-reader/asset"
 	"rumble-reader/chunk"
 	"rumble-reader/chunk/shoc"
 )
 
 func main() {
-	file := "../data/FE2.TRK"
-	track := chunk.ReadTrackFile(file)
 
-	// fmt.Println(track.FileName)
+	file := chunk.ReadTrackFile("../data/SE1.TRK")
 
-	for _, top := range track.TopLevelChunks {
+	fmt.Println(file.FileName, file.FileSize, len(file.TopLevelChunks))
 
-		c, ok := top.(*shoc.Shoc)
+	// get resource list?
+
+	for i, main := range file.TopLevelChunks {
+
+		shc, ok := main.(*shoc.Shoc)
+
 		if ok {
 
-			s, ok := c.MetaData.(*shoc.Rdat)
-			// if ok {
-			// 	fmt.Println(s.OutBufferSize)
-			// 	// if s.OutBufferSize > max {
-			// 	// 	max = uint32(s.OutBufferSize)
-			// 	// }
-			// }
+			dat, ok := shc.MetaData.(*shoc.SDAT)
+
 			if ok {
-				if s.OutBufferSize == 9436 {
-					_, err := shoc.Decompress(s.Data(), int(s.OutBufferSize))
-					if err == nil {
-						// fmt.Println(len(data))
+
+				prev, ok := file.TopLevelChunks[i-1].(*shoc.Shoc)
+
+				if ok {
+
+					pt, ok := prev.MetaData.(*shoc.SHDR)
+					if ok {
+
+						if pt.NextFourCC == "RLst" {
+							parsed, err := asset.ParseRLst(dat.Data())
+
+							if err != nil {
+								panic(err)
+							}
+
+							for _, e := range parsed.Entries {
+								fmt.Println(e.Path, e.TypeTag)
+
+							}
+							fmt.Println(len(parsed.Entries))
+							fmt.Println(shc.StartAddress())
+							// os.WriteFile("./RLst.dat", dat.Data(), 0644)
+						}
+
 					}
 				}
 			}
+
 		}
+
 	}
-
-	// file := "../eeMemory.bin"
-	// data, err := os.ReadFile(file)
-	// // data = data[4:]
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// slice := data[0x00f90980 : 0x00f90980+9436]
-	// os.WriteFile("rdat-target.bin", slice, 0644)
-	// fmt.Println(hex.Dump(slice))
-
-	// // res, foo := shoc.Decompress(data, 0x24dc)
-	// // fmt.Println(res, foo)
-	// // fmt.Println(hex.Dump(res))
-	// // os.WriteFile("decompressed.bin", res, 0644)
-
 }
