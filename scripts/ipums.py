@@ -10,7 +10,7 @@ Input #0, ipu, from 'MP/MP2.LSC':
 path = Path("./ipums")
 out_dir = Path("./ipums")
 
-lsc_files = [p for p in path.rglob("*") if p.suffix.lower() == ".ipum"]
+lsc_files = [p for p in path.rglob("*") if p.suffix.lower() == ".ipu"]
 
 for file in lsc_files:
 

@@ -152,9 +152,9 @@ func (t TrackFile) getHeaderForResource(res asset.ResourceEntry) *shoc.SHDR {
 			header, ok := shc.MetaData.(*shoc.SHDR)
 			if ok {
 				if header.AssetType == res.TypeTag {
-					fmt.Println("target", res.TypeTag, res.ResourceIndex, "comparing", header.AssetType, header.AssetIndex)
+					// fmt.Println("target", res.TypeTag, res.ResourceIndex, "comparing", header.AssetType, header.AssetIndex)
 					if header.AssetIndex == res.ResourceIndex {
-						fmt.Println("FOUND!", "target", res.TypeTag, res.ResourceIndex, "comparing", header.AssetType, header.AssetIndex)
+						// fmt.Println("FOUND!", "target", res.TypeTag, res.ResourceIndex, "comparing", header.AssetType, header.AssetIndex)
 						return header
 					}
 				}
@@ -169,10 +169,9 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 
 	var assetData []byte
 
-	hdrShoc := t.TopLevelChunks[header.ShocIndex]
-	fmt.Println("getting data for:", header.AssetType, header.AssetIndex, "| header address:", hdrShoc.StartAddress())
-
-	fmt.Println("Header shoc:", hdrShoc.StartAddress(), header.ShocIndex)
+	// hdrShoc := t.TopLevelChunks[header.ShocIndex]
+	// fmt.Println("getting data for:", header.AssetType, header.AssetIndex, "| header address:", hdrShoc.StartAddress())
+	// fmt.Println("Header shoc:", hdrShoc.StartAddress(), header.ShocIndex)
 
 	shocCount := 1
 	for {
@@ -191,12 +190,15 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 		case *shoc.SDAT:
 			assetData = append(assetData, data.Data()...)
 		default:
-			panic("Unhandled SHOC type!" + data.FourCC())
+			return make([]byte, 0)
+			// panic("Unhandled SHOC type!" + data.FourCC())
 		}
 
 		shocCount++
 		// fmt.Println("total size", len(assetData))
 
+		// making a pretty big assumption here,
+		// that the contiguous shoc data equals header's size value
 		if len(assetData) >= int(header.TotalDataSize) {
 			break
 		}
@@ -206,7 +208,7 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 }
 
 func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error) {
-	fmt.Println("attempting to get", resource.ResourceName, resource.TypeTag, "at resource index", resource.ResourceIndex)
+	// fmt.Println("attempting to get", resource.ResourceName, resource.TypeTag, "at resource index", resource.ResourceIndex)
 	header := t.getHeaderForResource(resource)
 	data := t.getDataForHeader(*header)
 	switch resource.TypeTag {

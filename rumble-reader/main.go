@@ -1,8 +1,8 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
+	"os"
 	"rumble-reader/file"
 )
 
@@ -18,18 +18,17 @@ func main() {
 
 		if entry.TypeTag == "CarI" {
 
-			if entry.ResourceIndex == 0 {
-				continue
-			}
-
 			asset, err := f.GetResource(entry)
 
 			if err != nil {
 				panic(err)
 			}
 
-			fmt.Println(asset.GetType())
-			fmt.Println(hex.Dump(asset.RawData()))
+			if len(asset.RawData()) > 0 {
+				os.WriteFile("../ipums/"+entry.ResourceName, asset.RawData(), 0644)
+				fmt.Println(entry.ResourceName)
+				// fmt.Println(hex.Dump(asset.RawData()))
+			}
 		}
 
 	}
