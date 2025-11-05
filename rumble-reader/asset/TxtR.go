@@ -11,11 +11,16 @@ type TextEntry struct {
 }
 
 type TxtR struct {
+	rawData     []byte
 	TextEntries []TextEntry
 }
 
 func (t *TxtR) GetType() string {
 	return "TxtR"
+}
+
+func (t *TxtR) RawData() []byte {
+	return t.rawData
 }
 
 // ParseEntries parses a byte buffer containing multiple null-terminated strings.
@@ -24,7 +29,9 @@ func (t *TxtR) GetType() string {
 //
 //	"123 apple\x00" + "456 banana\x00" + "789 cherry\x00"
 func ParseTxtR(buf []byte) (*TxtR, error) {
-	resource := TxtR{}
+	resource := TxtR{
+		rawData: buf,
+	}
 	i := 0
 
 	for i < len(buf) {

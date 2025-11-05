@@ -1,23 +1,24 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"rumble-reader/file"
 )
 
 func main() {
 
-	f := file.ReadTrackFile("../data/SE1.TRK")
+	f := file.ReadTrackFile("../data/FE2.TRK")
 
 	fmt.Println(f.FileName, f.FileSize, len(f.TopLevelChunks))
 
 	rlst, _ := f.GetResourceList()
 
-	// for i, entry := range rlst.Entries {
-	// 	fmt.Println(i, entry.ResourceName, entry.TypeTag)
-	// }
+	for i, entry := range rlst.Entries {
+		fmt.Println(i, entry.ResourceName, entry.TypeTag)
+	}
 
-	first := rlst.Entries[15]
+	first := rlst.Entries[189]
 
 	fmt.Println(first.ResourceName)
 	asset, err := f.GetResource(first)
@@ -26,5 +27,6 @@ func main() {
 	}
 
 	fmt.Println(asset.GetType())
+	fmt.Println(hex.Dump(asset.RawData()))
 
 }

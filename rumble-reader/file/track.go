@@ -188,18 +188,21 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 
 func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error) {
 
-	fmt.Println("attempting to get", resource.ResourceName, resource.TypeTag, "at", resource.ResourceIndex)
+	fmt.Println("attempting to get", resource.ResourceName, resource.TypeTag, "at resource index", resource.ResourceIndex)
 	headers := t.getHeadersForType(resource.TypeTag)
 
 	for _, header := range headers {
-		// fmt.Println(header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
-		if header.AssetIndex == resource.ResourceIndex {
+		fmt.Println("test header:", header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
+
+		if header.AssetIndex == resource.ResourceIndex-1 {
 			addr := (t.TopLevelChunks[header.ShocIndex].StartAddress())
 			fmt.Println("header found!", header.ShocIndex, addr)
 			data := t.getDataForHeader(header)
 			switch resource.TypeTag {
 			case "TxtR":
 				return asset.ParseTxtR(data)
+			default:
+				return asset.ParseGenericAsset(data, resource.TypeTag)
 			}
 		}
 	}

@@ -32,6 +32,8 @@ func parseSHDR(data []byte, shocIndex uint32) *SHDR {
 
 	unk := binary.LittleEndian.Uint32(data[0:4])
 	index := binary.LittleEndian.Uint32(data[8 : 8+4])
+	// Indicies seem to be one-based
+	index -= 1
 	size := binary.LittleEndian.Uint32(data[8+4 : 8+4+4])
 
 	return &SHDR{
