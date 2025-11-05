@@ -33,18 +33,31 @@ func main() {
 					if ok {
 
 						if pt.NextFourCC == "RLst" {
-							parsed, err := asset.ParseRLst(dat.Data())
+							next, ok := file.TopLevelChunks[i+1].(*shoc.Shoc)
 
-							if err != nil {
-								panic(err)
+							if ok {
+
+								nextDat, ok := next.MetaData.(*shoc.SDAT)
+								if ok {
+									var combined = dat.Data()
+									combined = append(combined, nextDat.Data()...)
+
+									parsed, err := asset.ParseRLst(combined)
+
+									if err != nil {
+										panic(err)
+									}
+
+									for _, e := range parsed.Entries {
+										fmt.Println(e.Path, e.TypeTag)
+
+									}
+
+									fmt.Println(len(parsed.Entries))
+
+								}
 							}
-
-							for _, e := range parsed.Entries {
-								fmt.Println(e.Path, e.TypeTag)
-
-							}
-							fmt.Println(len(parsed.Entries))
-							fmt.Println(shc.StartAddress())
+							// fmt.Println(shc.StartAddress())
 							// os.WriteFile("./RLst.dat", dat.Data(), 0644)
 						}
 
