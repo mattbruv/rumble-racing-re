@@ -1,7 +1,6 @@
 package file
 
 import (
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -106,9 +105,20 @@ func readTopLevelChunk(r io.ReadSeeker, chunkIndex uint32) (TopLevelChunk, error
 
 func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
 
+	headers := t.getHeadersForType("RLst")
+
+	for _, header := range headers {
+		fmt.Println(header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
+		// fmt.Println(hex.Dump(hdr.Data()))
+	}
+
+	return &asset.RLst{}, false
+}
+
+func (t TrackFile) getHeadersForType(assetType string) []shoc.SHDR {
 	var headers []shoc.SHDR
 
-	// Get the SHDRs for all RLst's in the file
+	// Get the SHDRs for all assetTypes in the file
 	for _, chunk := range t.TopLevelChunks {
 		// get SHOC
 		shc, ok := chunk.(*shoc.Shoc)
@@ -116,17 +126,11 @@ func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
 			// Get Headers
 			header, ok := shc.MetaData.(*shoc.SHDR)
 			if ok {
-				if header.AssetType == "RLst" {
+				if header.AssetType == assetType {
 					headers = append(headers, *header)
 				}
 			}
 		}
 	}
-
-	for i, hdr := range headers {
-		fmt.Println(i, hdr.AssetType, hdr.Unk0, hdr.AssetIndex, hdr.TotalDataSize)
-		fmt.Println(hex.Dump(hdr.Data()))
-	}
-
-	return &asset.RLst{}, false
+	return headers
 }
