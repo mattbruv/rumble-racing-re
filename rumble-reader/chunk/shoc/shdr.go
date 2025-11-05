@@ -6,8 +6,8 @@ import (
 )
 
 type SHDR struct {
-	data       []byte
-	NextFourCC string
+	data      []byte
+	AssetType string
 }
 
 func (s *SHDR) FourCC() string {
@@ -25,12 +25,12 @@ func parseSHDR(data []byte) *SHDR {
 	fourCC := string(fourCCbytes)
 
 	return &SHDR{
-		data:       data,
-		NextFourCC: fourCC,
+		data:      data,
+		AssetType: fourCC,
 	}
 }
 
 func (c *SHDR) MarshalJSON() ([]byte, error) {
-	arr := []interface{}{c.FourCC(), c.NextFourCC}
+	arr := []interface{}{c.FourCC(), c.AssetType}
 	return json.Marshal(arr)
 }

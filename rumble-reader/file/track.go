@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"rumble-reader/asset"
 	. "rumble-reader/chunk"
 	"rumble-reader/chunk/shoc"
 )
@@ -100,4 +101,30 @@ func readTopLevelChunk(r io.ReadSeeker, chunkIndex uint32) (TopLevelChunk, error
 	default:
 		return ReadGenericChunk(r, fourcc, startPos, chunkIndex)
 	}
+}
+
+func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
+
+	var headers []shoc.SHDR
+
+	// Get the SHDRs for all RLst's in the file
+	for _, chunk := range t.TopLevelChunks {
+		// get SHOC
+		shc, ok := chunk.(*shoc.Shoc)
+		if ok {
+			// Get Headers
+			header, ok := shc.MetaData.(*shoc.SHDR)
+			if ok {
+				if header.AssetType == "RLst" {
+					headers = append(headers, *header)
+				}
+			}
+		}
+	}
+
+	for i, hdr := range headers {
+		fmt.Println(i, hdr.AssetType)
+	}
+
+	return &asset.RLst{}, false
 }
