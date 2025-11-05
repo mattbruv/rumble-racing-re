@@ -7,6 +7,7 @@ import (
 )
 
 type SHDR struct {
+	ShocIndex     uint32
 	Unk0          uint32
 	AssetType     string
 	AssetIndex    uint32
@@ -23,7 +24,7 @@ func (s *SHDR) Data() []byte {
 	return s.data
 }
 
-func parseSHDR(data []byte) *SHDR {
+func parseSHDR(data []byte, shocIndex uint32) *SHDR {
 
 	fourCCbytes := append([]byte(nil), data[4:8]...)
 	helpers.ReverseBytesInPlace(fourCCbytes)
@@ -34,6 +35,7 @@ func parseSHDR(data []byte) *SHDR {
 	size := binary.LittleEndian.Uint32(data[8+4 : 8+4+4])
 
 	return &SHDR{
+		ShocIndex:     shocIndex,
 		Unk0:          unk,
 		AssetType:     fourCC,
 		AssetIndex:    index,

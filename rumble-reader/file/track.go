@@ -128,9 +128,53 @@ func (t TrackFile) getHeadersForType(assetType string) []shoc.SHDR {
 			if ok {
 				if header.AssetType == assetType {
 					headers = append(headers, *header)
+					dat := t.getDataForHeader(*header)
+					rlst, err := asset.ParseRLst(dat)
+					if err != nil {
+						panic(err)
+					}
+					fmt.Println(rlst.Count)
 				}
 			}
 		}
 	}
+
 	return headers
+}
+
+func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
+	var chunks []shoc.Shoc
+
+	var assetData []byte
+
+	// Find the first SHOC associated with this header, and then
+	// collect all shocks until totalSize >= headerTotalSize
+	shocCount := 1
+	for {
+		topLevel := t.TopLevelChunks[header.ShocIndex+uint32(shocCount)]
+
+		theShoc, ok := topLevel.(*shoc.Shoc)
+
+		if !ok {
+			// skip past filler/unrelated chunks
+			continue
+		}
+
+		switch data := theShoc.MetaData.(type) {
+		case *shoc.SDAT:
+			chunks = append(chunks, *theShoc)
+			assetData = append(assetData, data.Data()...)
+		default:
+			panic("Unhandled SHOC type!")
+		}
+
+		shocCount++
+		// fmt.Println("total size", len(assetData))
+
+		if len(assetData) >= int(header.TotalDataSize) {
+			break
+		}
+	}
+
+	return assetData
 }

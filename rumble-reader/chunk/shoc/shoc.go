@@ -50,11 +50,11 @@ func ReadSHOCChunk(r io.ReadSeeker, startPos uint32, index uint32) (*Shoc, error
 		index:        index,
 		startAddress: startPos,
 		data:         data,
-		MetaData:     parseSubChunk(data),
+		MetaData:     parseSubChunk(data, index),
 	}, nil
 }
 
-func parseSubChunk(data []byte) ShocMetaChunk {
+func parseSubChunk(data []byte, shocIndex uint32) ShocMetaChunk {
 
 	fourCCbytes := append([]byte(nil), data[8:12]...)
 	helpers.ReverseBytesInPlace(fourCCbytes)
@@ -62,7 +62,7 @@ func parseSubChunk(data []byte) ShocMetaChunk {
 
 	switch fourCC {
 	case "SHDR":
-		return parseSHDR(data[12:])
+		return parseSHDR(data[12:], shocIndex)
 	case "SDAT":
 		return parseSDAT(data[12:])
 	case "Rdat":
