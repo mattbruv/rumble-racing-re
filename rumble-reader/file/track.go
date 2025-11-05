@@ -169,9 +169,9 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 
 	var assetData []byte
 
-	// hdrShoc := t.TopLevelChunks[header.ShocIndex]
-	// fmt.Println("getting data for:", header.AssetType, header.AssetIndex, "| header address:", hdrShoc.StartAddress())
-	// fmt.Println("Header shoc:", hdrShoc.StartAddress(), header.ShocIndex)
+	hdrShoc := t.TopLevelChunks[header.ShocIndex]
+	fmt.Println("getting data for:", header.AssetType, "size:", header.TotalDataSize, "asset idx:", header.AssetIndex, "| header address:", hdrShoc.StartAddress())
+	fmt.Println("Header addr", hdrShoc.StartAddress())
 
 	shocCount := 1
 	for {
@@ -184,14 +184,21 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 			continue
 		}
 
-		fmt.Println(theShoc.StartAddress(), theShoc.MetaData.FourCC())
+		fmt.Println(theShoc.StartAddress(), theShoc.MetaData.FourCC(), "size:", len(theShoc.Data()))
 
 		switch data := theShoc.MetaData.(type) {
 		case *shoc.SDAT:
 			assetData = append(assetData, data.Data()...)
+		case *shoc.Rdat:
+			decompressed, err := shoc.Decompress(data.Data(), int(data.OutBufferSize))
+			if err != nil {
+				fmt.Println("Error decompressing", header.AssetType, header.AssetIndex)
+				return make([]byte, 0)
+				// panic(err)
+			}
+			assetData = append(assetData, decompressed...)
 		default:
-			return make([]byte, 0)
-			// panic("Unhandled SHOC type!" + data.FourCC())
+			panic("Unhandled SHOC type!" + data.FourCC())
 		}
 
 		shocCount++
