@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"rumble-reader/asset"
 	"rumble-reader/chunk"
@@ -36,6 +37,7 @@ func main() {
 							next, ok := file.TopLevelChunks[i+1].(*shoc.Shoc)
 
 							if ok {
+								fmt.Println(hex.Dump(pt.Data()))
 
 								nextDat, ok := next.MetaData.(*shoc.SDAT)
 								if ok {
@@ -49,8 +51,8 @@ func main() {
 									}
 
 									for _, e := range parsed.Entries {
-										fmt.Println(e.ResourceName, e.TypeTag)
-
+										out := fmt.Sprintf("%d,%s,%s", e.ResourceIndex, e.ResourceName, e.TypeTag)
+										fmt.Println(out)
 									}
 
 									fmt.Println(len(parsed.Entries))

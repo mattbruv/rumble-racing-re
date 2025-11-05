@@ -34,6 +34,11 @@ func ParseRLst(data []byte) (*RLst, error) {
 			return nil, fmt.Errorf("failed to read tag (entry %d): %w", i, err)
 		}
 
+		// Reverse bytes
+		for j := 0; j < 2; j++ {
+			tag[j], tag[3-j] = tag[3-j], tag[j]
+		}
+
 		var index uint32
 		if err := binary.Read(r, binary.LittleEndian, &index); err != nil {
 			return nil, fmt.Errorf("failed to read index (entry %d): %w", i, err)
