@@ -13,6 +13,12 @@ func main() {
 
 	rlst, _ := f.GetResourceList()
 
-	fmt.Println(rlst.Count)
+	for i, entry := range rlst.Entries {
+		fmt.Println(i, entry.ResourceName, entry.TypeTag)
+	}
+
+	// first := rlst.Entries[15]
+
+	// fmt.Println(first.ResourceIndex, first.ResourceName, first.TypeTag)
 
 }

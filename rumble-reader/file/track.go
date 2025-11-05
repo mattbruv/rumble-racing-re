@@ -109,10 +109,16 @@ func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
 
 	for _, header := range headers {
 		fmt.Println(header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
+
+		rList, err := asset.ParseRLst(t.getDataForHeader(header))
+		if err != nil {
+			panic(err)
+		}
+		return rList, true
 		// fmt.Println(hex.Dump(hdr.Data()))
 	}
 
-	return &asset.RLst{}, false
+	return nil, false
 }
 
 func (t TrackFile) getHeadersForType(assetType string) []shoc.SHDR {
@@ -177,4 +183,23 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 	}
 
 	return assetData
+}
+
+func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error) {
+
+	headers := t.getHeadersForType(resource.TypeTag)
+
+	for _, header := range headers {
+		// fmt.Println(header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
+
+		if header.AssetIndex == resource.ResourceIndex {
+			data := t.getDataForHeader(header)
+			switch resource.TypeTag {
+			case "TxtR":
+				return asset.ParseTxtR(data)
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("asset not found")
 }

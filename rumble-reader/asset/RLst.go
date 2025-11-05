@@ -13,6 +13,10 @@ type RLst struct {
 	Entries []ResourceEntry
 }
 
+func (r *RLst) GetType() string {
+	return "RLst"
+}
+
 type ResourceEntry struct {
 	TypeTag       string
 	ResourceIndex uint32

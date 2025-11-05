@@ -14,6 +14,10 @@ type TxtR struct {
 	TextEntries []TextEntry
 }
 
+func (t *TxtR) GetType() string {
+	return "TxtR"
+}
+
 // ParseEntries parses a byte buffer containing multiple null-terminated strings.
 // Each string starts with a decimal number, followed by a space, then some text.
 // Example input (as bytes):
