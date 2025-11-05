@@ -17,8 +17,13 @@ func main() {
 		fmt.Println(i, entry.ResourceName, entry.TypeTag)
 	}
 
-	// first := rlst.Entries[15]
+	first := rlst.Entries[15]
 
-	// fmt.Println(first.ResourceIndex, first.ResourceName, first.TypeTag)
+	asset, err := f.GetResource(first)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(asset.GetType())
 
 }

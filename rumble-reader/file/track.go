@@ -134,12 +134,6 @@ func (t TrackFile) getHeadersForType(assetType string) []shoc.SHDR {
 			if ok {
 				if header.AssetType == assetType {
 					headers = append(headers, *header)
-					dat := t.getDataForHeader(*header)
-					rlst, err := asset.ParseRLst(dat)
-					if err != nil {
-						panic(err)
-					}
-					fmt.Println(rlst.Count)
 				}
 			}
 		}
@@ -153,8 +147,13 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 
 	var assetData []byte
 
+	fmt.Println(header.AssetIndex, header.AssetType, header.ShocIndex)
+
 	// Find the first SHOC associated with this header, and then
 	// collect all shocks until totalSize >= headerTotalSize
+	hdrShoc := t.TopLevelChunks[header.ShocIndex]
+	fmt.Println("Header shoc:", hdrShoc.StartAddress())
+
 	shocCount := 1
 	for {
 		topLevel := t.TopLevelChunks[header.ShocIndex+uint32(shocCount)]
@@ -166,12 +165,14 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 			continue
 		}
 
+		fmt.Println(theShoc.StartAddress(), theShoc.MetaData.FourCC())
+
 		switch data := theShoc.MetaData.(type) {
 		case *shoc.SDAT:
 			chunks = append(chunks, *theShoc)
 			assetData = append(assetData, data.Data()...)
 		default:
-			panic("Unhandled SHOC type!")
+			panic("Unhandled SHOC type!" + data.FourCC())
 		}
 
 		shocCount++
@@ -187,11 +188,11 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 
 func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error) {
 
+	fmt.Println("attempting to get", resource.ResourceName, resource.TypeTag, "at", resource.ResourceIndex)
 	headers := t.getHeadersForType(resource.TypeTag)
 
 	for _, header := range headers {
 		// fmt.Println(header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
-
 		if header.AssetIndex == resource.ResourceIndex {
 			data := t.getDataForHeader(header)
 			switch resource.TypeTag {
