@@ -41,8 +41,9 @@ func readTrackFile(file io.ReadSeeker) []chunk.TopLevelChunk {
 
 		if !ok {
 			chunks = append(chunks, chunkObj)
+			// only increment chunk index if we're actually adding a chunk
+			chunkIndex++
 		}
-		chunkIndex++
 	}
 
 	return chunks
@@ -165,7 +166,6 @@ func (t TrackFile) getHeaderForResource(res asset.ResourceEntry) *shoc.SHDR {
 }
 
 func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
-	var chunks []shoc.Shoc
 
 	var assetData []byte
 
@@ -189,7 +189,6 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 
 		switch data := theShoc.MetaData.(type) {
 		case *shoc.SDAT:
-			chunks = append(chunks, *theShoc)
 			assetData = append(assetData, data.Data()...)
 		default:
 			panic("Unhandled SHOC type!" + data.FourCC())
