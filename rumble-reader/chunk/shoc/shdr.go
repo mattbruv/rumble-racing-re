@@ -1,13 +1,18 @@
 package shoc
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"rumble-reader/helpers"
 )
 
 type SHDR struct {
-	data      []byte
-	AssetType string
+	Unk0          uint32
+	AssetType     string
+	AssetIndex    uint32
+	TotalDataSize uint32
+
+	data []byte
 }
 
 func (s *SHDR) FourCC() string {
@@ -24,9 +29,16 @@ func parseSHDR(data []byte) *SHDR {
 	helpers.ReverseBytesInPlace(fourCCbytes)
 	fourCC := string(fourCCbytes)
 
+	unk := binary.LittleEndian.Uint32(data[0:4])
+	index := binary.LittleEndian.Uint32(data[8 : 8+4])
+	size := binary.LittleEndian.Uint32(data[8+4 : 8+4+4])
+
 	return &SHDR{
-		data:      data,
-		AssetType: fourCC,
+		Unk0:          unk,
+		AssetType:     fourCC,
+		AssetIndex:    index,
+		TotalDataSize: size,
+		data:          data,
 	}
 }
 

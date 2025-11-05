@@ -1,6 +1,7 @@
 package file
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -123,7 +124,8 @@ func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
 	}
 
 	for i, hdr := range headers {
-		fmt.Println(i, hdr.AssetType)
+		fmt.Println(i, hdr.AssetType, hdr.Unk0, hdr.AssetIndex, hdr.TotalDataSize)
+		fmt.Println(hex.Dump(hdr.Data()))
 	}
 
 	return &asset.RLst{}, false
