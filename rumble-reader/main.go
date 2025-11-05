@@ -13,12 +13,13 @@ func main() {
 
 	rlst, _ := f.GetResourceList()
 
-	for i, entry := range rlst.Entries {
-		fmt.Println(i, entry.ResourceName, entry.TypeTag)
-	}
+	// for i, entry := range rlst.Entries {
+	// 	fmt.Println(i, entry.ResourceName, entry.TypeTag)
+	// }
 
 	first := rlst.Entries[15]
 
+	fmt.Println(first.ResourceName)
 	asset, err := f.GetResource(first)
 	if err != nil {
 		panic(err)

@@ -6,19 +6,19 @@ import (
 	"log"
 	"os"
 	"rumble-reader/asset"
-	. "rumble-reader/chunk"
+	"rumble-reader/chunk"
 	"rumble-reader/chunk/shoc"
 )
 
 type TrackFile struct {
 	FileName       string
 	FileSize       int64
-	TopLevelChunks []TopLevelChunk
+	TopLevelChunks []chunk.TopLevelChunk
 }
 
-func readTrackFile(file io.ReadSeeker) []TopLevelChunk {
+func readTrackFile(file io.ReadSeeker) []chunk.TopLevelChunk {
 
-	var chunks []TopLevelChunk
+	var chunks []chunk.TopLevelChunk
 
 	var chunkIndex uint32 = 0
 	for {
@@ -37,7 +37,7 @@ func readTrackFile(file io.ReadSeeker) []TopLevelChunk {
 		}
 
 		// Do not append empty FILL chunks, who cares about them.
-		_, ok := chunkObj.(*Fill)
+		_, ok := chunkObj.(*chunk.Fill)
 
 		if !ok {
 			chunks = append(chunks, chunkObj)
@@ -74,7 +74,7 @@ func ReadTrackFile(filename string) TrackFile {
 	}
 }
 
-func readTopLevelChunk(r io.ReadSeeker, chunkIndex uint32) (TopLevelChunk, error) {
+func readTopLevelChunk(r io.ReadSeeker, chunkIndex uint32) (chunk.TopLevelChunk, error) {
 	startPosSigned, _ := r.Seek(0, io.SeekCurrent)
 	startPos := uint32(startPosSigned)
 
@@ -93,13 +93,13 @@ func readTopLevelChunk(r io.ReadSeeker, chunkIndex uint32) (TopLevelChunk, error
 
 	switch fourcc {
 	case "CTRL":
-		return ReadCTRLChunk(r, startPos, chunkIndex)
+		return chunk.ReadCTRLChunk(r, startPos, chunkIndex)
 	case "SHOC":
 		return shoc.ReadSHOCChunk(r, startPos, chunkIndex)
 	case "FILL":
-		return ReadFILLChunk(r, startPos, pos, chunkIndex)
+		return chunk.ReadFILLChunk(r, startPos, pos, chunkIndex)
 	default:
-		return ReadGenericChunk(r, fourcc, startPos, chunkIndex)
+		return chunk.ReadGenericChunk(r, fourcc, startPos, chunkIndex)
 	}
 }
 
@@ -108,7 +108,7 @@ func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
 	headers := t.getHeadersForType("RLst")
 
 	for _, header := range headers {
-		fmt.Println(header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
+		// fmt.Println(header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
 
 		rList, err := asset.ParseRLst(t.getDataForHeader(header))
 		if err != nil {
@@ -152,7 +152,7 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 	// Find the first SHOC associated with this header, and then
 	// collect all shocks until totalSize >= headerTotalSize
 	hdrShoc := t.TopLevelChunks[header.ShocIndex]
-	fmt.Println("Header shoc:", hdrShoc.StartAddress())
+	fmt.Println("Header shoc:", hdrShoc.StartAddress(), header.ShocIndex)
 
 	shocCount := 1
 	for {
@@ -194,6 +194,8 @@ func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error
 	for _, header := range headers {
 		// fmt.Println(header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
 		if header.AssetIndex == resource.ResourceIndex {
+			addr := (t.TopLevelChunks[header.ShocIndex].StartAddress())
+			fmt.Println("header found!", header.ShocIndex, addr)
 			data := t.getDataForHeader(header)
 			switch resource.TypeTag {
 			case "TxtR":
