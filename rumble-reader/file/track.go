@@ -1,10 +1,12 @@
-package chunk
+package file
 
 import (
 	"fmt"
 	"io"
 	"log"
 	"os"
+	. "rumble-reader/chunk"
+	"rumble-reader/chunk/shoc"
 )
 
 type TrackFile struct {
@@ -68,5 +70,34 @@ func ReadTrackFile(filename string) TrackFile {
 		FileName:       info.Name(),
 		FileSize:       info.Size(),
 		TopLevelChunks: chunks,
+	}
+}
+
+func readTopLevelChunk(r io.ReadSeeker, chunkIndex uint32) (TopLevelChunk, error) {
+	startPosSigned, _ := r.Seek(0, io.SeekCurrent)
+	startPos := uint32(startPosSigned)
+
+	tag := make([]byte, 4)
+	if _, err := io.ReadFull(r, tag); err != nil {
+		return nil, err
+	}
+
+	// Reverse bytes if little-endian
+	for i := 0; i < 2; i++ {
+		tag[i], tag[3-i] = tag[3-i], tag[i]
+	}
+	fourcc := string(tag)
+
+	pos, _ := r.Seek(0, io.SeekCurrent)
+
+	switch fourcc {
+	case "CTRL":
+		return ReadCTRLChunk(r, startPos, chunkIndex)
+	case "SHOC":
+		return shoc.ReadSHOCChunk(r, startPos, chunkIndex)
+	case "FILL":
+		return ReadFILLChunk(r, startPos, pos, chunkIndex)
+	default:
+		return ReadGenericChunk(r, fourcc, startPos, chunkIndex)
 	}
 }

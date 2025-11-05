@@ -1,11 +1,13 @@
 package tests
 
-import "rumble-reader/chunk"
+import (
+	"rumble-reader/file"
+)
 
 type TestTrack struct {
 	InternalName string
 	TrackName    string
-	Track        chunk.TrackFile
+	Track        file.TrackFile
 }
 
 var testTracks = []TestTrack{
@@ -30,7 +32,7 @@ var testTracks = []TestTrack{
 func GetTestFiles() []TestTrack {
 
 	for i := range testTracks {
-		testTracks[i].Track = chunk.ReadTrackFile("../../data/" + testTracks[i].InternalName + ".TRK")
+		testTracks[i].Track = file.ReadTrackFile("../../data/" + testTracks[i].InternalName + ".TRK")
 	}
 
 	return testTracks

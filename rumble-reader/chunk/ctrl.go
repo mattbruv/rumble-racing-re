@@ -34,7 +34,7 @@ func (c *Ctrl) Index() uint32 {
 	return c.index
 }
 
-func readCTRLChunk(r io.ReadSeeker, startPos uint32, index uint32) (*Ctrl, error) {
+func ReadCTRLChunk(r io.ReadSeeker, startPos uint32, index uint32) (*Ctrl, error) {
 	var chunkSize uint32
 	if err := binary.Read(r, binary.LittleEndian, &chunkSize); err != nil {
 		return nil, err

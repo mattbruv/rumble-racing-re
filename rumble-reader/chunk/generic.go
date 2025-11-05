@@ -33,7 +33,7 @@ func (c *Generic) Index() uint32 {
 	return c.index
 }
 
-func readGenericChunk(r io.ReadSeeker, fourCC string, startPos uint32, index uint32) (*Generic, error) {
+func ReadGenericChunk(r io.ReadSeeker, fourCC string, startPos uint32, index uint32) (*Generic, error) {
 	var chunkSize uint32
 	if err := binary.Read(r, binary.LittleEndian, &chunkSize); err != nil {
 		return nil, err

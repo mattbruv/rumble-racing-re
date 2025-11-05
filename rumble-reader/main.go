@@ -4,19 +4,19 @@ import (
 	"encoding/hex"
 	"fmt"
 	"rumble-reader/asset"
-	"rumble-reader/chunk"
 	"rumble-reader/chunk/shoc"
+	"rumble-reader/file"
 )
 
 func main() {
 
-	file := chunk.ReadTrackFile("../data/SE1.TRK")
+	f := file.ReadTrackFile("../data/SE1.TRK")
 
-	fmt.Println(file.FileName, file.FileSize, len(file.TopLevelChunks))
+	fmt.Println(f.FileName, f.FileSize, len(f.TopLevelChunks))
 
 	// get resource list?
 
-	for i, main := range file.TopLevelChunks {
+	for i, main := range f.TopLevelChunks {
 
 		shc, ok := main.(*shoc.Shoc)
 
@@ -26,7 +26,7 @@ func main() {
 
 			if ok {
 
-				prev, ok := file.TopLevelChunks[i-1].(*shoc.Shoc)
+				prev, ok := f.TopLevelChunks[i-1].(*shoc.Shoc)
 
 				if ok {
 
@@ -34,7 +34,7 @@ func main() {
 					if ok {
 
 						if pt.NextFourCC == "RLst" {
-							next, ok := file.TopLevelChunks[i+1].(*shoc.Shoc)
+							next, ok := f.TopLevelChunks[i+1].(*shoc.Shoc)
 
 							if ok {
 								fmt.Println(hex.Dump(pt.Data()))
@@ -51,7 +51,7 @@ func main() {
 									}
 
 									for _, e := range parsed.Entries {
-										out := fmt.Sprintf("%d,%s,%s", e.ResourceIndex, e.ResourceName, e.TypeTag)
+										out := fmt.Sprintf("%s,%s,%d", e.ResourceName, e.TypeTag, e.ResourceIndex)
 										fmt.Println(out)
 									}
 

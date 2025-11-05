@@ -32,7 +32,7 @@ func (c *Fill) Index() uint32 {
 	return c.index
 }
 
-func readFILLChunk(r io.ReadSeeker, startPos uint32, pos int64, index uint32) (*Fill, error) {
+func ReadFILLChunk(r io.ReadSeeker, startPos uint32, pos int64, index uint32) (*Fill, error) {
 	// Handle special case: fill tag ends on 0x6000 boundary
 	if pos%0x6000 == 0 {
 		return &Fill{
