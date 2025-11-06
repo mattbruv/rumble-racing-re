@@ -9,6 +9,7 @@ target/
 *.txt
 *.rdat
 *.dat
+rumble-reader/rumble-reader
 *.bin
 */.DS_STORE
 **/.DS_STORE
