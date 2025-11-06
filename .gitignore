@@ -1,6 +1,5 @@
 loading-screens/*
 data/*
-**/*.png
 ../.DS_STORE
 ipums/
 target/
@@ -10,6 +9,7 @@ target/
 *.txt
 *.rdat
 *.dat
+*.bin
 */.DS_STORE
 **/.DS_STORE
 eeMemory.bin
