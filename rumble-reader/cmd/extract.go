@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -15,17 +19,37 @@ var extractCmd = &cobra.Command{
 		outputDir, _ := cmd.Flags().GetString("output")
 		doConvert, _ := cmd.Flags().GetBool("convert")
 		makeSubfolders, _ := cmd.Flags().GetBool("sub-folders")
-		extractData(inputDir, outputDir, doConvert, makeSubfolders)
-		return nil
+		err := extractData(inputDir, outputDir, doConvert, makeSubfolders)
+		return err
 	},
 }
 
-func extractData(inputDir, outputDir string, convert, subfolders bool) {
-	fmt.Printf("Input: %s\n", inputDir)
-	fmt.Printf("Output: %s\n", outputDir)
-	fmt.Printf("Convert: %v\n", convert)
-	fmt.Printf("Subfolders: %v\n", subfolders)
+func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
+	err := filepath.WalkDir(inputDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Check for .TRK extension (case-insensitive)
+		if strings.EqualFold(filepath.Ext(d.Name()), ".TRK") {
+
+			// Get the file name without extension
+			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
+			subDir := filepath.Join(outputDir, baseName)
+
+			// Create the subdirectory
+			if err := os.MkdirAll(subDir, 0755); err != nil {
+				return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
+			}
+
+			fmt.Println("Created output directory:", subDir)
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func init() {
