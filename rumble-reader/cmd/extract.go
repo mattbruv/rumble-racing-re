@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"rumble-reader/file"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -38,12 +39,16 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
 			subDir := filepath.Join(outputDir, baseName)
 
+			trackFile := file.ReadTrackFile(path)
+
+			fmt.Println(path, trackFile.FileSize, len(trackFile.TopLevelChunks))
+
 			// Create the subdirectory
 			if err := os.MkdirAll(subDir, 0755); err != nil {
 				return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
 			}
 
-			fmt.Println("Created output directory:", subDir)
+			// fmt.Println("Created output directory:", subDir)
 		}
 
 		return nil
