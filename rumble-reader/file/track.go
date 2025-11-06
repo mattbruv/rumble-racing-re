@@ -107,6 +107,13 @@ func readTopLevelChunk(r io.ReadSeeker, chunkIndex uint32) (chunk.TopLevelChunk,
 
 func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
 
+	// FE2 has multiple resource lists.
+	// Let's just combine them and treat it as one giant list for now.
+	var newList = asset.RLst{
+		Count:   0,
+		Entries: []asset.ResourceEntry{},
+	}
+
 	headers := t.getHeadersForType("RLst")
 
 	for _, header := range headers {
@@ -116,11 +123,12 @@ func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
 		if err != nil {
 			panic(err)
 		}
-		return rList, true
-		// fmt.Println(hex.Dump(hdr.Data()))
+
+		newList.Count += rList.Count
+		newList.Entries = append(newList.Entries, rList.Entries...)
 	}
 
-	return nil, false
+	return &newList, false
 }
 
 func (t TrackFile) getHeadersForType(assetType string) []shoc.SHDR {
