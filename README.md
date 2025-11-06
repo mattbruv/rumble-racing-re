@@ -69,6 +69,9 @@ Currently the chunks do not appear to be nested or recursive, but rather sequent
 
 Each SHOC entry contains some data which makes up a game asset.
 I am currently working through understanding how `SHOC`s are related to each other, and how to pull out this data.
+
+## Game Assets
+
 The game asset FourCC types are listed here as follows, along with the address of the function that processes this data:
 
 | Status | Meaning                         |
