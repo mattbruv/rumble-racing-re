@@ -4,6 +4,8 @@ This repository hosts my notes and tools for reverse engineering the file format
 
 [Rumble Reader](./rumble-reader/) is a program I'm writing in Go as I work on reverse engineering the file formats. The ultimate goal is to be able to parse, export, and preserve the 3D game maps to display them in [noclip.website](https://noclip.website)
 
+![](./docs/images/cars.png)
+
 ## File Formats
 
 There are three main file types seen in the game's data: `.TRK`, `.AV`. and `.LSC`.
