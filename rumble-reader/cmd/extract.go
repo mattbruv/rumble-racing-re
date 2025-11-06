@@ -68,7 +68,7 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 					}
 
 					// Append the type as file suffix/extension
-					outFileName := fmt.Sprintf("%s.%s", entry.ResourceName, theAsset.GetType())
+					outFileName := fmt.Sprintf("%d_%s.%s", entry.ResourceIndex, entry.ResourceName, theAsset.GetType())
 					outFilePath := filepath.Join(outFolder, outFileName)
 
 					if err := os.WriteFile(outFilePath, data, 0644); err != nil {
