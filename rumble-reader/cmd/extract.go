@@ -1,0 +1,99 @@
+package cmd
+
+import (
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"rumble-reader/file"
+	"strings"
+
+	"github.com/spf13/cobra"
+)
+
+var extractCmd = &cobra.Command{
+	Use:   "extract",
+	Short: "Extract assets from input to output directory",
+	Long:  `This command processes files from the input directory and saves results in the output directory.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		inputDir, _ := cmd.Flags().GetString("input")
+		outputDir, _ := cmd.Flags().GetString("output")
+		doConvert, _ := cmd.Flags().GetBool("convert")
+		makeSubfolders, _ := cmd.Flags().GetBool("sub-folders")
+		err := extractData(inputDir, outputDir, doConvert, makeSubfolders)
+		return err
+	},
+}
+
+func extractData(inputDir, outputDir string, convert, subfolders bool) error {
+	// Ensure the outputDir exists
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	err := filepath.WalkDir(inputDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		if strings.EqualFold(filepath.Ext(d.Name()), ".TRK") {
+			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
+			subDir := filepath.Join(outputDir, baseName)
+
+			trackFile := file.ReadTrackFile(path)
+			rlst, _ := trackFile.GetResourceList()
+
+			if err := os.MkdirAll(subDir, 0755); err != nil {
+				return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
+			}
+
+			for _, entry := range rlst.Entries {
+				theAsset, err := trackFile.GetResource(entry)
+				if err != nil {
+					return fmt.Errorf("failed to get resource: %w", err)
+				}
+
+				data := theAsset.RawData()
+				if len(data) > 0 {
+					outFolder := subDir
+					if subfolders {
+						outFolder = filepath.Join(subDir, theAsset.GetType())
+						if err := os.MkdirAll(outFolder, 0755); err != nil {
+							return fmt.Errorf("failed to create subfolder %s: %w", outFolder, err)
+						}
+					}
+
+					// Append the type as file suffix/extension
+					outFileName := fmt.Sprintf("%s.%s", entry.ResourceName, theAsset.GetType())
+					outFilePath := filepath.Join(outFolder, outFileName)
+
+					if err := os.WriteFile(outFilePath, data, 0644); err != nil {
+						return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+					}
+				}
+			}
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func init() {
+	rootCmd.AddCommand(extractCmd)
+
+	// Required flags
+	extractCmd.Flags().StringP("input", "i", "", "Input directory (required)")
+	extractCmd.Flags().StringP("output", "o", "", "Output directory (required)")
+	extractCmd.MarkFlagRequired("input")
+	extractCmd.MarkFlagRequired("output")
+
+	// Optional flags
+	extractCmd.Flags().BoolP("convert", "c", false, "Whether to convert files")
+	extractCmd.Flags().BoolP("sub-folders", "s", false, "Create sub-folders for each asset type")
+}

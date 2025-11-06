@@ -8,6 +8,7 @@ import (
 	"rumble-reader/asset"
 	"rumble-reader/chunk"
 	"rumble-reader/chunk/shoc"
+	"strings"
 )
 
 type TrackFile struct {
@@ -222,6 +223,6 @@ func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error
 	case "TxtR":
 		return asset.ParseTxtR(data)
 	default:
-		return asset.ParseGenericAsset(data, resource.TypeTag)
+		return asset.ParseGenericAsset(data, strings.TrimSpace(resource.TypeTag))
 	}
 }
