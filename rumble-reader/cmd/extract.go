@@ -47,13 +47,28 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 			for _, entry := range rlst.Entries {
 				theAsset, err := trackFile.GetResource(entry)
-
 				if err != nil {
-					panic(err)
+					return fmt.Errorf("failed to get resource: %w", err)
 				}
 
-				if len(theAsset.RawData()) > 0 {
-					//
+				data := theAsset.RawData()
+				if len(data) > 0 {
+					// Determine output folder
+					outFolder := subDir
+					if subfolders {
+						outFolder = filepath.Join(subDir, theAsset.GetType())
+						if err := os.MkdirAll(outFolder, 0755); err != nil {
+							return fmt.Errorf("failed to create subfolder %s: %w", outFolder, err)
+						}
+					}
+
+					// Determine output file path
+					outFilePath := filepath.Join(outFolder, entry.ResourceName)
+
+					// Write the asset data
+					if err := os.WriteFile(outFilePath, data, 0644); err != nil {
+						return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+					}
 				}
 			}
 
