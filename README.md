@@ -16,10 +16,24 @@ Stands for 'Loading Screen'.
 LSC files begin with the magic `ipum` ASCII bytes.
 Reading [this reddit post](https://www.reddit.com/r/ffmpeg/comments/1heju1a/help_with_rare_ipu_format/) was enough to learn that this is a stripped version of the MPEG-1 codec, and that the image can be extracted as PNGs via `ffmpeg`.
 
-### `.TRK` and `.AV`
+### `.AV`
 
-Probably stands for 'Track', and 'Audio/Video'.
-`.TRK` files seem to contain all of the unique map data for each track, while `.AV` seems to be audio/video data. Internal map names seemed to be grouped by similarity. Internal name mappings can be seen below. Each internal map has a `.TRK`, `.AV`, and `.LSC` file. `FE` is a special case, as it seems to be globally used assets.
+Probably stands for 'Audio/Video'.
+Has a similar layout to `.TRK`, but with different top-level chunks/FourCC codes.
+People have already put effort into reverse engineering this filetype, I am not the first one.
+
+[vgmstream](https://github.com/vgmstream/vgmstream) contributor [bnnm](https://github.com/bnnm) added support for this filetype in [this PR](https://github.com/vgmstream/vgmstream/pull/1304).
+
+As a result, vgmstream can read and play these files in your browser:
+
+1. Rename the file from `.AV` to `.stream`
+   - Alternatively, you can download some pre-processed files [here](https://vgm.hcs64.com/?text=rumble+racing).
+2. Drop it into [vgmstream-web](https://katiefrogs.github.io/vgmstream-web/). (no 3rd party programs needed!)
+
+### `.TRK`
+
+Probably stands for 'Track'.
+`.TRK` files seem to contain all of the unique map data for each track. Internal map names seemed to be grouped by similarity. Internal name mappings can be seen below. Each internal map has a `.TRK`, `.AV`, and `.LSC` file. `FE` is a special case, as it seems to be globally used assets.
 
 | Internal | Meaning           | Name            |
 | -------- | ----------------- | --------------- |
