@@ -9,6 +9,7 @@ target/
 *.txt
 *.rdat
 *.dat
+*.bin
 */.DS_STORE
 **/.DS_STORE
 eeMemory.bin
