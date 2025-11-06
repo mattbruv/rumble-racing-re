@@ -1,6 +1,5 @@
 loading-screens/*
 data/*
-**/*.png
 ../.DS_STORE
 ipums/
 target/
