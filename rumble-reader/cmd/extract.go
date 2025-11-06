@@ -41,7 +41,21 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 			trackFile := file.ReadTrackFile(path)
 
-			fmt.Println(path, trackFile.FileSize, len(trackFile.TopLevelChunks))
+			rlst, _ := trackFile.GetResourceList()
+
+			// fmt.Println(path, trackFile.FileSize, len(trackFile.TopLevelChunks))
+
+			for _, entry := range rlst.Entries {
+				theAsset, err := trackFile.GetResource(entry)
+
+				if err != nil {
+					panic(err)
+				}
+
+				if len(theAsset.RawData()) > 0 {
+					//
+				}
+			}
 
 			// Create the subdirectory
 			if err := os.MkdirAll(subDir, 0755); err != nil {
