@@ -26,24 +26,30 @@ var extractCmd = &cobra.Command{
 }
 
 func extractData(inputDir, outputDir string, convert, subfolders bool) error {
+	// Ensure the outputDir exists
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
 
 	err := filepath.WalkDir(inputDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Check for .TRK extension (case-insensitive)
-		if strings.EqualFold(filepath.Ext(d.Name()), ".TRK") {
+		if d.IsDir() {
+			return nil
+		}
 
-			// Get the file name without extension
+		if strings.EqualFold(filepath.Ext(d.Name()), ".TRK") {
 			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
 			subDir := filepath.Join(outputDir, baseName)
 
 			trackFile := file.ReadTrackFile(path)
-
 			rlst, _ := trackFile.GetResourceList()
 
-			// fmt.Println(path, trackFile.FileSize, len(trackFile.TopLevelChunks))
+			if err := os.MkdirAll(subDir, 0755); err != nil {
+				return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
+			}
 
 			for _, entry := range rlst.Entries {
 				theAsset, err := trackFile.GetResource(entry)
@@ -53,7 +59,6 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 				data := theAsset.RawData()
 				if len(data) > 0 {
-					// Determine output folder
 					outFolder := subDir
 					if subfolders {
 						outFolder = filepath.Join(subDir, theAsset.GetType())
@@ -62,22 +67,15 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 						}
 					}
 
-					// Determine output file path
-					outFilePath := filepath.Join(outFolder, entry.ResourceName)
+					// Append the type as file suffix/extension
+					outFileName := fmt.Sprintf("%s.%s", entry.ResourceName, theAsset.GetType())
+					outFilePath := filepath.Join(outFolder, outFileName)
 
-					// Write the asset data
 					if err := os.WriteFile(outFilePath, data, 0644); err != nil {
 						return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
 					}
 				}
 			}
-
-			// Create the subdirectory
-			if err := os.MkdirAll(subDir, 0755); err != nil {
-				return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
-			}
-
-			// fmt.Println("Created output directory:", subDir)
 		}
 
 		return nil
@@ -97,5 +95,5 @@ func init() {
 
 	// Optional flags
 	extractCmd.Flags().BoolP("convert", "c", false, "Whether to convert files")
-	extractCmd.Flags().BoolP("sub-folders", "s", true, "Create sub-folders for each asset type")
+	extractCmd.Flags().BoolP("sub-folders", "s", false, "Create sub-folders for each asset type")
 }

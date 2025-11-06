@@ -4,6 +4,7 @@ data/*
 ipums/
 target/
 *.lock
+out
 *.AV
 *.TRK
 *.txt
