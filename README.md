@@ -40,6 +40,8 @@ Probably stands for 'Track', and 'Audio/Video'.
 | `SE1`    | Southern Exposure | True Grits      |
 | `SE2`    | Southern Exposure | Over Easy       |
 
+![](./docs/images/tracks.png)
+
 `.TRK` and `.AV` files are a special binary format created by EA games. They are seemingly optimized and aligned for compression and for quickly streaming data from disc to PS2 RAM.
 
 It seems like these files all follow the same pattern. They are a essentially a sequential list of binary blobs, which I am calling `Chunk`s.
