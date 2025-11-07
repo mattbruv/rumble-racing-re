@@ -32,7 +32,8 @@ var testTracks = []TestTrack{
 func GetTestFiles() []TestTrack {
 
 	for i := range testTracks {
-		testTracks[i].Track = file.ReadTrackFile("../../data/" + testTracks[i].InternalName + ".TRK")
+		prefix := "LOC" + testTracks[i].InternalName[0:2] + "/"
+		testTracks[i].Track = file.ReadTrackFile("../../data/" + prefix + testTracks[i].InternalName + ".TRK")
 	}
 
 	return testTracks

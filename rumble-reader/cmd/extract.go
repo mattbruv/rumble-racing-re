@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io/fs"
 	"os"
@@ -76,6 +77,33 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 					}
 				}
 			}
+		}
+
+		if strings.EqualFold(filepath.Ext(d.Name()), ".AV") {
+			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
+			subDir := filepath.Join(outputDir, baseName)
+
+			if err := os.MkdirAll(subDir, 0755); err != nil {
+				return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
+			}
+
+			avFile := file.ReadAVFile(path)
+
+			for _, audioFile := range avFile.ExtractAudio() {
+				// Append the type as file suffix/extension
+				// Sanitize name
+				// var invalidChars = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1F]`)
+				// cleanName := invalidChars.ReplaceAllString(audioFile.Name, "_")
+				outFileName := fmt.Sprintf("%s.txt", audioFile.Name)
+				data := "todo"
+				outFilePath := filepath.Join(subDir, outFileName)
+
+				if err := os.WriteFile(outFilePath, []byte(data), 0644); err != nil {
+					fmt.Println("NAME BYTES: ", hex.Dump([]byte(audioFile.Name)))
+					return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+				}
+			}
+
 		}
 
 		return nil
