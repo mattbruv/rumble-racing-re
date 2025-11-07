@@ -13,7 +13,7 @@ type Generic struct {
 }
 
 func (c *Generic) FourCC() string {
-	return "CTRL"
+	return c.fourCC
 }
 
 func (c *Generic) TotalSize() uint32 {
