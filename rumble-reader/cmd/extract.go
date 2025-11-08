@@ -97,10 +97,6 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 				outFileName := fmt.Sprintf("%s.stream", audioFile.Name)
 				outFilePath := filepath.Join(subDir, outFileName)
 
-				if strings.Contains(outFileName, "BeachBlast") {
-					panic("FUCK")
-				}
-
 				if err := os.WriteFile(outFilePath, audioFile.RawVagData, 0644); err != nil {
 					fmt.Println("NAME BYTES: ", hex.Dump([]byte(audioFile.Name)))
 					return fmt.Errorf("failed to write file %s: %w", outFilePath, err)

@@ -76,6 +76,7 @@ func ReadAVFile(filename string) AVFile {
 type AudioFile struct {
 	Name       string
 	RawVagData []byte // lol
+	IsVagM     bool
 }
 
 func (av *AVFile) ExtractAudio() []AudioFile {
@@ -94,6 +95,7 @@ func (av *AVFile) ExtractAudio() []AudioFile {
 			stream = &AudioFile{
 				Name:       s.FileName,
 				RawVagData: s.FullData,
+				IsVagM:     false,
 			}
 		}
 
@@ -103,7 +105,12 @@ func (av *AVFile) ExtractAudio() []AudioFile {
 
 		if vagm, ok := toplevel.(*chunk.VAGM); ok {
 			stream.RawVagData = append(stream.RawVagData, vagm.FulLData...)
+			stream.IsVagM = true
 		}
+	}
+
+	if stream != nil {
+		avs = append(avs, *stream)
 	}
 
 	return avs

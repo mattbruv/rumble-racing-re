@@ -35,9 +35,7 @@ func readTopLevelChunk(r io.ReadSeeker, chunkIndex uint32) (chunk.TopLevelChunk,
 	case "VAGB":
 		return chunk.ReadVAGBChunk(r, startPos, pos, chunkIndex)
 	case "VAGM":
-		{
-			return chunk.ReadVAGMChunk(r, startPos, pos, chunkIndex)
-		}
+		return chunk.ReadVAGMChunk(r, startPos, pos, chunkIndex)
 	default:
 		return chunk.ReadGenericChunk(r, fourcc, startPos, chunkIndex)
 	}
