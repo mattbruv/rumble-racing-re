@@ -100,6 +100,10 @@ func (av *AVFile) ExtractAudio() []AudioFile {
 		if vag, ok := toplevel.(*chunk.VAGB); ok {
 			stream.RawVagData = append(stream.RawVagData, vag.FulLData...)
 		}
+
+		if vagm, ok := toplevel.(*chunk.VAGM); ok {
+			stream.RawVagData = append(stream.RawVagData, vagm.FulLData...)
+		}
 	}
 
 	return avs
