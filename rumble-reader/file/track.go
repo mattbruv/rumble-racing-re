@@ -90,7 +90,7 @@ func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
 	for _, header := range headers {
 		// fmt.Println(header.Unk0, header.AssetType, header.AssetIndex, header.TotalDataSize)
 
-		rList, err := asset.ParseRLst(t.getDataForHeader(header))
+		rList, err := asset.ParseRLst(t.getDataForHeader(header), t.FileName)
 		if err != nil {
 			panic(err)
 		}

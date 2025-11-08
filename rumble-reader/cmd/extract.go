@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -51,6 +52,7 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 			if err := os.MkdirAll(subDir, 0755); err != nil {
 				return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
 			}
+			outFolder := subDir
 
 			for _, entry := range rlst.Entries {
 				theAsset, err := trackFile.GetResource(entry)
@@ -60,7 +62,6 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 				data := theAsset.RawData()
 				if len(data) > 0 {
-					outFolder := subDir
 					if subfolders {
 						outFolder = filepath.Join(subDir, theAsset.GetType())
 						if err := os.MkdirAll(outFolder, 0755); err != nil {
@@ -77,6 +78,20 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 					}
 				}
 			}
+
+			outFolder = subDir
+			// Append the type as file suffix/extension
+			outFileName := "resources.json"
+			outFilePath := filepath.Join(outFolder, outFileName)
+			rlstJson, err := json.MarshalIndent(rlst, "", "  ")
+
+			if err != nil {
+				panic("Error serializing JSON")
+			}
+
+			if err := os.WriteFile(outFilePath, rlstJson, 0644); err != nil {
+				panic("Error writing resource file")
+			}
 		}
 
 		if strings.EqualFold(filepath.Ext(d.Name()), ".AV") {
@@ -91,9 +106,6 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 			for _, audioFile := range avFile.ExtractAudio() {
 				// Append the type as file suffix/extension
-				// Sanitize name
-				// var invalidChars = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1F]`)
-				// cleanName := invalidChars.ReplaceAllString(audioFile.Name, "_")
 				outFileName := fmt.Sprintf("%s.stream", audioFile.Name)
 				outFilePath := filepath.Join(subDir, outFileName)
 

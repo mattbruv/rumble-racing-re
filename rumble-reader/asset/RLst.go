@@ -9,8 +9,9 @@ import (
 )
 
 type RLst struct {
-	Count   uint32
-	Entries []ResourceEntry
+	FileName string
+	Count    uint32
+	Entries  []ResourceEntry
 }
 
 func (r *RLst) GetType() string {
@@ -23,7 +24,7 @@ type ResourceEntry struct {
 	ResourceName  string
 }
 
-func ParseRLst(data []byte) (*RLst, error) {
+func ParseRLst(data []byte, fileName string) (*RLst, error) {
 	r := bytes.NewReader(data)
 
 	var count uint32
@@ -64,5 +65,9 @@ func ParseRLst(data []byte) (*RLst, error) {
 		entries = append(entries, entry)
 	}
 
-	return &RLst{Count: count, Entries: entries}, nil
+	return &RLst{
+		Count:    count,
+		Entries:  entries,
+		FileName: fileName,
+	}, nil
 }
