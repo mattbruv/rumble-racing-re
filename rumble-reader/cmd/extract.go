@@ -94,11 +94,10 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 				// Sanitize name
 				// var invalidChars = regexp.MustCompile(`[<>:"/\\|?*\x00-\x1F]`)
 				// cleanName := invalidChars.ReplaceAllString(audioFile.Name, "_")
-				outFileName := fmt.Sprintf("%s.txt", audioFile.Name)
-				data := "todo"
+				outFileName := fmt.Sprintf("%s.stream", audioFile.Name)
 				outFilePath := filepath.Join(subDir, outFileName)
 
-				if err := os.WriteFile(outFilePath, []byte(data), 0644); err != nil {
+				if err := os.WriteFile(outFilePath, audioFile.RawVagData, 0644); err != nil {
 					fmt.Println("NAME BYTES: ", hex.Dump([]byte(audioFile.Name)))
 					return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
 				}

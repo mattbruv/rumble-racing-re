@@ -12,6 +12,7 @@ type SWVR struct {
 	data         []byte
 
 	FileName string
+	FullData []byte
 }
 
 func (c *SWVR) FourCC() string {
@@ -47,6 +48,14 @@ func ReadSWVRChunk(r io.ReadSeeker, startPos uint32, pos int64, index uint32) (*
 		return nil, err
 	}
 
+	// get all data, including initial headers/size.
+	// we do this because the tools to convert these files expect this.
+	fullData := make([]byte, chunkSize)
+	r.Seek(int64(startPos), io.SeekStart)
+	if _, err := io.ReadFull(r, fullData); err != nil {
+		return nil, err
+	}
+
 	// Names are capped at 16 characters, some end earlier. stop at first null byte
 	raw := data[12 : 12+16]
 	if i := bytes.IndexByte(raw, 0); i != -1 {
@@ -58,6 +67,7 @@ func ReadSWVRChunk(r io.ReadSeeker, startPos uint32, pos int64, index uint32) (*
 		index:        index,
 		startAddress: startPos,
 		data:         data,
+		FullData:     fullData,
 		FileName:     fileName,
 	}, nil
 }

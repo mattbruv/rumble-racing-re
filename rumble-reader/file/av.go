@@ -82,14 +82,23 @@ func (av *AVFile) ExtractAudio() []AudioFile {
 
 	var avs []AudioFile
 
+	var stream *AudioFile
+
 	for _, toplevel := range av.TopLevelChunks {
 
 		s, ok := toplevel.(*chunk.SWVR)
 		if ok {
-			avs = append(avs, AudioFile{
+			if stream != nil {
+				avs = append(avs, *stream)
+			}
+			stream = &AudioFile{
 				Name:       s.FileName,
-				RawVagData: make([]byte, 0),
-			})
+				RawVagData: s.FullData,
+			}
+		}
+
+		if vag, ok := toplevel.(*chunk.VAGB); ok {
+			stream.RawVagData = append(stream.RawVagData, vag.FulLData...)
 		}
 	}
 

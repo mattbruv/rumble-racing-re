@@ -9,6 +9,8 @@ type VAGB struct {
 	index        uint32
 	startAddress uint32
 	data         []byte
+
+	FulLData []byte
 }
 
 func (c *VAGB) FourCC() string {
@@ -44,9 +46,17 @@ func ReadVAGBChunk(r io.ReadSeeker, startPos uint32, pos int64, index uint32) (*
 		return nil, err
 	}
 
+	fullData := make([]byte, chunkSize)
+	r.Seek(int64(startPos), io.SeekStart)
+
+	if _, err := io.ReadFull(r, fullData); err != nil {
+		return nil, err
+	}
+
 	return &VAGB{
 		index:        index,
 		startAddress: startPos,
 		data:         data,
+		FulLData:     fullData,
 	}, nil
 }
