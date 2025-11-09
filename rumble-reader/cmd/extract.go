@@ -42,7 +42,8 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 			return nil
 		}
 
-		if strings.EqualFold(filepath.Ext(d.Name()), ".TRK") {
+		ext := filepath.Ext(d.Name())
+		if strings.EqualFold(ext, ".TRK") || strings.EqualFold(ext, ".PS2") {
 			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
 			subDir := filepath.Join(outputDir, baseName)
 
