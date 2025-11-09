@@ -88,43 +88,43 @@ I am currently working through understanding how `SHOC`s are related to each oth
 
 The game asset FourCC types are listed here as follows, along with the address of the function that processes this data:
 
-| Status | Meaning                         |
-| ------ | ------------------------------- |
-| ❔     | Unknown                         |
-| ⚠️     | Educated Guess, Not Extractable |
-| ✅     | Understood, Extractable         |
+| Status | Meaning     |
+| ------ | ----------- |
+| ❔     | Not Certain |
+| ⚠️     | In Progress |
+| ✅     | Extractable |
 
-| Type   | Status | Game Asset Purpose                                                                                        | Parsing Function       |
-| ------ | ------ | --------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `ico`  | ❔     |                                                                                                           | 001a7560               |
-| `TxtR` | ✅     | Text/String List                                                                                          | 001a73e0               |
-| `RleD` | ❔     |                                                                                                           | 001a7370               |
-| `Mclc` | ❔     |                                                                                                           | 001a7330               |
-| `Gimg` | ✅     | General(?) Image, variable size (IPU format)                                                              | 001a72f0               |
-| `CarI` | ✅     | Car Image, 128 × 80 (IPU format)                                                                          | 001a7310               |
-| `Cimg` | ✅     | Cup Image, 128 × 96 (IPU format)                                                                          | 001a72d0               |
-| `Timg` | ✅     | Track Image, 128 × 80 (IPU format)                                                                        | 001a72b0               |
-| `Limg` | ❔     |                                                                                                           | 001a7290               |
-| `Mask` | ❔     |                                                                                                           | 001a7270               |
-| `Bimg` | ✅     | Background Image, 512x448 (IPU format)                                                                    | 001a7250               |
-| `txf2` | ❔     |                                                                                                           | 001a7340               |
-| `Cvkb` | ⚠️     | Sound?                                                                                                    | 001abb80               |
-| `Cvkh` | ⚠️     | Sound?                                                                                                    | 001abb80               |
-| `Cshd` | ⚠️     | Sound?                                                                                                    | 001abb80               |
-| `Ceng` | ⚠️     | Engine Sound?                                                                                             | 001abb80               |
-| `Cnet` | ❔     |                                                                                                           | 0017e080               |
-| `sfn`  | ⚠️     | Font ([Arial](https://en.wikipedia.org/wiki/Arial), [Lucida](https://en.wikipedia.org/wiki/Lucida), etc.) | 0012b920               |
-| `gmd`  | ❔     |                                                                                                           | 00160da0               |
-| `obf`  | ❔     |                                                                                                           | 00160de0               |
-| `txf`  | ❔     |                                                                                                           | 001644f0,<br>00121230, |
-| `Ctos` | ❔     |                                                                                                           | 00125a10               |
-| `Cfun` | ❔     |                                                                                                           | 001272e0               |
-| `Csac` | ❔     |                                                                                                           | 00127550               |
-| `RPNS` | ❔     |                                                                                                           | 0016c590               |
-| `Cact` | ❔     |                                                                                                           | 0016c3a0               |
-| `o3da` | ❔     |                                                                                                           | 0016a2a0               |
-| `o3d`  | ❔     |                                                                                                           | 0016a0e0               |
-| `Cctr` | ❔     |                                                                                                           | 00121230               |
-| `RLst` | ✅     | Resource List, metadata about game assets in this file                                                    | 00121230               |
-| `rscE` | ❔     |                                                                                                           | 00121230               |
-| `rscB` | ❔     |                                                                                                           | 00121230               |
+| Type   | Status | Game Asset Type                                                                                           | Final Build Address    | Debug Build Address |
+| ------ | ------ | --------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------- |
+| `ico`  |        | Icon                                                                                                      | 001a7560               | 001ab8e0            |
+| `TxtR` | ✅     | Text/String List                                                                                          | 001a73e0               | 001ab760            |
+| `RleD` |        | RLE Data                                                                                                  | 001a7370               | 001ab6f0            |
+| `Mclc` |        | Memory Card Icons                                                                                         | 001a7330               | 001ab6b0            |
+| `Gimg` | ✅     | General Image, variable size (IPU format)                                                                 | 001a72f0               | 001ab670            |
+| `CarI` | ✅     | Car Image, 128 × 80 (IPU format)                                                                          | 001a7310               | 001ab690            |
+| `Cimg` | ✅     | Cup Image, 128 × 96 (IPU format)                                                                          | 001a72d0               | 001ab650            |
+| `Timg` | ✅     | Track Image, 128 × 80 (IPU format)                                                                        | 001a72b0               | 001ab630            |
+| `Limg` |        | Locale Image                                                                                              | 001a7290               | 001ab610            |
+| `Mask` |        | Motion Mask                                                                                               | 001a7270               | 001ab5f0            |
+| `Bimg` | ✅     | Background Image, 512x448 (IPU format)                                                                    | 001a7250               | 001ab5d0            |
+| `txf2` |        | Txf Data                                                                                                  | 001a7340               | 001ab6c0            |
+| `Cvkb` |        | Audio                                                                                                     | 001abb80               | 001afce0            |
+| `Cvkh` |        | Audio                                                                                                     | 001abb80               | 001afce0            |
+| `Cshd` |        | Audio                                                                                                     | 001abb80               | 001afce0            |
+| `Ceng` |        | Audio (Engine?)                                                                                           | 001abb80               | 001afce0            |
+| `Cnet` | ❔     | Network Data (paths?)                                                                                     | 0017e080               | 00183900            |
+| `sfn`  |        | Font ([Arial](https://en.wikipedia.org/wiki/Arial), [Lucida](https://en.wikipedia.org/wiki/Lucida), etc.) | 0012b920               | 0012f050            |
+| `gmd`  |        | Track Data                                                                                                | 00160da0               | 00162ca0            |
+| `Obf`  |        | Track Mesh                                                                                                | 00160de0               | 00162ce0            |
+| `txf`  |        | Texture / Texture Group Data                                                                              | 001644f0,<br>00121230, | 001667c0            |
+| `Ctos` | ❔     | Voice-over Group Data?                                                                                    | 00125a10               | 00129160            |
+| `Cfun` | ❔     | CtrlFct (Control Function?)                                                                               | 001272e0               | 0012a9a0            |
+| `Csac` | ❔     | SupAct (actor system?)                                                                                    | 00127550               | 0012ac10            |
+| `RPNS` | ❔     | RPNstrings                                                                                                | 0016c590               | 0016ee90            |
+| `Cact` | ❔     | Game Actor instance                                                                                       | 0016c3a0               | 0016ec60            |
+| `o3da` |        | Object3D Data Array                                                                                       | 0016a2a0               | 0016cb40            |
+| `o3d`  |        | Object3D Data                                                                                             | 0016a0e0               | 0016c950            |
+| `Cctr` | ❔     | Game Status Control?                                                                                      | 00121230               | 00128504            |
+| `RLst` | ✅     | Record Debug Resources List                                                                               | 00121230               | 00126c60            |
+| `rscE` | ❔     |                                                                                                           | 00121230               | 001284c4            |
+| `rscB` | ❔     |                                                                                                           | 00121230               | 001284ac            |
