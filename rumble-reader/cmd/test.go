@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"encoding/hex"
 	"fmt"
+	"os"
 	"rumble-reader/asset"
 
 	"github.com/spf13/cobra"
@@ -18,7 +18,7 @@ var testCmd = &cobra.Command{
 
 		for _, section := range model.Obf.Sections {
 			if eltl, ok := section.(*asset.ELDA); ok {
-				fmt.Println(hex.Dump(eltl.Data))
+				os.WriteFile("./elda.bin", eltl.Data, 0644)
 			}
 		}
 
