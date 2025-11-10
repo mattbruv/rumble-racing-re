@@ -5,3 +5,9 @@ func ReverseBytesInPlace(b []byte) {
 		b[i], b[j] = b[j], b[i]
 	}
 }
+
+func GetNextFourCC(b []byte) string {
+	slice := append([]byte(nil), b[0:4]...) // make a copy
+	ReverseBytesInPlace(slice)
+	return string(slice)
+}
