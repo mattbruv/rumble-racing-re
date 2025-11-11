@@ -26,6 +26,7 @@ var symbolsCmd = &cobra.Command{
 		lines := strings.Split(string(data), "\n")
 
 		var outLines []string
+		var pcsx2Lines []string
 
 		for _, line := range lines {
 			fields := strings.Fields(line)
@@ -45,13 +46,19 @@ var symbolsCmd = &cobra.Command{
 				}
 
 				out := fmt.Sprintf("%s %s %s", name, addr, typeChar)
+				ps2 := fmt.Sprintf("%s %s", addr, name)
 				outLines = append(outLines, out)
+				pcsx2Lines = append(pcsx2Lines, ps2)
 			}
 		}
 
 		var outData = strings.Join(outLines, "\n")
+		var outPs2 = strings.Join(pcsx2Lines, "\n")
 
-		if err := os.WriteFile("./symbols.txt", []byte(outData), 0644); err != nil {
+		if err := os.WriteFile("./symbols_ghidra.txt", []byte(outData), 0644); err != nil {
+			return fmt.Errorf("failed to write symbols file: %w", err)
+		}
+		if err := os.WriteFile("./symbols_pcsx2.sym", []byte(outPs2), 0644); err != nil {
 			return fmt.Errorf("failed to write symbols file: %w", err)
 		}
 
