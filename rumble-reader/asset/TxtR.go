@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -64,7 +63,8 @@ func ParseTxtR(buf []byte) (*TxtR, error) {
 		num, err := strconv.Atoi(numPart)
 
 		if err != nil {
-			return nil, fmt.Errorf("invalid number in entry %q: %w", s, err)
+			num = -1
+			// return nil, fmt.Errorf("invalid number in entry %q: %w", s, err)
 		}
 
 		resource.TextEntries = append(resource.TextEntries, TextEntry{Number: num, Text: textPart})

@@ -35,24 +35,24 @@ As a result, vgmstream can read and play these files in your browser:
 Probably stands for 'Track'.
 `.TRK` files seem to contain all of the unique map data for each track. Internal map names seemed to be grouped by similarity. Internal name mappings can be seen below. Each internal map has a `.TRK`, `.AV`, and `.LSC` file. `FE` is a special case, as it seems to be globally used assets.
 
-| Internal | Meaning           | Name            |
-| -------- | ----------------- | --------------- |
-| `BB1`    | Beach Blast       | Sun Burn        |
-| `BB2`    | Beach Blast       | Surf And Turf   |
-| `BL1`    | Bad Lands         | So Refined      |
-| `BL2`    | Bad Lands         | Coal Cuts       |
-| `DA1`    | Daytona           | Flip Out        |
-| `DA2`    | Daytona           | The Gauntlet    |
-| `DA3`    | Daytona           | Wild Kingdom    |
-| `FE`     |                   | Global Data     |
-| `JT1`    | Joke Tracks       | Circus Minimus  |
-| `JT2`    | Joke Tracks       | Outer Limits    |
-| `MA1`    | Mountain Air      | Passing Through |
-| `MA2`    | Mountain Air      | Falls Down      |
-| `MP1`    | Metropolis        | Touch And Go    |
-| `MP2`    | Metropolis        | Car Go          |
-| `SE1`    | Southern Exposure | True Grits      |
-| `SE2`    | Southern Exposure | Over Easy       |
+| Internal | Meaning           | Name              |
+| -------- | ----------------- | ----------------- |
+| `BB1`    | Beach Blast       | Sun Burn          |
+| `BB2`    | Beach Blast       | Surf And Turf     |
+| `BL1`    | Bad Lands         | So Refined        |
+| `BL2`    | Bad Lands         | Coal Cuts         |
+| `DA1`    | Daytona           | Flip Out          |
+| `DA2`    | Daytona           | The Gauntlet      |
+| `DA3`    | Daytona           | Wild Kingdom      |
+| `FE`     | Front End         | UI/Main Menu Data |
+| `JT1`    | Joke Tracks       | Circus Minimus    |
+| `JT2`    | Joke Tracks       | Outer Limits      |
+| `MA1`    | Mountain Air      | Passing Through   |
+| `MA2`    | Mountain Air      | Falls Down        |
+| `MP1`    | Metropolis        | Touch And Go      |
+| `MP2`    | Metropolis        | Car Go            |
+| `SE1`    | Southern Exposure | True Grits        |
+| `SE2`    | Southern Exposure | Over Easy         |
 
 ![](./docs/images/tracks.png)
 
