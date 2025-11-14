@@ -5,6 +5,7 @@ ipums/
 target/
 *.lock
 out
+*.txf
 *.AV
 *.p2s
 *.sym

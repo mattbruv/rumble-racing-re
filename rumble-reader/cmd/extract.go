@@ -69,8 +69,11 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 						}
 					}
 
+					resName := strings.ReplaceAll(entry.ResourceName, "/", "-")
+					resName = strings.ReplaceAll(resName, ":", "-")
+
 					// Append the type as file suffix/extension
-					outFileName := fmt.Sprintf("%d_%s.%s", entry.ResourceIndex, entry.ResourceName, theAsset.GetType())
+					outFileName := fmt.Sprintf("%d_%s.%s", entry.ResourceIndex, resName, theAsset.GetType())
 					outFilePath := filepath.Join(outFolder, outFileName)
 
 					if err := os.WriteFile(outFilePath, data, 0644); err != nil {
@@ -78,7 +81,7 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 					}
 
 					// write header data
-					outFileName = fmt.Sprintf("%d_%s.shdr", entry.ResourceIndex, entry.ResourceName)
+					outFileName = fmt.Sprintf("%d_%s.shdr", entry.ResourceIndex, resName)
 					outFilePath = filepath.Join(outFolder, outFileName)
 					hdr := theAsset.Header()
 
