@@ -3,6 +3,8 @@
 from PIL import Image
 import struct, binascii, math, os
 path = '../OUT/FE2/txf/10000_RS-TXF-STOCKCAR_1_A.TXF.txf'
+path = '../test.txf'
+# path = '../OUT/FE2/txf/1_SOURCES-TRACK-TRACK.TXF.txf'
 data = open(path,'rb').read()
 
 # parse chunks as before
@@ -41,12 +43,18 @@ if clda and len(clda) >= 2:
         r = (val & 0x1F) << 3
         g = ((val >> 5) & 0x1F) << 3
         b = ((val >> 10) & 0x1F) << 3
+        # print(i, val, hex(r), hex(g), hex(b))
         palette.append((r,g,b))
     # pad palette to 256
     while len(palette) < 256:
         palette.append((0,0,0))
-else:
-    palette = [(i,i,i) for i in range(256)]
+
+if len(palette) > 256:
+    palette = palette[0:256]
+print(len(txda))
+print("max:", len(txda) / 512)
+print("clda: ", len(clda) // 2)
+
 
 out_paths = []
 # try a set of plausible widths
@@ -62,43 +70,5 @@ for w in width_candidates:
     out = f'../test/tex_auto_w{w}.png'
     img.save(out)
     out_paths.append(out)
-
-# Also try a simple "unswizzled by 16x8 tiles" naive reordering (best-effort)
-def unswizzle_ps2_8bpp(src, width, height):
-    # PS2 swizzle often arranges in 16x8 tiles; we'll try that mapping.
-    dst = bytearray(len(src) if len(src)>=width*height else width*height)
-    tile_w, tile_h = 16, 8
-    tiles_x = math.ceil(width / tile_w)
-    tiles_y = math.ceil(height / tile_h)
-    si = 0
-    for ty in range(tiles_y):
-        for tx in range(tiles_x):
-            for y in range(tile_h):
-                for x in range(tile_w):
-                    px = tx*tile_w + x
-                    py = ty*tile_h + y
-                    if px < width and py < height:
-                        di = py*width + px
-                        if si < len(src):
-                            dst[di] = src[si]
-                        si += 1
-    return bytes(dst)
-
-# try unswizzle for candidate widths
-for w in [64,128,256,512]:
-    h = math.ceil(len(txda) / w)
-    # only try if reasonable size
-    if w*h > 0 and w*h <= 4000000:
-        out_img = Image.new('RGB', (w,h))
-        uns = unswizzle_ps2_8bpp(txda, w, h)
-        # map palette
-        px = out_img.load()
-        for y in range(h):
-            for x in range(w):
-                idx = uns[y*w + x]
-                px[x,y] = palette[idx]
-        out = f'../test/tex_unsw_w{w}.png'
-        out_img.save(out)
-        out_paths.append(out)
 
 out_paths
