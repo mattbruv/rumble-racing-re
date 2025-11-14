@@ -6,6 +6,8 @@ target/
 *.lock
 out
 *.AV
+*.p2s
+*.sym
 *.TRK
 *.txt
 *.rdat

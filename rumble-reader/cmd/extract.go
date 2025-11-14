@@ -76,6 +76,15 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 					if err := os.WriteFile(outFilePath, data, 0644); err != nil {
 						return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
 					}
+
+					// write header data
+					outFileName = fmt.Sprintf("%d_%s.shdr", entry.ResourceIndex, entry.ResourceName)
+					outFilePath = filepath.Join(outFolder, outFileName)
+					hdr := theAsset.Header()
+
+					if err := os.WriteFile(outFilePath, hdr.Data(), 0644); err != nil {
+						return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+					}
 				}
 			}
 
