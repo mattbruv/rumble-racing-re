@@ -37,6 +37,7 @@ var symbolsCmd = &cobra.Command{
 				}
 
 				addr := fields[0]
+				sizeHex := fields[1]
 				section := fields[2]
 				name := fields[3]
 
@@ -45,10 +46,17 @@ var symbolsCmd = &cobra.Command{
 					typeChar = "f"
 				}
 
-				out := fmt.Sprintf("%s %s %s", name, addr, typeChar)
-				ps2 := fmt.Sprintf("%s %s", addr, name)
-				outLines = append(outLines, out)
-				pcsx2Lines = append(pcsx2Lines, ps2)
+				// Only export symbols with sizes > 0
+				size, err := strconv.ParseInt(sizeHex, 16, 64)
+				if err == nil {
+					out := fmt.Sprintf("%s %s %s", name, addr, typeChar)
+					ps2 := fmt.Sprintf("%s %s", addr, name)
+					if size > 0 {
+						outLines = append(outLines, out)
+						pcsx2Lines = append(pcsx2Lines, ps2)
+					}
+				}
+
 			}
 		}
 
