@@ -2,6 +2,7 @@ package txf
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
 type HEAD struct {
@@ -14,6 +15,7 @@ type HEAD struct {
 	CLHEIterations   uint8    // 0x14
 	ZTHEsCount       uint8    // 0x15
 	HeadPointerCount uint8    // 0x16
+	UnusedByte       uint8    // 0x17
 	ZTHEFilePointers []uint32 // 4 byte absolute pointers to ZTHEs starting data within the entire TXF file. Repeats until end of HEAD section
 }
 
@@ -24,16 +26,21 @@ func parseHEAD(buf []byte) (*HEAD, error) {
 
 	// HEAD data
 	alloc := binary.LittleEndian.Uint16(buf[8:10])
+
 	totalTextures := binary.LittleEndian.Uint16(buf[10:12])
+
+	// missing something here
 	clheIterations := buf[12]
-	zthesCount := buf[14]
-	headPointerCount := buf[15]
+	zthesCount := buf[13]
+	headPointerCount := buf[14]
+	unusedByte := buf[15]
 
 	pointers := buf[16:]
 
-	// fmt.Println(headPointerCount, len(pointers))
+	fmt.Println(totalTextures, clheIterations, zthesCount, headPointerCount, unusedByte)
 
 	if len(pointers)/4 != int(headPointerCount) {
+		fmt.Println(len(pointers)/4, int(headPointerCount))
 		panic("remaining head pointers byte length is not equal to the pointer count")
 	}
 
@@ -54,6 +61,7 @@ func parseHEAD(buf []byte) (*HEAD, error) {
 		CLHEIterations:   clheIterations,
 		ZTHEsCount:       zthesCount,
 		HeadPointerCount: headPointerCount,
+		UnusedByte:       unusedByte,
 		ZTHEFilePointers: ptrs,
 	}, nil
 }
