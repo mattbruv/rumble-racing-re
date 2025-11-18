@@ -27,10 +27,12 @@ var testCmd = &cobra.Command{
 		}
 
 		if txf != nil {
-			// fmt.Println(hex.Dump(txf.TextureData.RawData))
+			// fmt.Println(hex.Dump(txf.CLUTData.RawData))
+			// fmt.Println(len(txf.CLUTData.RawData))
 			// for i, entry := range txf.CLUTHeader.Entries {
 			// 	fmt.Println(i, "start:", entry.CLDAStartOffset, "sizeLookup:", entry.CLUTImageSizeLookup, "format:", entry.PixelFormat, "vram:", entry.VRAM_Dest)
 			// }
+
 		}
 		return nil
 	},
