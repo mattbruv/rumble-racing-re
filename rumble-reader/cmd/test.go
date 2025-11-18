@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"rumble-reader/asset/txf"
 
@@ -32,6 +33,10 @@ var testCmd = &cobra.Command{
 			// for i, entry := range txf.CLUTHeader.Entries {
 			// 	fmt.Println(i, "start:", entry.CLDAStartOffset, "sizeLookup:", entry.CLUTImageSizeLookup, "format:", entry.PixelFormat, "vram:", entry.VRAM_Dest)
 			// }
+
+			for _, tex := range txf.TextureHeaders {
+				fmt.Println(tex)
+			}
 
 		}
 		return nil
