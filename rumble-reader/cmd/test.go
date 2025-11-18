@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"rumble-reader/asset/txf"
 
@@ -27,6 +28,7 @@ var testCmd = &cobra.Command{
 		}
 
 		if txf != nil {
+			fmt.Println(txf.Header)
 
 		}
 		return nil

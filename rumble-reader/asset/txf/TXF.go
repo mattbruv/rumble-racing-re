@@ -2,33 +2,25 @@ package txf
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
-
-type HEAD struct {
-}
-
-type ZTHE struct {
-}
-type CLHE struct {
-}
-type TXDA struct {
-}
-
-type CLDA struct {
-}
 
 // TXF seems to contain
 type TXF struct {
 	rawData []byte
 
-	Header HEAD
-	ZTHEs  []ZTHE
-	CLHEs  CLHE
+	Header *HEAD
+
+	TextureHeaders []*ZTHE
+	CLUTHeader     *CLHE
+
+	TextureData *TXDA
+	CLUTData    *CLDA
 }
 
 func ParseTXF(buf []byte) (*TXF, error) {
-	resource := TXF{
+	txfAsset := TXF{
 		rawData: buf,
 	}
 
@@ -38,12 +30,55 @@ func ParseTXF(buf []byte) (*TXF, error) {
 		panic(err)
 	}
 
-	for chunkIndex, chunk := range chunks {
-		fmt.Println(chunkIndex, len(chunk), string(chunk[0:4]))
+	for _, chunk := range chunks {
+		// fmt.Println(chunkIndex, len(chunk), string(chunk[0:4]))
+		tag := string(chunk[0:4])
 
+		switch tag {
+		case "HEAD":
+			{
+				if head, err := parseHEAD(chunk); err == nil {
+					if txfAsset.Header != nil {
+						return nil, errors.New("multiple HEAD in TXF file")
+					}
+					txfAsset.Header = head
+				}
+			}
+		case "ZTHE":
+			{
+				if zthe, err := parseZTHE(chunk); err == nil {
+					txfAsset.TextureHeaders = append(txfAsset.TextureHeaders, zthe)
+				}
+			}
+		case "CLHE":
+			if clhe, err := parseCLHE(chunk); err == nil {
+				if txfAsset.CLUTHeader != nil {
+					return nil, errors.New("multiple CLHE in TXF file")
+				}
+				txfAsset.CLUTHeader = clhe
+			}
+		case "TXDA":
+			if txda, err := parseTXDA(chunk); err == nil {
+				if txfAsset.TextureData != nil {
+					return nil, errors.New("multiple TXDA in TXF file")
+				}
+				txfAsset.TextureData = txda
+			}
+		case "CLDA":
+			if clda, err := parseCLDA(chunk); err == nil {
+				if txfAsset.CLUTData != nil {
+					return nil, errors.New("multiple CLDA in TXF file")
+				}
+				txfAsset.CLUTData = clda
+			}
+		default:
+			{
+				panic("Unknown TXF chunk tag: " + tag)
+			}
+		}
 	}
 
-	return &resource, nil
+	return &txfAsset, nil
 }
 
 // Splits binary stream into chunks: [4-byte tag][4-byte size][size bytes of data]
