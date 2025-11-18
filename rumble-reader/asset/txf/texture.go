@@ -23,6 +23,9 @@ func (txf *TXF) GetTextures() []Texture {
 	var textures []Texture
 
 	for i, tex := range txf.TextureHeaders {
+
+		clhe := txf.CLUTHeader.Entries[i]
+
 		for j, tex := range tex.Textures {
 
 			var mipMaps []TextureFile
@@ -32,7 +35,6 @@ func (txf *TXF) GetTextures() []Texture {
 				height := txImage.BlockHeightPixels
 				width := tex.BlockWidthPixels >> k
 
-				clhe := txf.CLUTHeader.Entries[i]
 				format := clhe.PixelFormat
 
 				// TODO: support other pixel types
@@ -48,14 +50,38 @@ func (txf *TXF) GetTextures() []Texture {
 				size := uint32(height) * uint32(width)
 				data := txf.TextureData.RawData[start : start+size]
 
-				for px_index, value := range data {
+				for px_index, color_index := range data {
+
+					// probe CLUT table for actual RGB value
+					color_start := clhe.CLDAStartOffset
+					fmt.Println(len(txf.CLUTData.RawData))
+
+					idx := int(color_index) // value is the pixel index 0..255
+					off := idx * 2          // two bytes per palette entry
+
+					palette := txf.CLUTData.RawData[color_start : color_start+(256*2)]
+					// palette is your []byte length 512
+					c0 := palette[off]   // low byte
+					c1 := palette[off+1] // high byte
+					// Combine into 16-bit pixel value
+					px := uint16(c0) | uint16(c1)<<8
+
+					r := (px & 0x1F)       // 5 bits red
+					g := (px >> 5) & 0x1F  // 5 bits green
+					b := (px >> 10) & 0x1F // 5 bits blue
+
+					// Scale 5-bit to 8-bit
+					R := uint8(r * 255 / 31)
+					G := uint8(g * 255 / 31)
+					B := uint8(b * 255 / 31)
+
 					x := px_index % int(width)
 					y := px_index / int(width)
 					// fmt.Println(px_index, x, y, value)
 					img.Set(x, y, color.RGBA{
-						R: uint8(value),
-						G: uint8(value),
-						B: uint8(value),
+						R: R,
+						G: G,
+						B: B,
 						A: 255,
 					})
 				}
