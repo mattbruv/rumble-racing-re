@@ -54,26 +54,26 @@ func (txf *TXF) GetTextures() []Texture {
 
 					// probe CLUT table for actual RGB value
 					color_start := clhe.CLDAStartOffset
-					fmt.Println(len(txf.CLUTData.RawData))
+					// fmt.Println(len(txf.CLUTData.RawData))
 
 					idx := int(color_index) // value is the pixel index 0..255
 					off := idx * 2          // two bytes per palette entry
 
 					palette := txf.CLUTData.RawData[color_start : color_start+(256*2)]
 					// palette is your []byte length 512
-					c0 := palette[off]   // low byte
-					c1 := palette[off+1] // high byte
+					low := palette[off]    // low byte
+					high := palette[off+1] // high byte
+
 					// Combine into 16-bit pixel value
-					px := uint16(c0) | uint16(c1)<<8
+					px := uint16(low) | uint16(high)<<8
 
-					r := (px & 0x1F)       // 5 bits red
-					g := (px >> 5) & 0x1F  // 5 bits green
-					b := (px >> 10) & 0x1F // 5 bits blue
+					r5 := px & 0x1F
+					g5 := (px >> 5) & 0x1F
+					b5 := (px >> 10) & 0x1F
 
-					// Scale 5-bit to 8-bit
-					R := uint8(r * 255 / 31)
-					G := uint8(g * 255 / 31)
-					B := uint8(b * 255 / 31)
+					R := uint8((r5 * 255) / 31)
+					G := uint8((g5 * 255) / 31)
+					B := uint8((b5 * 255) / 31)
 
 					x := px_index % int(width)
 					y := px_index / int(width)
