@@ -1,6 +1,7 @@
 package txf
 
 import (
+	"encoding/binary"
 	"fmt"
 	"image"
 	"image/color"
@@ -61,11 +62,10 @@ func (txf *TXF) GetTextures() []Texture {
 
 					palette := txf.CLUTData.RawData[color_start : color_start+(256*2)]
 					// palette is your []byte length 512
-					low := palette[off]    // low byte
-					high := palette[off+1] // high byte
+					// low := palette[off]    // low byte
+					// high := palette[off+1] // high byte
 
-					// Combine into 16-bit pixel value
-					px := uint16(low) | uint16(high)<<8
+					px := binary.LittleEndian.Uint16(palette[off : off+2])
 
 					r5 := px & 0x1F
 					g5 := (px >> 5) & 0x1F
