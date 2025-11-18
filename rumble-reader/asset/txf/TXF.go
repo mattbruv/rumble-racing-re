@@ -78,6 +78,10 @@ func ParseTXF(buf []byte) (*TXF, error) {
 		}
 	}
 
+	if int(txfAsset.Header.CLHEIterations) != len(txfAsset.CLUTHeader.Entries) {
+		panic("txf header clheIterations is not equal to actual entries in CLUT header")
+	}
+
 	return &txfAsset, nil
 }
 

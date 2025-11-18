@@ -37,7 +37,7 @@ func parseHEAD(buf []byte) (*HEAD, error) {
 
 	pointers := buf[16:]
 
-	fmt.Println(totalTextures, clheIterations, zthesCount, headPointerCount, unusedByte)
+	// fmt.Println(totalTextures, clheIterations, zthesCount, headPointerCount, unusedByte)
 
 	if len(pointers)/4 != int(headPointerCount) {
 		fmt.Println(len(pointers)/4, int(headPointerCount))
