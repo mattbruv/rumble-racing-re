@@ -2,8 +2,6 @@ package txf
 
 import (
 	"encoding/binary"
-	"encoding/hex"
-	"fmt"
 )
 
 type ZTHE struct {
@@ -12,7 +10,18 @@ type ZTHE struct {
 }
 
 type ZTHETexture struct {
-	// Each texture could have up to 4 mip-mapped sub-textures
+	Images           []ZTHETextureMetaHeader
+	PixelFormat      uint8
+	ImageCount       uint8 // Each texture could have up to 4 mip-mapped sub-textures
+	BlockWidthPixels uint16
+}
+
+type ZTHETextureMetaHeader struct {
+	TXDAAddressOffset   uint32
+	Unk                 uint16
+	BlockHeightPixels   uint16
+	SelfPlusMemAllocRes uint16
+	RamDestWidth        uint16
 }
 
 func parseZTHE(buf []byte) (*ZTHE, error) {
@@ -27,8 +36,36 @@ func parseZTHE(buf []byte) (*ZTHE, error) {
 
 	for i := 0; i+0x48 <= len(buf); i += 0x48 {
 		data := buf[i : i+0x48]
-		fmt.Println(hex.Dump(data[0:8]))
-		textures = append(textures, ZTHETexture{})
+		// fmt.Println(hex.Dump(data[0:8]))
+
+		var metaHeaders []ZTHETextureMetaHeader
+
+		imageCount := data[0x31]
+
+		for j := 0; j < int(imageCount); j++ {
+			offset := j * 0xc
+			hData := data[offset : offset+0xc]
+			// fmt.Println("meta:", hex.Dump(hData))
+
+			metaHeaders = append(metaHeaders, ZTHETextureMetaHeader{
+				TXDAAddressOffset:   binary.LittleEndian.Uint32(hData[0:4]),
+				Unk:                 binary.LittleEndian.Uint16(hData[0x4 : 0x4+2]),
+				BlockHeightPixels:   binary.LittleEndian.Uint16(hData[0x6 : 0x6+2]),
+				SelfPlusMemAllocRes: binary.LittleEndian.Uint16(hData[0x8 : 0x8+2]),
+				RamDestWidth:        binary.LittleEndian.Uint16(hData[0xa : 0xa+2]),
+			})
+		}
+
+		textures = append(textures, ZTHETexture{
+			PixelFormat:      data[0x30],
+			ImageCount:       imageCount,
+			BlockWidthPixels: binary.LittleEndian.Uint16(data[0x3e:(0x3e + 2)]),
+			Images:           metaHeaders,
+		})
+	}
+
+	if int(texCount) != len(textures) {
+		panic("TexCount != length of textures!")
 	}
 
 	return &ZTHE{
