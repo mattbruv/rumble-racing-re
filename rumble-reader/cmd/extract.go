@@ -19,6 +19,7 @@ type ExtractSettings struct {
 	convertAutomatically bool
 	createSubFolders     bool
 	exportMipMaps        bool
+	exportHeaders        bool
 }
 
 var extractCmd = &cobra.Command{
@@ -32,6 +33,7 @@ var extractCmd = &cobra.Command{
 		convertAutomatically, _ := cmd.Flags().GetBool("convert")
 		createSubFolders, _ := cmd.Flags().GetBool("sub-folders")
 		exportMipMaps, _ := cmd.Flags().GetBool("mip-maps")
+		exportHeaders, _ := cmd.Flags().GetBool("save-headers")
 
 		opts := ExtractSettings{
 			inputDir:             inputDir,
@@ -39,6 +41,7 @@ var extractCmd = &cobra.Command{
 			convertAutomatically: convertAutomatically,
 			createSubFolders:     createSubFolders,
 			exportMipMaps:        exportMipMaps,
+			exportHeaders:        exportHeaders,
 		}
 
 		err := extractData(opts)
@@ -73,6 +76,8 @@ func extractData(opts ExtractSettings) error {
 			}
 			outFolder := subDir
 
+			fmt.Println("Extracting", trackFile.FileName, "| Assets:", rlst.Count)
+
 			for _, entry := range rlst.Entries {
 				theAsset, err := trackFile.GetResource(entry)
 				if err != nil {
@@ -100,12 +105,14 @@ func extractData(opts ExtractSettings) error {
 					}
 
 					// write header data
-					outFileName = fmt.Sprintf("%d_%s.shdr", entry.ResourceIndex, resName)
-					outFilePath = filepath.Join(outFolder, outFileName)
-					hdr := theAsset.Header()
+					if opts.exportHeaders {
+						outFileName = fmt.Sprintf("%d_%s.shdr", entry.ResourceIndex, resName)
+						outFilePath = filepath.Join(outFolder, outFileName)
+						hdr := theAsset.Header()
 
-					if err := os.WriteFile(outFilePath, hdr.Data(), 0644); err != nil {
-						return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+						if err := os.WriteFile(outFilePath, hdr.Data(), 0644); err != nil {
+							return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+						}
 					}
 				}
 			}
@@ -134,6 +141,7 @@ func extractData(opts ExtractSettings) error {
 			}
 
 			avFile := file.ReadAVFile(path)
+			fmt.Println("Extracting audio/video file:", avFile.FileName)
 
 			for _, audioFile := range avFile.ExtractAudio() {
 				// Append the type as file suffix/extension
@@ -151,6 +159,10 @@ func extractData(opts ExtractSettings) error {
 		return nil
 	})
 
+	if err == nil {
+		fmt.Println("Finished extracting all data!")
+	}
+
 	return err
 }
 
@@ -167,4 +179,5 @@ func init() {
 	extractCmd.Flags().BoolP("convert", "c", true, "Whether to convert known files automatically")
 	extractCmd.Flags().BoolP("sub-folders", "s", true, "Create sub-folders for each asset type")
 	extractCmd.Flags().BoolP("mip-maps", "m", false, "Export texture mip-maps")
+	extractCmd.Flags().BoolP("save-headers", "x", false, "Export asset headers")
 }

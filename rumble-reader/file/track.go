@@ -149,9 +149,9 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 
 	var assetData []byte
 
-	hdrShoc := t.TopLevelChunks[header.ShocIndex]
-	fmt.Println("getting data for:", header.AssetType, "size:", header.TotalDataSize, "asset idx:", header.AssetIndex, "| header address:", hdrShoc.StartAddress())
-	fmt.Println("Header addr", hdrShoc.StartAddress())
+	// hdrShoc := t.TopLevelChunks[header.ShocIndex]
+	// fmt.Println("getting data for:", header.AssetType, "size:", header.TotalDataSize, "asset idx:", header.AssetIndex, "| header address:", hdrShoc.StartAddress())
+	// fmt.Println("Header addr", hdrShoc.StartAddress())
 
 	shocCount := 1
 	for {
@@ -164,7 +164,7 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 			continue
 		}
 
-		fmt.Println(theShoc.StartAddress(), theShoc.MetaData.FourCC(), "size:", len(theShoc.Data()))
+		// fmt.Println(theShoc.StartAddress(), theShoc.MetaData.FourCC(), "size:", len(theShoc.Data()))
 
 		switch data := theShoc.MetaData.(type) {
 		case *shoc.SDAT:
