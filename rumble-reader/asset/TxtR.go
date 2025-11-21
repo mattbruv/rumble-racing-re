@@ -28,6 +28,11 @@ func (t *TxtR) Header() shoc.SHDR {
 	return t.header
 }
 
+func (t *TxtR) GetConvertedFiles() []ConvertedAssetFile {
+	// TODO
+	return make([]ConvertedAssetFile, 0)
+}
+
 // ParseTxtR parses a byte buffer containing multiple null-terminated strings.
 // Each string starts with a decimal number, followed by a space, then some text.
 // Example input (as bytes):
