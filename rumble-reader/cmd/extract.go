@@ -13,27 +13,46 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type ExtractSettings struct {
+	inputDir             string
+	outputDir            string
+	convertAutomatically bool
+	createSubFolders     bool
+	exportMipMaps        bool
+}
+
 var extractCmd = &cobra.Command{
 	Use:   "extract",
 	Short: "Extract assets from input to output directory",
 	Long:  `This command processes files from the input directory and saves results in the output directory.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
 		inputDir, _ := cmd.Flags().GetString("input")
 		outputDir, _ := cmd.Flags().GetString("output")
-		doConvert, _ := cmd.Flags().GetBool("convert")
-		makeSubfolders, _ := cmd.Flags().GetBool("sub-folders")
-		err := extractData(inputDir, outputDir, doConvert, makeSubfolders)
+		convertAutomatically, _ := cmd.Flags().GetBool("convert")
+		createSubFolders, _ := cmd.Flags().GetBool("sub-folders")
+		exportMipMaps, _ := cmd.Flags().GetBool("mip-maps")
+
+		opts := ExtractSettings{
+			inputDir:             inputDir,
+			outputDir:            outputDir,
+			convertAutomatically: convertAutomatically,
+			createSubFolders:     createSubFolders,
+			exportMipMaps:        exportMipMaps,
+		}
+
+		err := extractData(opts)
 		return err
 	},
 }
 
-func extractData(inputDir, outputDir string, convert, subfolders bool) error {
+func extractData(opts ExtractSettings) error {
 	// Ensure the outputDir exists
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(opts.outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	err := filepath.WalkDir(inputDir, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(opts.inputDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -44,7 +63,7 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 		if strings.EqualFold(filepath.Ext(d.Name()), ".TRK") {
 			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
-			subDir := filepath.Join(outputDir, baseName)
+			subDir := filepath.Join(opts.outputDir, baseName)
 
 			trackFile := file.ReadTrackFile(path)
 			rlst, _ := trackFile.GetResourceList()
@@ -62,7 +81,7 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 				data := theAsset.RawData()
 				if len(data) > 0 {
-					if subfolders {
+					if opts.createSubFolders {
 						outFolder = filepath.Join(subDir, theAsset.GetType())
 						if err := os.MkdirAll(outFolder, 0755); err != nil {
 							return fmt.Errorf("failed to create subfolder %s: %w", outFolder, err)
@@ -108,7 +127,7 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 		if strings.EqualFold(filepath.Ext(d.Name()), ".AV") {
 			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
-			subDir := filepath.Join(outputDir, baseName)
+			subDir := filepath.Join(opts.outputDir, baseName)
 
 			if err := os.MkdirAll(subDir, 0755); err != nil {
 				return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
@@ -145,6 +164,7 @@ func init() {
 	extractCmd.MarkFlagRequired("output")
 
 	// Optional flags
-	extractCmd.Flags().BoolP("convert", "c", false, "Whether to convert files")
-	extractCmd.Flags().BoolP("sub-folders", "s", false, "Create sub-folders for each asset type")
+	extractCmd.Flags().BoolP("convert", "c", true, "Whether to convert known files automatically")
+	extractCmd.Flags().BoolP("sub-folders", "s", true, "Create sub-folders for each asset type")
+	extractCmd.Flags().BoolP("mip-maps", "m", false, "Export texture mip-maps")
 }
