@@ -41,7 +41,7 @@ func (txf *TXF) GetTextures() []Texture {
 			linearPalette := txf.CLUTData.RawData[paletteStart : paletteStart+(256*2)]
 
 			grouped := helpers.GroupBytesIntoPairs(linearPalette)
-			swizzled, err := helpers.ReorderArray(grouped)
+			swizzled, err := helpers.SwizzleClutPstm8(grouped)
 			if err != nil {
 				panic(err)
 			}
