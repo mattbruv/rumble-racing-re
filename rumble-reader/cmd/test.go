@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+	"image/png"
 	"os"
 	"rumble-reader/asset/txf"
+	"rumble-reader/chunk/shoc"
 
 	"github.com/spf13/cobra"
 )
@@ -20,7 +23,7 @@ var testCmd = &cobra.Command{
 			panic("unable to open file")
 		}
 
-		txf, err := txf.ParseTXF(data)
+		txf, err := txf.ParseTXF(data, shoc.SHDR{}, "test")
 
 		if err != nil {
 			panic(err)
@@ -28,6 +31,20 @@ var testCmd = &cobra.Command{
 
 		if txf != nil {
 
+			textures := txf.GetTextures()
+
+			for _, tx := range textures {
+				fmt.Println(tx.Name)
+				for f, texFile := range tx.Files {
+					name := fmt.Sprintf("../test/%s_%d_%dx%d.png", tx.Name, f, texFile.Width, texFile.Height)
+					outFile, err := os.Create(name)
+					if err != nil {
+						panic(err)
+					}
+					defer outFile.Close()
+					png.Encode(outFile, texFile.Image)
+				}
+			}
 		}
 		return nil
 	},

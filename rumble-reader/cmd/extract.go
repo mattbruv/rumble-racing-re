@@ -9,31 +9,57 @@ import (
 	"path/filepath"
 	"rumble-reader/file"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
+
+type ExtractSettings struct {
+	inputDir             string
+	outputDir            string
+	convertAutomatically bool
+	createSubFolders     bool
+	exportMipMaps        bool
+	exportHeaders        bool
+}
 
 var extractCmd = &cobra.Command{
 	Use:   "extract",
 	Short: "Extract assets from input to output directory",
 	Long:  `This command processes files from the input directory and saves results in the output directory.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
 		inputDir, _ := cmd.Flags().GetString("input")
 		outputDir, _ := cmd.Flags().GetString("output")
-		doConvert, _ := cmd.Flags().GetBool("convert")
-		makeSubfolders, _ := cmd.Flags().GetBool("sub-folders")
-		err := extractData(inputDir, outputDir, doConvert, makeSubfolders)
+		convertAutomatically, _ := cmd.Flags().GetBool("convert")
+		createSubFolders, _ := cmd.Flags().GetBool("sub-folders")
+		exportMipMaps, _ := cmd.Flags().GetBool("mip-maps")
+		exportHeaders, _ := cmd.Flags().GetBool("save-headers")
+
+		opts := ExtractSettings{
+			inputDir:             inputDir,
+			outputDir:            outputDir,
+			convertAutomatically: convertAutomatically,
+			createSubFolders:     createSubFolders,
+			exportMipMaps:        exportMipMaps,
+			exportHeaders:        exportHeaders,
+		}
+
+		err := extractData(opts)
 		return err
 	},
 }
 
-func extractData(inputDir, outputDir string, convert, subfolders bool) error {
+func extractData(opts ExtractSettings) error {
 	// Ensure the outputDir exists
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(opts.outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	err := filepath.WalkDir(inputDir, func(path string, d fs.DirEntry, err error) error {
+	fmt.Println("🏁 Go, go, go! 🚦")
+	start := time.Now()
+
+	err := filepath.WalkDir(opts.inputDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -44,7 +70,7 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 		if strings.EqualFold(filepath.Ext(d.Name()), ".TRK") {
 			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
-			subDir := filepath.Join(outputDir, baseName)
+			subDir := filepath.Join(opts.outputDir, baseName)
 
 			trackFile := file.ReadTrackFile(path)
 			rlst, _ := trackFile.GetResourceList()
@@ -54,6 +80,8 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 			}
 			outFolder := subDir
 
+			fmt.Println("Extracting", trackFile.FileName, "| Assets:", rlst.Count)
+
 			for _, entry := range rlst.Entries {
 				theAsset, err := trackFile.GetResource(entry)
 				if err != nil {
@@ -62,7 +90,7 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 				data := theAsset.RawData()
 				if len(data) > 0 {
-					if subfolders {
+					if opts.createSubFolders {
 						outFolder = filepath.Join(subDir, theAsset.GetType())
 						if err := os.MkdirAll(outFolder, 0755); err != nil {
 							return fmt.Errorf("failed to create subfolder %s: %w", outFolder, err)
@@ -76,17 +104,48 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 					outFileName := fmt.Sprintf("%d_%s.%s", entry.ResourceIndex, resName, theAsset.GetType())
 					outFilePath := filepath.Join(outFolder, outFileName)
 
-					if err := os.WriteFile(outFilePath, data, 0644); err != nil {
-						return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+					// if the asset can be converted, and we want to convert it,
+					// write out all of those files instead of the raw file.
+					converted := false
+					if opts.convertAutomatically {
+						// only flag as converted if we have saved files
+						convertedFiles := theAsset.GetConvertedFiles()
+						if len(convertedFiles) > 0 {
+							converted = true
+
+							for _, conv := range convertedFiles {
+								outFileName = conv.FullFileName
+								outFilePath = filepath.Join(outFolder, outFileName)
+
+								// If this is a texture, and we don't want mip maps,
+								// don't export them..
+								if !opts.exportMipMaps && strings.Contains(conv.FullFileName, "mipmap") {
+									continue
+								}
+
+								if err := os.WriteFile(outFilePath, conv.Data, 0644); err != nil {
+									return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+								}
+							}
+						}
+					}
+
+					// If we didn't convert anything, write raw resource data
+					if !converted {
+						if err := os.WriteFile(outFilePath, data, 0644); err != nil {
+							return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+						}
 					}
 
 					// write header data
-					outFileName = fmt.Sprintf("%d_%s.shdr", entry.ResourceIndex, resName)
-					outFilePath = filepath.Join(outFolder, outFileName)
-					hdr := theAsset.Header()
+					if opts.exportHeaders {
+						outFileName = fmt.Sprintf("%d_%s.shdr", entry.ResourceIndex, resName)
+						outFilePath = filepath.Join(outFolder, outFileName)
+						hdr := theAsset.Header()
 
-					if err := os.WriteFile(outFilePath, hdr.Data(), 0644); err != nil {
-						return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+						if err := os.WriteFile(outFilePath, hdr.Data(), 0644); err != nil {
+							return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+						}
 					}
 				}
 			}
@@ -108,13 +167,14 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 
 		if strings.EqualFold(filepath.Ext(d.Name()), ".AV") {
 			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
-			subDir := filepath.Join(outputDir, baseName)
+			subDir := filepath.Join(opts.outputDir, baseName)
 
 			if err := os.MkdirAll(subDir, 0755); err != nil {
 				return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
 			}
 
 			avFile := file.ReadAVFile(path)
+			fmt.Println("Extracting audio/video file:", avFile.FileName)
 
 			for _, audioFile := range avFile.ExtractAudio() {
 				// Append the type as file suffix/extension
@@ -132,6 +192,11 @@ func extractData(inputDir, outputDir string, convert, subfolders bool) error {
 		return nil
 	})
 
+	if err == nil {
+		res := fmt.Sprintf("🏁 Finished extracting data in %f seconds! 🏆", time.Since(start).Seconds())
+		fmt.Println(res)
+	}
+
 	return err
 }
 
@@ -145,6 +210,8 @@ func init() {
 	extractCmd.MarkFlagRequired("output")
 
 	// Optional flags
-	extractCmd.Flags().BoolP("convert", "c", false, "Whether to convert files")
-	extractCmd.Flags().BoolP("sub-folders", "s", false, "Create sub-folders for each asset type")
+	extractCmd.Flags().BoolP("convert", "c", true, "Whether to convert known files automatically")
+	extractCmd.Flags().BoolP("sub-folders", "s", true, "Create sub-folders for each asset type")
+	extractCmd.Flags().BoolP("mip-maps", "m", false, "Export texture mip-maps")
+	extractCmd.Flags().BoolP("save-headers", "x", false, "Export asset headers")
 }

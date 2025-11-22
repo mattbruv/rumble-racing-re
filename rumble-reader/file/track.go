@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"rumble-reader/asset"
+	"rumble-reader/asset/txf"
 	"rumble-reader/chunk"
 	"rumble-reader/chunk/shoc"
 	"strings"
@@ -149,9 +150,9 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 
 	var assetData []byte
 
-	hdrShoc := t.TopLevelChunks[header.ShocIndex]
-	fmt.Println("getting data for:", header.AssetType, "size:", header.TotalDataSize, "asset idx:", header.AssetIndex, "| header address:", hdrShoc.StartAddress())
-	fmt.Println("Header addr", hdrShoc.StartAddress())
+	// hdrShoc := t.TopLevelChunks[header.ShocIndex]
+	// fmt.Println("getting data for:", header.AssetType, "size:", header.TotalDataSize, "asset idx:", header.AssetIndex, "| header address:", hdrShoc.StartAddress())
+	// fmt.Println("Header addr", hdrShoc.StartAddress())
 
 	shocCount := 1
 	for {
@@ -164,7 +165,7 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 			continue
 		}
 
-		fmt.Println(theShoc.StartAddress(), theShoc.MetaData.FourCC(), "size:", len(theShoc.Data()))
+		// fmt.Println(theShoc.StartAddress(), theShoc.MetaData.FourCC(), "size:", len(theShoc.Data()))
 
 		switch data := theShoc.MetaData.(type) {
 		case *shoc.SDAT:
@@ -201,6 +202,9 @@ func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error
 	switch resource.TypeTag {
 	case "TxtR":
 		return asset.ParseTxtR(data, *header)
+	case "txf ", "txf2":
+		name := fmt.Sprintf("%d_%s", resource.ResourceIndex, resource.ResourceName)
+		return txf.ParseTXF(data, *header, name)
 	default:
 		return asset.ParseGenericAsset(data, strings.TrimSpace(resource.TypeTag), *header)
 	}
