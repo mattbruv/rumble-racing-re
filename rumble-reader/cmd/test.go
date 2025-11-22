@@ -5,6 +5,7 @@ import (
 	"image/png"
 	"os"
 	"rumble-reader/asset/txf"
+	"rumble-reader/chunk/shoc"
 
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,7 @@ var testCmd = &cobra.Command{
 			panic("unable to open file")
 		}
 
-		txf, err := txf.ParseTXF(data)
+		txf, err := txf.ParseTXF(data, shoc.SHDR{})
 
 		if err != nil {
 			panic(err)

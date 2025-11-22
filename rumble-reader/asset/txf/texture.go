@@ -23,9 +23,9 @@ func (txf *TXF) GetTextures() []Texture {
 
 	var textures []Texture
 
-	for i, tex := range txf.TextureHeaders {
+	for i, tex := range txf.textureHeaders {
 
-		clhe := txf.CLUTHeader.Entries[i]
+		clhe := txf.clutHeader.Entries[i]
 
 		for j, tex := range tex.Textures {
 
@@ -33,12 +33,12 @@ func (txf *TXF) GetTextures() []Texture {
 
 			// Pull the CLUT **once** per texture
 			paletteStart := clhe.CLDAStartOffset
-			if int(paletteStart)+256*2 > len(txf.CLUTData.RawData) {
+			if int(paletteStart)+256*2 > len(txf.clutData.RawData) {
 				fmt.Println("Invalid CLUT pointer!")
 				continue
 			}
 
-			linearPalette := txf.CLUTData.RawData[paletteStart : paletteStart+(256*2)]
+			linearPalette := txf.clutData.RawData[paletteStart : paletteStart+(256*2)]
 
 			grouped := helpers.GroupBytesIntoPairs(linearPalette)
 			swizzled, err := helpers.SwizzleClutPstm8(grouped)
@@ -64,11 +64,11 @@ func (txf *TXF) GetTextures() []Texture {
 				// Extract texture data (one byte per pixel)
 				start := txImage.TXDAAddressOffset
 				size := uint32(height) * uint32(width)
-				if int(start)+int(size) > len(txf.TextureData.RawData) {
+				if int(start)+int(size) > len(txf.textureData.RawData) {
 					fmt.Println("Texture data OOB")
 					continue
 				}
-				data := txf.TextureData.RawData[start : start+size]
+				data := txf.textureData.RawData[start : start+size]
 
 				for pxIndex, colorIndex := range data {
 
@@ -110,7 +110,7 @@ func (txf *TXF) GetTextures() []Texture {
 			}
 
 			textures = append(textures, Texture{
-				Name:  fmt.Sprintf("tx_%d_%d", i, j),
+				Name:  fmt.Sprintf("%d_%d", i, j),
 				Files: mipMaps,
 			})
 		}

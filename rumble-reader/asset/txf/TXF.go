@@ -1,27 +1,32 @@
 package txf
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"image/png"
+	"rumble-reader/asset"
+	"rumble-reader/chunk/shoc"
 )
 
 // TXF seems to contain
 type TXF struct {
 	rawData []byte
 
-	Header *HEAD
+	shocHeader shoc.SHDR
 
-	TextureHeaders []*ZTHE
-	CLUTHeader     *CLHE
-
-	TextureData *TXDA
-	CLUTData    *CLDA
+	header         *HEAD
+	textureHeaders []*ZTHE
+	clutHeader     *CLHE
+	textureData    *TXDA
+	clutData       *CLDA
 }
 
-func ParseTXF(buf []byte) (*TXF, error) {
+func ParseTXF(buf []byte, hdr shoc.SHDR) (*TXF, error) {
 	txfAsset := TXF{
-		rawData: buf,
+		rawData:    buf,
+		shocHeader: hdr,
 	}
 
 	chunks, err := splitTaggedChunks(buf[8:])
@@ -38,38 +43,38 @@ func ParseTXF(buf []byte) (*TXF, error) {
 		case "HEAD":
 			{
 				if head, err := parseHEAD(chunk); err == nil {
-					if txfAsset.Header != nil {
+					if txfAsset.header != nil {
 						return nil, errors.New("multiple HEAD in TXF file")
 					}
-					txfAsset.Header = head
+					txfAsset.header = head
 				}
 			}
 		case "ZTHE":
 			{
 				if zthe, err := parseZTHE(chunk); err == nil {
-					txfAsset.TextureHeaders = append(txfAsset.TextureHeaders, zthe)
+					txfAsset.textureHeaders = append(txfAsset.textureHeaders, zthe)
 				}
 			}
 		case "CLHE":
 			if clhe, err := parseCLHE(chunk); err == nil {
-				if txfAsset.CLUTHeader != nil {
+				if txfAsset.clutHeader != nil {
 					return nil, errors.New("multiple CLHE in TXF file")
 				}
-				txfAsset.CLUTHeader = clhe
+				txfAsset.clutHeader = clhe
 			}
 		case "TXDA":
 			if txda, err := parseTXDA(chunk); err == nil {
-				if txfAsset.TextureData != nil {
+				if txfAsset.textureData != nil {
 					return nil, errors.New("multiple TXDA in TXF file")
 				}
-				txfAsset.TextureData = txda
+				txfAsset.textureData = txda
 			}
 		case "CLDA":
 			if clda, err := parseCLDA(chunk); err == nil {
-				if txfAsset.CLUTData != nil {
+				if txfAsset.clutData != nil {
 					return nil, errors.New("multiple CLDA in TXF file")
 				}
-				txfAsset.CLUTData = clda
+				txfAsset.clutData = clda
 			}
 		default:
 			{
@@ -78,7 +83,7 @@ func ParseTXF(buf []byte) (*TXF, error) {
 		}
 	}
 
-	if int(txfAsset.Header.CLHEIterations) != len(txfAsset.CLUTHeader.Entries) {
+	if int(txfAsset.header.CLHEIterations) != len(txfAsset.clutHeader.Entries) {
 		// panic("txf header clheIterations is not equal to actual entries in CLUT header")
 	}
 
@@ -115,4 +120,38 @@ func splitTaggedChunks(buf []byte) ([][]byte, error) {
 	}
 
 	return chunks, nil
+}
+
+func (g *TXF) GetType() string {
+	return "txf"
+}
+
+func (g *TXF) RawData() []byte {
+	return g.rawData
+}
+
+func (g *TXF) Header() shoc.SHDR {
+	return g.shocHeader
+}
+
+func (t *TXF) GetConvertedFiles() []asset.ConvertedAssetFile {
+
+	var out []asset.ConvertedAssetFile
+
+	for _, texture := range t.GetTextures() {
+		for _, f := range texture.Files {
+			var buf bytes.Buffer
+			if err := png.Encode(&buf, f.Image); err != nil {
+				panic(err)
+			}
+
+			name := fmt.Sprintf("texture-%s-%dx%d.png", texture.Name, f.Width, f.Height)
+			out = append(out, asset.ConvertedAssetFile{
+				FullFileName: name,
+				Data:         buf.Bytes(),
+			})
+		}
+	}
+
+	return out
 }
