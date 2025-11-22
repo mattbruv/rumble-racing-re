@@ -116,6 +116,13 @@ func extractData(opts ExtractSettings) error {
 							for _, conv := range convertedFiles {
 								outFileName = conv.FullFileName
 								outFilePath = filepath.Join(outFolder, outFileName)
+
+								// If this is a texture, and we don't want mip maps,
+								// don't export them..
+								if !opts.exportMipMaps && strings.Contains(conv.FullFileName, "mipmap") {
+									continue
+								}
+
 								if err := os.WriteFile(outFilePath, conv.Data, 0644); err != nil {
 									return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
 								}

@@ -202,7 +202,7 @@ func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error
 	switch resource.TypeTag {
 	case "TxtR":
 		return asset.ParseTxtR(data, *header)
-	case "txf":
+	case "txf ", "txf2":
 		return txf.ParseTXF(data, *header)
 	default:
 		return asset.ParseGenericAsset(data, strings.TrimSpace(resource.TypeTag), *header)

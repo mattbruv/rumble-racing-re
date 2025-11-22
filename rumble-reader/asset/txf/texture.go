@@ -9,9 +9,10 @@ import (
 )
 
 type TextureFile struct {
-	Height uint16
-	Width  uint16
-	Image  *image.RGBA
+	IsMipMap bool
+	Height   uint16
+	Width    uint16
+	Image    *image.RGBA
 }
 
 type Texture struct {
@@ -103,9 +104,10 @@ func (txf *TXF) GetTextures() []Texture {
 				}
 
 				mipMaps = append(mipMaps, TextureFile{
-					Height: height,
-					Width:  width,
-					Image:  img,
+					Height:   height,
+					Width:    width,
+					Image:    img,
+					IsMipMap: k > 0,
 				})
 			}
 
