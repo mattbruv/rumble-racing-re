@@ -5,8 +5,8 @@ import "rumble-reader/chunk/shoc"
 // This is a simple struct which represents the asset after being converted to a usable file.
 // For example, internal TXF binary will be converted to a list of simple PNG texture files.
 type ConvertedAssetFile struct {
-	Name string
-	Data []byte
+	FullFileName string
+	Data         []byte
 }
 
 type Asset interface {

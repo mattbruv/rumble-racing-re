@@ -104,8 +104,30 @@ func extractData(opts ExtractSettings) error {
 					outFileName := fmt.Sprintf("%d_%s.%s", entry.ResourceIndex, resName, theAsset.GetType())
 					outFilePath := filepath.Join(outFolder, outFileName)
 
-					if err := os.WriteFile(outFilePath, data, 0644); err != nil {
-						return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+					// if the asset can be converted, and we want to convert it,
+					// write out all of those files instead of the raw file.
+					converted := false
+					if opts.convertAutomatically {
+						// only flag as converted if we have saved files
+						convertedFiles := theAsset.GetConvertedFiles()
+						if len(convertedFiles) > 0 {
+							converted = true
+
+							for _, conv := range convertedFiles {
+								outFileName = conv.FullFileName
+								outFilePath = filepath.Join(outFolder, outFileName)
+								if err := os.WriteFile(outFilePath, conv.Data, 0644); err != nil {
+									return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+								}
+							}
+						}
+					}
+
+					// If we didn't convert anything, write raw resource data
+					if !converted {
+						if err := os.WriteFile(outFilePath, data, 0644); err != nil {
+							return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+						}
 					}
 
 					// write header data

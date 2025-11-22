@@ -1,13 +1,15 @@
 package asset
 
 import (
+	"encoding/json"
+	"fmt"
 	"rumble-reader/chunk/shoc"
 	"strconv"
 )
 
 type TextEntry struct {
-	Number int
-	Text   string
+	Index int
+	Value string
 }
 
 type TxtR struct {
@@ -29,8 +31,14 @@ func (t *TxtR) Header() shoc.SHDR {
 }
 
 func (t *TxtR) GetConvertedFiles() []ConvertedAssetFile {
-	// TODO
-	return make([]ConvertedAssetFile, 0)
+	name := fmt.Sprintf("TextResource-%d.json", t.header.AssetIndex)
+	b, _ := json.MarshalIndent(t.TextEntries, "", "  ")
+	outFile := ConvertedAssetFile{
+		FullFileName: name,
+		Data:         b,
+	}
+
+	return []ConvertedAssetFile{outFile}
 }
 
 // ParseTxtR parses a byte buffer containing multiple null-terminated strings.
@@ -79,7 +87,7 @@ func ParseTxtR(buf []byte, header shoc.SHDR) (*TxtR, error) {
 			// return nil, fmt.Errorf("invalid number in entry %q: %w", s, err)
 		}
 
-		resource.TextEntries = append(resource.TextEntries, TextEntry{Number: num, Text: textPart})
+		resource.TextEntries = append(resource.TextEntries, TextEntry{Index: num, Value: textPart})
 
 		i++ // skip null terminator
 	}
