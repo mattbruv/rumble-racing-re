@@ -29,7 +29,7 @@ func (txf *TXF) GetTextures() []Texture {
 		clhe := txf.clutHeader.Entries[i]
 
 		for j, tex := range tex.Textures {
-			extracted := extractTextures(clhe, txf, tex, i, j)
+			extracted := extractTexturesFromZTHE(txf, clhe, tex, i, j)
 			textures = append(textures, extracted...)
 		}
 	}
@@ -37,7 +37,7 @@ func (txf *TXF) GetTextures() []Texture {
 	return textures
 }
 
-func extractTextures(clutHeader CLHEEntry, txf *TXF, tex ZTHETexture, ztheIndex int, textureIndex int) []Texture {
+func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, ztheIndex int, textureIndex int) []Texture {
 	var mipMaps []TextureFile
 	var textures []Texture
 
@@ -58,16 +58,16 @@ func extractTextures(clutHeader CLHEEntry, txf *TXF, tex ZTHETexture, ztheIndex 
 	}
 	// swizzledPalette := helpers.SwizzleClutPSMT8(linearPalette)
 
-	for k, txImage := range tex.Images {
+	for k, txImage := range zthe.Images {
 
 		height := txImage.BlockHeightPixels
-		width := tex.BlockWidthPixels >> k
+		width := zthe.BlockWidthPixels >> k
 
 		format := clutHeader.PixelFormat
 
 		if format != 2 { // IDTEX8 (indexed 256-color)
 			fmt.Println("Skipping type:", format)
-			fmt.Println(tex.PixelFormat, clutHeader.CLDAStartOffset, txf.resourceName)
+			fmt.Println(zthe.PixelFormat, clutHeader.CLDAStartOffset, txf.resourceName)
 			fmt.Println("")
 			continue
 		}
