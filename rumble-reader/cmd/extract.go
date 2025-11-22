@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"rumble-reader/file"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -54,6 +55,9 @@ func extractData(opts ExtractSettings) error {
 	if err := os.MkdirAll(opts.outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
+
+	fmt.Println("🏁 Go, go, go! 🚦")
+	start := time.Now()
 
 	err := filepath.WalkDir(opts.inputDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -160,7 +164,8 @@ func extractData(opts ExtractSettings) error {
 	})
 
 	if err == nil {
-		fmt.Println("Finished extracting all data!")
+		res := fmt.Sprintf("🏁 Finished extracting data in %f seconds! 🏆", time.Since(start).Seconds())
+		fmt.Println(res)
 	}
 
 	return err
