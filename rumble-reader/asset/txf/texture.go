@@ -37,17 +37,26 @@ func (txf *TXF) GetTextures() []Texture {
 	return textures
 }
 
+const (
+	// Texel storage format
+	PSMCT32 = 0 // [RGBA32], directly stored in 4 bytes
+	PSMCT16 = 2 // [RGBA16, RGBA16] across 4 bytes
+
+	// Indexed color (CLUT Types)
+	PSM8 = 19 // 8 bits per index = 0 -> 255 palette indices
+	PSM4 = 20 // 4 bits per index = 0 -> 16 palette indices
+)
+
 func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, ztheIndex int, textureIndex int) []Texture {
 	var mipMaps []TextureFile
 	var textures []Texture
 
-	// Pull the CLUT **once** per texture
 	paletteStart := clutHeader.CLDAStartOffset
 
-	// if int(paletteStart)+256*2 > len(txf.clutData.RawData) {
-	// 	fmt.Println("Invalid CLUT pointer!")
-	// 	continue
-	// }
+	// TODO:
+	// change behavior based on CLUT and texel mode
+	// calculate palette size
+	// if PSTM8, the size is 512
 
 	linearPalette := txf.clutData.RawData[paletteStart : paletteStart+(256*2)]
 
