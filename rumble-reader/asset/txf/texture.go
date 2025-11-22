@@ -34,10 +34,11 @@ func (txf *TXF) GetTextures() []Texture {
 
 			// Pull the CLUT **once** per texture
 			paletteStart := clhe.CLDAStartOffset
-			if int(paletteStart)+256*2 > len(txf.clutData.RawData) {
-				fmt.Println("Invalid CLUT pointer!")
-				continue
-			}
+
+			// if int(paletteStart)+256*2 > len(txf.clutData.RawData) {
+			// 	fmt.Println("Invalid CLUT pointer!")
+			// 	continue
+			// }
 
 			linearPalette := txf.clutData.RawData[paletteStart : paletteStart+(256*2)]
 
@@ -57,6 +58,8 @@ func (txf *TXF) GetTextures() []Texture {
 
 				if format != 2 { // IDTEX8 (indexed 256-color)
 					fmt.Println("Skipping type:", format)
+					fmt.Println(tex.PixelFormat, clhe.CLDAStartOffset, txf.resourceName)
+					fmt.Println("")
 					continue
 				}
 
