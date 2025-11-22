@@ -14,7 +14,8 @@ import (
 type TXF struct {
 	rawData []byte
 
-	shocHeader shoc.SHDR
+	resourceName string
+	shocHeader   shoc.SHDR
 
 	header         *HEAD
 	textureHeaders []*ZTHE
@@ -23,10 +24,11 @@ type TXF struct {
 	clutData       *CLDA
 }
 
-func ParseTXF(buf []byte, hdr shoc.SHDR) (*TXF, error) {
+func ParseTXF(buf []byte, hdr shoc.SHDR, resName string) (*TXF, error) {
 	txfAsset := TXF{
-		rawData:    buf,
-		shocHeader: hdr,
+		rawData:      buf,
+		shocHeader:   hdr,
+		resourceName: resName,
 	}
 
 	chunks, err := splitTaggedChunks(buf[8:])
@@ -150,7 +152,7 @@ func (t *TXF) GetConvertedFiles() []asset.ConvertedAssetFile {
 				mipmap = "-mipmap"
 			}
 
-			name := fmt.Sprintf("texture-%s-%dx%d%s.png", texture.Name, f.Width, f.Height, mipmap)
+			name := fmt.Sprintf("%s-%s-%dx%d%s.png", t.resourceName, texture.Name, f.Width, f.Height, mipmap)
 			out = append(out, asset.ConvertedAssetFile{
 				FullFileName: name,
 				Data:         buf.Bytes(),

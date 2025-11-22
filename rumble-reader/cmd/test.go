@@ -23,7 +23,7 @@ var testCmd = &cobra.Command{
 			panic("unable to open file")
 		}
 
-		txf, err := txf.ParseTXF(data, shoc.SHDR{})
+		txf, err := txf.ParseTXF(data, shoc.SHDR{}, "test")
 
 		if err != nil {
 			panic(err)

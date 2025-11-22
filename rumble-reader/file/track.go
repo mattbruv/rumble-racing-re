@@ -203,7 +203,8 @@ func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error
 	case "TxtR":
 		return asset.ParseTxtR(data, *header)
 	case "txf ", "txf2":
-		return txf.ParseTXF(data, *header)
+		name := fmt.Sprintf("%d_%s", resource.ResourceIndex, resource.ResourceName)
+		return txf.ParseTXF(data, *header, name)
 	default:
 		return asset.ParseGenericAsset(data, strings.TrimSpace(resource.TypeTag), *header)
 	}
