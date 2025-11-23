@@ -129,19 +129,20 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		// Extract texture data (one byte per pixel)
 		start := txImage.TXDAAddressOffset
 		size := uint32(height) * uint32(width)
-		if int(start)+int(size) > len(txf.textureData.RawData) {
-			fmt.Println("Texture data OOB")
-			continue
-		}
-
 		// if we are using 1 byte or half byte index, the color index needs to change
 		colorSize := size
 
 		switch zthe.TexelStorageFormat {
 		case PSMT8: // in byte indexed color, the size is already fine
-			break
 		case PSMT4:
 			colorSize /= 2 // but if using half the bits, the size is half
+		default:
+			panic("Fuck!")
+		}
+
+		if int(start)+int(colorSize) > len(txf.textureData.RawData) {
+			fmt.Println("Texture data OOB")
+			continue
 		}
 
 		data := txf.textureData.RawData[start : start+colorSize]
@@ -170,7 +171,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			idx := colorIndex
 
 			// px := binary.LittleEndian.Uint16(swizzledPalette[idx : idx+2])
-			fmt.Println(zthe.TexelStorageFormat, size)
+			// fmt.Println(zthe.TexelStorageFormat, size)
 			finalPixel := swizzled[idx]
 
 			var R uint8
