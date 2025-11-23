@@ -255,12 +255,12 @@ func extract32bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8
 		panic("You fucked up.")
 	}
 	// TODO: might need to swap this?
-	word := binary.LittleEndian.Uint32(finalPixel.Bytes)
+	// word := binary.LittleEndian.Uint32(finalPixel.Bytes)
 
-	A := (word >> (8 * 3)) & 0xff
-	B := (word >> (8 * 2)) & 0xff
-	G := (word >> (8 * 1)) & 0xff
-	R := (word) & 0xff
+	R := finalPixel.Bytes[0]
+	G := finalPixel.Bytes[1]
+	B := finalPixel.Bytes[2]
+	A := 255 //finalPixel.Bytes[3]
 	// A := (word & 0xFF000000) >> (8 * 3)
 	// B := (word & 0x00FF0000) >> (8 * 2)
 	// G := (word & 0x0000FF00) >> (8 * 1)
