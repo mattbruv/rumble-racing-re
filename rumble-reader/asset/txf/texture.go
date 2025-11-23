@@ -2,6 +2,7 @@ package txf
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"image"
 	"image/color"
@@ -24,16 +25,12 @@ func (txf *TXF) GetTextures() []Texture {
 
 	var textures []Texture
 
-	for i, tex := range txf.textureHeaders {
-
-		// clhe := txf.clutHeader.Entries[i]
-
-		for j, tex := range tex.Textures {
-
-			for clhe_index, clhe := range txf.clutHeader.Entries {
-				extracted := extractTexturesFromZTHE(txf, clhe, tex, i, j, clhe_index)
-				textures = append(textures, extracted...)
-			}
+	for i, zthe := range txf.textureHeaders {
+		// panic(txf.header.ZTHEsCount)
+		for j, tex := range zthe.Textures {
+			clhe := txf.clutHeader.Entries[tex.CLUTHeaderIndex]
+			extracted := extractTexturesFromZTHE(txf, clhe, tex, i, j, int(tex.CLUTHeaderIndex))
+			textures = append(textures, extracted...)
 		}
 	}
 
@@ -64,9 +61,9 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 	for k, txImage := range zthe.Images {
 
 		// only extract chicken
-		if ztheIndex != 13 || textureIndex != 6 {
-			continue
-		}
+		// if ztheIndex != 14 || textureIndex != 1 {
+		// 	continue
+		// }
 
 		var paletteSize uint32
 		// clut size is based on whether it's
@@ -238,6 +235,8 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			Image:    img,
 			IsMipMap: k > 0,
 		})
+
+		fmt.Println(hex.Dump(zthe.RawData))
 
 		break // TODO: remove me, don't care about mipmaps right now
 	}

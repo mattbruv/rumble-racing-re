@@ -16,6 +16,9 @@ type ZTHETexture struct {
 	TexelStorageFormat uint8
 	ImageCount         uint8 // Each texture could have up to 4 mip-mapped sub-textures
 	BlockWidthPixels   uint16
+	CLUTHeaderIndex    uint8
+
+	RawData []byte
 }
 
 type ZTHETextureMetaHeader struct {
@@ -39,6 +42,7 @@ func parseZTHE(buf []byte) (*ZTHE, error) {
 
 	for i := 0; i+0x48 <= len(buf); i += 0x48 {
 		data := buf[i : i+0x48]
+		rawTexture := data
 		// fmt.Println(hex.Dump(data[0:8]))
 
 		var metaHeaders []ZTHETextureMetaHeader
@@ -64,6 +68,8 @@ func parseZTHE(buf []byte) (*ZTHE, error) {
 			ImageCount:         imageCount,
 			BlockWidthPixels:   binary.LittleEndian.Uint16(data[0x3e:(0x3e + 2)]),
 			Images:             metaHeaders,
+			CLUTHeaderIndex:    data[0x44],
+			RawData:            rawTexture,
 		})
 	}
 
