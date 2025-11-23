@@ -64,6 +64,8 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		// clut size is based on whether it's
 		switch zthe.TexelStorageFormat {
 		case PSMT8:
+			// TODO: focus on psmt4 for now.
+			continue
 			// 8 bits per index, or 2^8
 			paletteSize = 256
 		case PSMT4:
@@ -81,7 +83,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			pixelBytes = 4
 			paletteSize *= 4
 		case PSMCT16: // PSMCT16, 16 bits color per pixel
-			// continue
+			continue // TODO: uncomment when fixed
 			pixelBytes = 2
 			paletteSize *= 2
 		default:
@@ -100,6 +102,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		// I think only 8 bit indexing needs to be swizzled.
 		switch zthe.TexelStorageFormat {
 		case PSMT8:
+			panic("Shouldn't be here")
 			grouped := helpers.GroupBytesIntoChunks(paletteDataUnswizzled, pixelBytes)
 			// fmt.Println(len(grouped))
 			swizzled, err = helpers.SwizzleClutPstm8(grouped)
@@ -200,6 +203,8 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			Image:    img,
 			IsMipMap: k > 0,
 		})
+
+		break // TODO: remove me, don't care about mipmaps right now
 	}
 
 	textures = append(textures, Texture{
