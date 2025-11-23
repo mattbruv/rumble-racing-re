@@ -43,8 +43,8 @@ const (
 	PSMCT16 = 2 // [RGBA16, RGBA16] across 4 bytes
 
 	// Indexed color (CLUT Types)
-	PSM8 = 19 // 8 bits per index = 0 -> 255 palette indices
-	PSM4 = 20 // 4 bits per index = 0 -> 16 palette indices
+	PSMT8 = 19 // 8 bits per index = 0 -> 255 palette indices
+	PSMT4 = 20 // 4 bits per index = 0 -> 16 palette indices
 )
 
 func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, ztheIndex int, textureIndex int) []Texture {
@@ -63,20 +63,25 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		var paletteSize uint32
 		// clut size is based on whether it's
 		switch zthe.TexelStorageFormat {
-		case 19:
-			paletteSize = 0xff // 0 -> 255 indexed
-		case 20:
-			paletteSize = 3
+		case PSMT8:
+			// 8 bits per index, or 2^8
+			paletteSize = 256
+		case PSMT4:
+			// 4 bits per index, or 2^4
+			paletteSize = 16
 		default:
 			panic("Unhandled indexed texel format!")
 		}
 
+		var pixelBytes int
 		// next, multiply the paletteSize based on number of bytes each pixel/mode takes up
 		// going to be 4 bytes per pixel for 32 bit color, or 2 bytes for 16 bit
 		switch clutHeader.PixelFormat {
-		case 0: // PSMCT32, 32 bits color per pixel
+		case PSMCT32: // PSMCT32, 32 bits color per pixel
+			pixelBytes = 4
 			paletteSize *= 4
-		case 2: // PSMCT16, 16 bits color per pixel
+		case PSMCT16: // PSMCT16, 16 bits color per pixel
+			pixelBytes = 2
 			paletteSize *= 2
 		default:
 			panic("Unhandled clut size!")
@@ -84,28 +89,28 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		// fmt.Println("Do", zthe.TexelStorageFormat, clutHeader.PixelFormat)
 		// continue
 
-		linearPalette := txf.clutData.RawData[paletteStart : paletteStart+paletteSize]
+		paletteDataUnswizzled := txf.clutData.RawData[paletteStart : paletteStart+paletteSize]
 
-		grouped := helpers.GroupBytesIntoPairs(linearPalette)
-		swizzled, err := helpers.SwizzleClutPstm8(grouped)
-		if err != nil {
-			panic(err)
+		// represents the final transformed array of CLUT data depending on storage mode
+		var swizzled []helpers.PixelBytes
+		var err error
+
+		// swizzle clut based on index type
+		// I think only 8 bit indexing needs to be swizzled.
+		switch zthe.TexelStorageFormat {
+		case PSMT8:
+			grouped := helpers.GroupBytesIntoChunks(paletteDataUnswizzled, pixelBytes)
+			fmt.Println(len(grouped))
+			swizzled, err = helpers.SwizzleClutPstm8(grouped)
+			if err != nil {
+				panic(err)
+			}
+		default:
+			panic("Oh shit oh fuck unhandled!")
 		}
-		// swizzledPalette := helpers.SwizzleClutPSMT8(linearPalette)
 
 		height := txImage.BlockHeightPixels
 		width := zthe.BlockWidthPixels >> k
-
-		format := clutHeader.PixelFormat
-
-		if format != 2 { // IDTEX8 (indexed 256-color)
-			fmt.Println("Skipping type:", format)
-			fmt.Println(zthe.TexelStorageFormat, clutHeader.CLDAStartOffset, txf.resourceName)
-			fmt.Println("")
-			continue
-		} else {
-			fmt.Println("FUCKING DO", zthe.TexelStorageFormat, clutHeader.PixelFormat)
-		}
 
 		img := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
 
@@ -123,11 +128,8 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			idx := int(colorIndex)
 
 			// px := binary.LittleEndian.Uint16(swizzledPalette[idx : idx+2])
-			swiz := swizzled[idx]
-			fuck := make([]byte, 2)
-			fuck[0] = swiz.Low
-			fuck[1] = swiz.High
-			px := binary.LittleEndian.Uint16(fuck)
+			finalPixel := swizzled[idx]
+			px := binary.LittleEndian.Uint16(finalPixel.Bytes)
 
 			// Extract 5:5:5 bits
 			r5 := px & 0x1F

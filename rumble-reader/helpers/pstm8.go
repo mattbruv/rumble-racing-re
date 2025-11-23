@@ -7,9 +7,8 @@ import "fmt"
 // this is how the 2 byte per RGBA color CLUT is re-arraigned.
 
 // TwoBytePair represents a 16-bit data unit read from the linear array.
-type TwoBytePair struct {
-	Low  byte // Corresponds to the first byte in the pair
-	High byte // Corresponds to the second byte in the pair
+type PixelBytes struct {
+	Bytes []byte
 }
 
 // Coord represents the (X, Y) location in the 16x16 CLUT grid.
@@ -45,31 +44,32 @@ func mapLinearIndexToCoord(linearIndex uint8) Coord {
 	return Coord{X: x, Y: y}
 }
 
-// GroupBytesIntoPairs converts a flat byte slice (expected length 512 for 256 pairs)
-// into a slice of 256 TwoBytePair structs.
-func GroupBytesIntoPairs(data []byte) []TwoBytePair {
-	if len(data) != 512 {
-		fmt.Printf("Warning: Input byte slice length is %d, expected 512 for 256 pairs.\n", len(data))
+// GroupBytesIntoChunks splits the byte slice into chunks of size N.
+func GroupBytesIntoChunks(data []byte, chunkSize int) []PixelBytes {
+	if chunkSize <= 0 {
+		panic("chunkSize must be greater than 0")
 	}
 
-	var pairs []TwoBytePair
-	for i := 0; i < len(data); i += 2 {
-		end := i + 2
+	if len(data)%chunkSize != 0 {
+		fmt.Printf("Warning: data length %d not divisible by chunkSize %d\n",
+			len(data), chunkSize)
+	}
+
+	var chunks []PixelBytes
+	for i := 0; i < len(data); i += chunkSize {
+		end := i + chunkSize
 		if end > len(data) {
 			end = len(data)
 		}
-
-		twoBytes := data[i:end]
-
-		// Ensure we always have two bytes for a pair
-		if len(twoBytes) == 2 {
-			pairs = append(pairs, TwoBytePair{
-				Low:  twoBytes[0],
-				High: twoBytes[1],
-			})
-		}
+		chunk := make([]byte, end-i)
+		copy(chunk, data[i:end])
+		// fmt.Println(i, end, chunk, len(data))
+		chunks = append(chunks, PixelBytes{
+			Bytes: chunk,
+		})
 	}
-	return pairs
+
+	return chunks
 }
 
 // SwizzleClutPstm8 takes a flat array of 256 elements (data) and reorders them
