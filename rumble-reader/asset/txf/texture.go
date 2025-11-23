@@ -81,6 +81,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			pixelBytes = 4
 			paletteSize *= 4
 		case PSMCT16: // PSMCT16, 16 bits color per pixel
+			continue
 			pixelBytes = 2
 			paletteSize *= 2
 		default:
@@ -165,18 +166,19 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			fmt.Println(zthe.TexelStorageFormat, size)
 			finalPixel := swizzled[idx]
 
-			px := binary.LittleEndian.Uint16(finalPixel.Bytes)
+			var R uint8
+			var G uint8
+			var B uint8
+			var A uint8
 
-			// Extract 5:5:5 bits
-			r5 := px & 0x1F
-			g5 := (px >> 5) & 0x1F
-			b5 := (px >> 10) & 0x1F
-			// a1 := (px >> 15) & 0x1
-
-			R := uint8((r5 * 255) / 31)
-			G := uint8((g5 * 255) / 31)
-			B := uint8((b5 * 255) / 31)
-			A := uint8(255) // 255uint8(a1 * 255)
+			switch clutHeader.PixelFormat {
+			case PSMCT16:
+				R, G, B, A = extract16bitRGBA(finalPixel) // 255uint8(a1 * 255)
+			case PSMCT32:
+				R, G, B, A = extract32bitRGBA(finalPixel)
+			default:
+				panic("oh fuck!")
+			}
 
 			x := pxIndex % int(width)
 			y := pxIndex / int(width)
@@ -198,4 +200,35 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 	})
 
 	return textures
+}
+
+func extract32bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8) {
+	// TODO: might need to swap this?
+	word := binary.LittleEndian.Uint32(finalPixel.Bytes)
+
+	A := (word & 0xFF000000) >> (8 * 3)
+	B := (word & 0x00FF0000) >> (8 * 2)
+	G := (word & 0x0000FF00) >> (8 * 1)
+	R := (word & 0x000000FF)
+
+	// fmt.Println(len(finalPixel.Bytes), hex.Dump(finalPixel.Bytes), word)
+	// panic("unimplemented")
+
+	return uint8(R), uint8(G), uint8(B), uint8(A)
+}
+
+func extract16bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8) {
+	px := binary.LittleEndian.Uint16(finalPixel.Bytes)
+
+	// Extract 5:5:5 bits
+	r5 := px & 0x1F
+	g5 := (px >> 5) & 0x1F
+	b5 := (px >> 10) & 0x1F
+	// a1 := (px >> 15) & 0x1
+
+	R := uint8((r5 * 255) / 31)
+	G := uint8((g5 * 255) / 31)
+	B := uint8((b5 * 255) / 31)
+	A := uint8(255)
+	return R, G, B, A
 }
