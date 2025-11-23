@@ -60,7 +60,31 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 
 	for k, txImage := range zthe.Images {
 
-		linearPalette := txf.clutData.RawData[paletteStart : paletteStart+(256*2)]
+		var paletteSize uint32
+		// clut size is based on whether it's
+		switch zthe.TexelStorageFormat {
+		case 19:
+			paletteSize = 0xff // 0 -> 255 indexed
+		case 20:
+			paletteSize = 3
+		default:
+			panic("Unhandled indexed texel format!")
+		}
+
+		// next, multiply the paletteSize based on number of bytes each pixel/mode takes up
+		// going to be 4 bytes per pixel for 32 bit color, or 2 bytes for 16 bit
+		switch clutHeader.PixelFormat {
+		case 0: // PSMCT32, 32 bits color per pixel
+			paletteSize *= 4
+		case 2: // PSMCT16, 16 bits color per pixel
+			paletteSize *= 2
+		default:
+			panic("Unhandled clut size!")
+		}
+		// fmt.Println("Do", zthe.TexelStorageFormat, clutHeader.PixelFormat)
+		// continue
+
+		linearPalette := txf.clutData.RawData[paletteStart : paletteStart+paletteSize]
 
 		grouped := helpers.GroupBytesIntoPairs(linearPalette)
 		swizzled, err := helpers.SwizzleClutPstm8(grouped)
