@@ -7,6 +7,8 @@ import (
 type ZTHE struct {
 	TextureCount uint32
 	Textures     []ZTHETexture
+
+	RawData []byte
 }
 
 type ZTHETexture struct {
@@ -28,6 +30,7 @@ func parseZTHE(buf []byte) (*ZTHE, error) {
 
 	// size := binary.LittleEndian.Uint32(buf[4:8])
 	// fmt.Println(size)
+	raw := buf
 
 	texCount := binary.LittleEndian.Uint32(buf[8 : 8+4])
 	buf = buf[8+4:]
@@ -71,5 +74,6 @@ func parseZTHE(buf []byte) (*ZTHE, error) {
 	return &ZTHE{
 		TextureCount: texCount,
 		Textures:     textures,
+		RawData:      raw,
 	}, nil
 }
