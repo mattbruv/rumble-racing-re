@@ -129,15 +129,16 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		}
 
 		// if we are using 1 byte or half byte index, the color index needs to change
+		colorSize := size
 
 		switch zthe.TexelStorageFormat {
 		case PSMT8: // in byte indexed color, the size is already fine
 			break
 		case PSMT4:
-			size /= 2 // but if using half the bits, the size is half
+			colorSize /= 2 // but if using half the bits, the size is half
 		}
 
-		data := txf.textureData.RawData[start : start+size]
+		data := txf.textureData.RawData[start : start+colorSize]
 		for pxIndex := range int(size) {
 
 			// get the color index
