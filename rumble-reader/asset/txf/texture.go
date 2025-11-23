@@ -155,9 +155,9 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 				high := twoColors & 0xF
 				// TODO: might need to swap logic here
 				if (pxIndex % 2) != 0 {
-					colorIndex = high
-				} else {
 					colorIndex = low
+				} else {
+					colorIndex = high
 				}
 			}
 
@@ -204,6 +204,9 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 }
 
 func extract32bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8) {
+	if len(finalPixel.Bytes) != 4 {
+		panic("You fucked up.")
+	}
 	// TODO: might need to swap this?
 	word := binary.LittleEndian.Uint32(finalPixel.Bytes)
 
