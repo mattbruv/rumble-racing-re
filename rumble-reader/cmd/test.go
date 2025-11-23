@@ -34,7 +34,7 @@ var testCmd = &cobra.Command{
 			textures := txf.GetTextures()
 
 			for _, tx := range textures {
-				fmt.Println(tx.Name)
+				// fmt.Println(tx.Name)
 				for f, texFile := range tx.Files {
 					name := fmt.Sprintf("../test/%s_%d_%dx%d.png", tx.Name, f, texFile.Width, texFile.Height)
 					outFile, err := os.Create(name)

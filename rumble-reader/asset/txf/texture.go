@@ -217,6 +217,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 				fmt.Println(hex.Dump(paletteDataUnswizzled))
 				fmt.Println(swizzled)
 				fmt.Println("final pixel:", finalPixel.Bytes, "idx/colorIdx", idx, colorIndex)
+				fmt.Println(clutHeader.VRAM_Dest)
 				R, G, B, A = extract32bitRGBA(finalPixel)
 			default:
 				panic("oh fuck!")
