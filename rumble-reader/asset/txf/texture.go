@@ -2,6 +2,7 @@ package txf
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"image"
 	"image/color"
@@ -59,6 +60,11 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 	// if PSTM8, the size is 512
 
 	for k, txImage := range zthe.Images {
+
+		// only extract chicken
+		if ztheIndex != 14 || textureIndex != 1 {
+			continue
+		}
 
 		var paletteSize uint32
 		// clut size is based on whether it's
@@ -208,6 +214,9 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 				panic("FUCK")
 				R, G, B, A = extract16bitRGBA(finalPixel) // 255uint8(a1 * 255)
 			case PSMCT32:
+				fmt.Println(hex.Dump(paletteDataUnswizzled))
+				fmt.Println(swizzled)
+				fmt.Println("final pixel:", finalPixel.Bytes, "idx/colorIdx", idx, colorIndex)
 				R, G, B, A = extract32bitRGBA(finalPixel)
 			default:
 				panic("oh fuck!")
@@ -245,10 +254,14 @@ func extract32bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8
 	// TODO: might need to swap this?
 	word := binary.LittleEndian.Uint32(finalPixel.Bytes)
 
-	A := (word & 0xFF000000) >> (8 * 3)
-	B := (word & 0x00FF0000) >> (8 * 2)
-	G := (word & 0x0000FF00) >> (8 * 1)
-	R := (word & 0x000000FF)
+	A := (word >> (8 * 3)) & 0xff
+	B := (word >> (8 * 2)) & 0xff
+	G := (word >> (8 * 1)) & 0xff
+	R := (word) & 0xff
+	// A := (word & 0xFF000000) >> (8 * 3)
+	// B := (word & 0x00FF0000) >> (8 * 2)
+	// G := (word & 0x0000FF00) >> (8 * 1)
+	// R := (word & 0x000000FF)
 
 	// fmt.Println(len(finalPixel.Bytes), hex.Dump(finalPixel.Bytes), word)
 	// panic("unimplemented")
