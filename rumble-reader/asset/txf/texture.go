@@ -161,18 +161,35 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 				// just a normal byte
 				colorIndex = uint32(data[pxIndex])
 			case PSMT4:
-				// half the pxIndex will get you the byte base
-				base := pxIndex / 2
-				twoColors := uint32(data[base])
 
-				low := (twoColors & 0xF0) >> 4
-				high := twoColors & 0xF
-				// TODO: might need to swap logic here
-				if (pxIndex % 2) != 0 {
-					colorIndex = low
-				} else {
-					colorIndex = high
-				}
+				// 1. Get the 32 bit offset
+				// each 32 bit word holds 8 indices
+				wordOffset := pxIndex / 8
+				// fmt.Println("px ", pxIndex, "at offset", wordOffset, (len(data)))
+				// 2. get the word.
+				wordStart := wordOffset * 4
+				// TODO: swap little for big change order?
+				word := binary.LittleEndian.Uint32(data[wordStart : wordStart+4])
+
+				// pixel index is index % 8 bits?
+				wordIndex := pxIndex % 8
+				shift := uint(wordIndex * 4)
+				lookup := (word >> shift) & 0xF
+				fmt.Println("px ", pxIndex, "at word ", wordOffset, len(data), word, wordStart)
+				colorIndex = lookup
+
+				// half the pxIndex will get you the byte base
+				// base := pxIndex / 2
+				// twoColors := uint32(data[base])
+
+				// low := (twoColors & 0xF0) >> 4
+				// high := twoColors & 0xF
+				// // TODO: might need to swap logic here
+				// if (pxIndex % 2) != 0 {
+				// 	colorIndex = low
+				// } else {
+				// 	colorIndex = high
+				// }
 			}
 
 			idx := colorIndex
@@ -188,6 +205,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 
 			switch clutHeader.PixelFormat {
 			case PSMCT16:
+				panic("FUCK")
 				R, G, B, A = extract16bitRGBA(finalPixel) // 255uint8(a1 * 255)
 			case PSMCT32:
 				R, G, B, A = extract32bitRGBA(finalPixel)
