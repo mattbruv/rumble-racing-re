@@ -10,10 +10,10 @@ type ZTHE struct {
 }
 
 type ZTHETexture struct {
-	Images           []ZTHETextureMetaHeader
-	PixelFormat      uint8
-	ImageCount       uint8 // Each texture could have up to 4 mip-mapped sub-textures
-	BlockWidthPixels uint16
+	Images             []ZTHETextureMetaHeader
+	TexelStorageFormat uint8
+	ImageCount         uint8 // Each texture could have up to 4 mip-mapped sub-textures
+	BlockWidthPixels   uint16
 }
 
 type ZTHETextureMetaHeader struct {
@@ -57,10 +57,10 @@ func parseZTHE(buf []byte) (*ZTHE, error) {
 		}
 
 		textures = append(textures, ZTHETexture{
-			PixelFormat:      data[0x30],
-			ImageCount:       imageCount,
-			BlockWidthPixels: binary.LittleEndian.Uint16(data[0x3e:(0x3e + 2)]),
-			Images:           metaHeaders,
+			TexelStorageFormat: data[0x30],
+			ImageCount:         imageCount,
+			BlockWidthPixels:   binary.LittleEndian.Uint16(data[0x3e:(0x3e + 2)]),
+			Images:             metaHeaders,
 		})
 	}
 

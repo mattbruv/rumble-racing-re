@@ -16,8 +16,8 @@ var testCmd = &cobra.Command{
 	Long:  `test tfx parsing`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		// data, err := os.ReadFile("../test.txf")
-		data, err := os.ReadFile("../testbad.txf")
+		data, err := os.ReadFile("../test.txf")
+		// data, err := os.ReadFile("../testbad.txf")
 
 		if err != nil {
 			panic("unable to open file")

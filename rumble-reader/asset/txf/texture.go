@@ -58,16 +58,16 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 	// calculate palette size
 	// if PSTM8, the size is 512
 
-	linearPalette := txf.clutData.RawData[paletteStart : paletteStart+(256*2)]
-
-	grouped := helpers.GroupBytesIntoPairs(linearPalette)
-	swizzled, err := helpers.SwizzleClutPstm8(grouped)
-	if err != nil {
-		panic(err)
-	}
-	// swizzledPalette := helpers.SwizzleClutPSMT8(linearPalette)
-
 	for k, txImage := range zthe.Images {
+
+		linearPalette := txf.clutData.RawData[paletteStart : paletteStart+(256*2)]
+
+		grouped := helpers.GroupBytesIntoPairs(linearPalette)
+		swizzled, err := helpers.SwizzleClutPstm8(grouped)
+		if err != nil {
+			panic(err)
+		}
+		// swizzledPalette := helpers.SwizzleClutPSMT8(linearPalette)
 
 		height := txImage.BlockHeightPixels
 		width := zthe.BlockWidthPixels >> k
@@ -76,9 +76,11 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 
 		if format != 2 { // IDTEX8 (indexed 256-color)
 			fmt.Println("Skipping type:", format)
-			fmt.Println(zthe.PixelFormat, clutHeader.CLDAStartOffset, txf.resourceName)
+			fmt.Println(zthe.TexelStorageFormat, clutHeader.CLDAStartOffset, txf.resourceName)
 			fmt.Println("")
 			continue
+		} else {
+			fmt.Println("FUCKING DO", zthe.TexelStorageFormat, clutHeader.PixelFormat)
 		}
 
 		img := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
@@ -95,10 +97,6 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		for pxIndex, colorIndex := range data {
 
 			idx := int(colorIndex)
-
-			// Compute swizzled CLUT lookup position
-			// mort := interleaveBits(idx&0xF, (idx>>4)&0xF)
-			// off := mort * 2
 
 			// px := binary.LittleEndian.Uint16(swizzledPalette[idx : idx+2])
 			swiz := swizzled[idx]
