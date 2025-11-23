@@ -105,7 +105,12 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			if err != nil {
 				panic(err)
 			}
+		case PSMT4:
+			// I don't think this needs to be swizzled, so just group?
+			grouped := helpers.GroupBytesIntoChunks(paletteDataUnswizzled, pixelBytes)
+			swizzled = grouped
 		default:
+			fmt.Println(zthe.TexelStorageFormat)
 			panic("Oh shit oh fuck unhandled!")
 		}
 
