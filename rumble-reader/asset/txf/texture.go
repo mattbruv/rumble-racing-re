@@ -81,7 +81,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			pixelBytes = 4
 			paletteSize *= 4
 		case PSMCT16: // PSMCT16, 16 bits color per pixel
-			continue
+			// continue
 			pixelBytes = 2
 			paletteSize *= 2
 		default:
@@ -101,7 +101,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		switch zthe.TexelStorageFormat {
 		case PSMT8:
 			grouped := helpers.GroupBytesIntoChunks(paletteDataUnswizzled, pixelBytes)
-			fmt.Println(len(grouped))
+			// fmt.Println(len(grouped))
 			swizzled, err = helpers.SwizzleClutPstm8(grouped)
 			if err != nil {
 				panic(err)
@@ -109,7 +109,13 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		case PSMT4:
 			// I don't think this needs to be swizzled, so just group?
 			grouped := helpers.GroupBytesIntoChunks(paletteDataUnswizzled, pixelBytes)
-			swizzled = grouped
+			swizzled, err = helpers.SwizzleClutPstm4_16(grouped)
+			fmt.Println(grouped)
+			fmt.Println(swizzled)
+			fmt.Println("zthe:", ztheIndex)
+			if err != nil {
+				panic(err)
+			}
 		default:
 			fmt.Println(zthe.TexelStorageFormat)
 			panic("Oh shit oh fuck unhandled!")
@@ -222,6 +228,9 @@ func extract32bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8
 }
 
 func extract16bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8) {
+	if len(finalPixel.Bytes) != 2 {
+		panic("You fucked up 16bit RGBA")
+	}
 	px := binary.LittleEndian.Uint16(finalPixel.Bytes)
 
 	// Extract 5:5:5 bits

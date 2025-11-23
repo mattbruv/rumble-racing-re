@@ -1,6 +1,8 @@
 package helpers
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Pixel Storage Mode 8
 // represents 0 -> 0xff texel indexing format
@@ -91,6 +93,26 @@ func SwizzleClutPstm8[T any](data []T) ([]T, error) {
 		flatIndex := int(coord.Y)*16 + int(coord.X)
 
 		// Map the original linear data[i] to its new flat grid position.
+		result[flatIndex] = data[i]
+	}
+
+	return result, nil
+}
+
+// SwizzleClutPstm4_16 handles the 16-color IDTEX4 CLUT layout (8x2 tile).
+func SwizzleClutPstm4_16[T any](data []T) ([]T, error) {
+	if len(data) != 16 {
+		var zero []T
+		return zero, fmt.Errorf("input must be 16 elements, got %d", len(data))
+	}
+
+	result := make([]T, 16)
+
+	for i := 0; i < 16; i++ {
+		y := i / 8 // row (0..1)
+		x := i % 8 // col (0..7)
+		flatIndex := y*8 + x
+
 		result[flatIndex] = data[i]
 	}
 
