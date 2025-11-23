@@ -65,6 +65,8 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		switch zthe.TexelStorageFormat {
 		case PSMT8:
 			// TODO: focus on psmt4 for now.
+
+			fmt.Println("SKIP LOOKUP:", clutHeader.CLUTImageSizeLookup)
 			continue
 			// 8 bits per index, or 2^8
 			paletteSize = 256
@@ -152,15 +154,17 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		for pxIndex := range int(size) {
 
 			// get the color index
-			var colorIndex int
+			var colorIndex uint32
 			switch zthe.TexelStorageFormat {
 			case PSMT8:
+				panic("FUCK")
 				// just a normal byte
-				colorIndex = int(data[pxIndex])
+				colorIndex = uint32(data[pxIndex])
 			case PSMT4:
 				// half the pxIndex will get you the byte base
 				base := pxIndex / 2
-				twoColors := int(data[base])
+				twoColors := uint32(data[base])
+
 				low := (twoColors & 0xF0) >> 4
 				high := twoColors & 0xF
 				// TODO: might need to swap logic here
@@ -197,6 +201,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			img.Set(x, y, color.RGBA{R, G, B, A})
 		}
 
+		fmt.Println("LOOKUP:", clutHeader.CLUTImageSizeLookup)
 		mipMaps = append(mipMaps, TextureFile{
 			Height:   height,
 			Width:    width,
