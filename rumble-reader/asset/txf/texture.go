@@ -2,7 +2,6 @@ package txf
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"image"
 	"image/color"
@@ -27,11 +26,14 @@ func (txf *TXF) GetTextures() []Texture {
 
 	for i, tex := range txf.textureHeaders {
 
-		clhe := txf.clutHeader.Entries[i]
+		// clhe := txf.clutHeader.Entries[i]
 
 		for j, tex := range tex.Textures {
-			extracted := extractTexturesFromZTHE(txf, clhe, tex, i, j)
-			textures = append(textures, extracted...)
+
+			for clhe_index, clhe := range txf.clutHeader.Entries {
+				extracted := extractTexturesFromZTHE(txf, clhe, tex, i, j, clhe_index)
+				textures = append(textures, extracted...)
+			}
 		}
 	}
 
@@ -48,7 +50,7 @@ const (
 	PSMT4 = 20 // 4 bits per index = 0 -> 16 palette indices
 )
 
-func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, ztheIndex int, textureIndex int) []Texture {
+func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, ztheIndex int, textureIndex int, clhe_index int) []Texture {
 	var mipMaps []TextureFile
 	var textures []Texture
 
@@ -62,7 +64,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 	for k, txImage := range zthe.Images {
 
 		// only extract chicken
-		if ztheIndex != 14 || textureIndex != 1 {
+		if ztheIndex != 13 || textureIndex != 6 {
 			continue
 		}
 
@@ -214,10 +216,10 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 				panic("FUCK")
 				R, G, B, A = extract16bitRGBA(finalPixel) // 255uint8(a1 * 255)
 			case PSMCT32:
-				fmt.Println(hex.Dump(paletteDataUnswizzled))
-				fmt.Println(swizzled)
-				fmt.Println("final pixel:", finalPixel.Bytes, "idx/colorIdx", idx, colorIndex)
-				fmt.Println(clutHeader.VRAM_Dest)
+				// fmt.Println(hex.Dump(paletteDataUnswizzled))
+				// fmt.Println(swizzled)
+				// fmt.Println("final pixel:", finalPixel.Bytes, "idx/colorIdx", idx, colorIndex)
+				// fmt.Println(len(txf.clutHeader.Entries))
 				R, G, B, A = extract32bitRGBA(finalPixel)
 			default:
 				panic("oh fuck!")
@@ -241,7 +243,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 	}
 
 	textures = append(textures, Texture{
-		Name:  fmt.Sprintf("%d_%d", ztheIndex, textureIndex),
+		Name:  fmt.Sprintf("%d_%d_%d", ztheIndex, textureIndex, clhe_index),
 		Files: mipMaps,
 	})
 
