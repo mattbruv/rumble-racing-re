@@ -35,6 +35,8 @@ As a result, vgmstream can read and play these files in your browser:
 Probably stands for 'Track'.
 `.TRK` files seem to contain all of the unique map data for each track. Internal map names seemed to be grouped by similarity. Internal name mappings can be seen below. Each internal map has a `.TRK`, `.AV`, and `.LSC` file. `FE` is a special case, as it seems to be globally used assets.
 
+![](./docs/images/true-grits.png)
+
 | Internal | Meaning           | Name              |
 | -------- | ----------------- | ----------------- |
 | `BB1`    | Beach Blast       | Sun Burn          |
@@ -86,13 +88,15 @@ I am currently working through understanding how `SHOC`s are related to each oth
 
 ## Game Assets
 
+![](./docs/images/darwin.png)
+
 The game asset FourCC types are listed here as follows, along with the address of the function that processes this data:
 
-| Status | Meaning     |
-| ------ | ----------- |
-| ❔     | Not Certain |
-| ⚠️     | In Progress |
-| ✅     | Extractable |
+| Status | Meaning               |
+| ------ | --------------------- |
+| ❔     | Not Certain           |
+| ⚠️     | Partially Extractable |
+| ✅     | Extractable           |
 
 | Type   | Status | Game Asset Type                                                                                           | Final Build Address    | Debug Build Address |
 | ------ | ------ | --------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------- |
@@ -107,7 +111,7 @@ The game asset FourCC types are listed here as follows, along with the address o
 | `Limg` |        | Locale Image                                                                                              | 001a7290               | 001ab610            |
 | `Mask` |        | Motion Mask                                                                                               | 001a7270               | 001ab5f0            |
 | `Bimg` | ✅     | Background Image, 512x448 (IPU format)                                                                    | 001a7250               | 001ab5d0            |
-| `txf2` |        | Txf Data                                                                                                  | 001a7340               | 001ab6c0            |
+| `txf2` | ✅     | Texture Data (same as `txf`)                                                                              | 001a7340               | 001ab6c0            |
 | `Cvkb` |        | Audio                                                                                                     | 001abb80               | 001afce0            |
 | `Cvkh` |        | Audio                                                                                                     | 001abb80               | 001afce0            |
 | `Cshd` |        | Audio                                                                                                     | 001abb80               | 001afce0            |
@@ -116,7 +120,7 @@ The game asset FourCC types are listed here as follows, along with the address o
 | `sfn`  |        | Font ([Arial](https://en.wikipedia.org/wiki/Arial), [Lucida](https://en.wikipedia.org/wiki/Lucida), etc.) | 0012b920               | 0012f050            |
 | `gmd`  |        | Track Data                                                                                                | 00160da0               | 00162ca0            |
 | `Obf`  |        | Track Mesh                                                                                                | 00160de0               | 00162ce0            |
-| `txf`  |        | Texture / Texture Group Data                                                                              | 001644f0,<br>00121230, | 001667c0            |
+| `txf`  | ✅     | Texture / Texture Group Data                                                                              | 001644f0,<br>00121230, | 001667c0            |
 | `Ctos` | ❔     | Voice-over Group Data?                                                                                    | 00125a10               | 00129160            |
 | `Cfun` | ❔     | CtrlFct (Control Function?)                                                                               | 001272e0               | 0012a9a0            |
 | `Csac` | ❔     | SupAct (actor system?)                                                                                    | 00127550               | 0012ac10            |
