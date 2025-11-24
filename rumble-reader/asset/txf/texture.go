@@ -149,8 +149,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		}
 
 		if int(start)+int(colorSize) > len(txf.textureData.RawData) {
-			fmt.Println("Texture data OOB")
-			continue
+			panic("Texture data OOB")
 		}
 
 		data := txf.textureData.RawData[start : start+colorSize]
@@ -257,7 +256,10 @@ func extract32bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8
 	R := finalPixel.Bytes[0]
 	G := finalPixel.Bytes[1]
 	B := finalPixel.Bytes[2]
-	A := 255 //finalPixel.Bytes[3]
+	// on the PS2, the color blending divides the values by 128 which means an alpha of 128 results in full opacity
+	// similar to PS1
+	A := 255 * (finalPixel.Bytes[3] / 128)
+	// A := 255 //finalPixel.Bytes[3]
 	// A := (word & 0xFF000000) >> (8 * 3)
 	// B := (word & 0x00FF0000) >> (8 * 2)
 	// G := (word & 0x0000FF00) >> (8 * 1)
