@@ -46,6 +46,7 @@ const (
 	PSMT4 = 20 // 4 bits per index = 0 -> 16 palette indices
 )
 
+// Please ignore how awful this function is, I'm aware it's bad.
 func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, ztheIndex int, textureIndex int, clhe_index int) []Texture {
 	var mipMaps []TextureFile
 	var textures []Texture
