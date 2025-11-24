@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"rumble-reader/file"
+	"rumble-reader/helpers"
 	"strings"
 	"time"
 
@@ -70,7 +71,13 @@ func extractData(opts ExtractSettings) error {
 
 		if strings.EqualFold(filepath.Ext(d.Name()), ".TRK") {
 			baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
+
+			if actualName, found := getTrackName(baseName); found {
+				baseName = baseName + " - " + actualName
+			}
+
 			subDir := filepath.Join(opts.outputDir, baseName)
+			//			find ../OUT ../DATA-FEB-7 -type f -name "*.o3d" -exec stat -f "%z %N" {} \; | sort -n | head -5
 
 			trackFile := file.ReadTrackFile(path)
 			rlst, _ := trackFile.GetResourceList()
@@ -214,4 +221,14 @@ func init() {
 	extractCmd.Flags().BoolP("sub-folders", "s", true, "Create sub-folders for each asset type")
 	extractCmd.Flags().BoolP("mip-maps", "m", false, "Export texture mip-maps")
 	extractCmd.Flags().BoolP("save-headers", "x", false, "Export asset headers")
+}
+
+func getTrackName(internal string) (string, bool) {
+
+	for _, track := range helpers.TrackData {
+		if track.InternalName == internal {
+			return track.TrackName, true
+		}
+	}
+	return "", false
 }
