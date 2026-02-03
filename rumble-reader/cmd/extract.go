@@ -77,6 +77,8 @@ func extractData(opts ExtractSettings) error {
 			go func() {
 				defer wg.Done()
 				processTrackFile(d, opts, path)
+				res := fmt.Sprintf("Finished %s in %f seconds!", d.Name(), time.Since(start).Seconds())
+				fmt.Println(res)
 			}()
 		}
 
@@ -85,6 +87,8 @@ func extractData(opts ExtractSettings) error {
 			go func() {
 				defer wg.Done()
 				processAvFile(d, opts, path)
+				res := fmt.Sprintf("Finished %s in %f seconds!", d.Name(), time.Since(start).Seconds())
+				fmt.Println(res)
 			}()
 		}
 
