@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>VIF Universal Renderer</title>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        margin: 0;
+        background: #111;
+        color: #eee;
+        font-family: "Segoe UI", sans-serif;
+        overflow: hidden;
+        display: flex;
+      }
+      #sidebar {
+        width: 340px;
+        padding: 20px;
+        background: #1a1a1a;
+        border-right: 1px solid #333;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+      }
+      #container {
+        flex-grow: 1;
+        position: relative;
+      }
+      textarea {
+        flex-grow: 1;
+        background: #050505;
+        color: #00ff88;
+        border: 1px solid #333;
+        padding: 12px;
+        font-family: "Consolas", monospace;
+        font-size: 11px;
+        margin-bottom: 15px;
+        outline: none;
+        resize: none;
+      }
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 15px;
+      }
+      button {
+        background: #333;
+        color: white;
+        border: 1px solid #444;
+        padding: 10px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: bold;
+        transition: 0.2s;
+      }
+      button:hover {
+        background: #444;
+        border-color: #666;
+      }
+      button.active {
+        background: #0066ff;
+        border-color: #00a2ff;
+      }
+      .stats {
+        font-size: 10px;
+        color: #777;
+        margin-top: 5px;
+        font-family: monospace;
+      }
+      .label {
+        margin-bottom: 8px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #aaa;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sidebar">
+      <div class="label">VIF Input (Chicken / Pepsi / Rotor)</div>
+      <textarea
+        id="vifInput"
+        placeholder="Paste your .txt file content here..."
+      ></textarea>
+
+      <div class="label">Visual Mode</div>
+      <div class="controls">
+        <button id="btnPoints" onclick="setMode('points')">POINTS</button>
+        <button id="btnWire" onclick="setMode('wire')">WIREFRAME</button>
+        <button id="btnSolid" class="active" onclick="setMode('solid')">
+          SOLID MESH
+        </button>
+        <button
+          onclick="updateMesh()"
+          style="background: #222; color: #00ff88; border-color: #00ff8866"
+        >
+          BUILD MODEL
+        </button>
+      </div>
+      <div id="meshStats" class="stats">Vertices: 0 | Triangles: 0</div>
+    </div>
+    <div id="container"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+
+      let scene,
+        camera,
+        renderer,
+        controls,
+        meshGroup,
+        renderMode = "solid";
+
+      init();
+
+      function init() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(
+          70,
+          (window.innerWidth - 340) / window.innerHeight,
+          0.01,
+          2000,
+        );
+        camera.position.set(5, 5, 5);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth - 340, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.getElementById("container").appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        meshGroup = new THREE.Group();
+        scene.add(meshGroup);
+
+        scene.add(new THREE.GridHelper(10, 20, 0x333333, 0x222222));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        window.addEventListener("resize", onWindowResize);
+        animate();
+      }
+
+      function parseVIF() {
+        const text = document.getElementById("vifInput").value;
+        const lines = text.split("\n");
+        const vertices = [];
+        const indices = [];
+        let globalVCount = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+          // Identify a V3 block (XYZ coordinates)
+          if (lines[i].includes("V3 Offset:")) {
+            let blockVertices = [];
+            let j = i + 1;
+
+            // Collect all valid coordinate lines until next block or empty space
+            while (j < lines.length) {
+              const line = lines[j].trim();
+              if (!line || line.includes("Offset") || line.includes("[source"))
+                break;
+
+              const coords = line
+                .split(/\s+/)
+                .filter((x) => x.length > 0)
+                .map(Number);
+              if (coords.length >= 3 && !isNaN(coords[0])) {
+                blockVertices.push(coords[0], coords[1], coords[2]);
+              }
+              j++;
+            }
+
+            if (blockVertices.length >= 9) {
+              // At least one triangle
+              const count = blockVertices.length / 3;
+              vertices.push(...blockVertices);
+
+              // Generate indices using Triangle Strip logic
+              // PS2 models are often strips. For a block of N vertices,
+              // triangles are (i, i+1, i+2) with alternating winding.
+              for (let n = 0; n < count - 2; n++) {
+                const a = globalVCount + n;
+                const b = globalVCount + n + 1;
+                const c = globalVCount + n + 2;
+
+                if (n % 2 === 0) {
+                  indices.push(a, b, c);
+                } else {
+                  indices.push(a, c, b); // Alternate winding
+                }
+              }
+              globalVCount += count;
+            }
+            i = j - 1; // Skip ahead
+          }
+        }
+        return { vertices, indices };
+      }
+
+      window.setMode = function (mode) {
+        renderMode = mode;
+        document
+          .querySelectorAll(".controls button")
+          .forEach((b) => b.classList.remove("active"));
+        const btnId = "btn" + mode.charAt(0).toUpperCase() + mode.slice(1);
+        if (document.getElementById(btnId))
+          document.getElementById(btnId).classList.add("active");
+        updateMesh();
+      };
+
+      window.updateMesh = function () {
+        meshGroup.clear();
+        const data = parseVIF();
+
+        document.getElementById("meshStats").innerText =
+          `Vertices: ${data.vertices.length / 3} | Triangles: ${data.indices.length / 3}`;
+
+        if (data.vertices.length === 0) return;
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(data.vertices, 3),
+        );
+        geo.setIndex(data.indices);
+        geo.computeVertexNormals();
+
+        if (renderMode === "points") {
+          const mat = new THREE.PointsMaterial({ color: 0x00ff88, size: 0.08 });
+          meshGroup.add(new THREE.Points(geo, mat));
+        } else if (renderMode === "wire") {
+          const mat = new THREE.MeshBasicMaterial({
+            color: 0x00a2ff,
+            wireframe: true,
+          });
+          meshGroup.add(new THREE.Mesh(geo, mat));
+        } else {
+          const mat = new THREE.MeshPhongMaterial({
+            color: 0x888888,
+            side: THREE.DoubleSide,
+            flatShading: true,
+            shininess: 30,
+          });
+          meshGroup.add(new THREE.Mesh(geo, mat));
+        }
+
+        // Auto-focus camera
+        geo.computeBoundingSphere();
+        const sphere = geo.boundingSphere;
+        if (sphere) {
+          controls.target.copy(sphere.center);
+          camera.position.set(
+            sphere.center.x + sphere.radius * 2,
+            sphere.center.y + sphere.radius * 2,
+            sphere.center.z + sphere.radius * 2,
+          );
+          controls.update();
+        }
+      };
+
+      function onWindowResize() {
+        camera.aspect = (window.innerWidth - 340) / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth - 340, window.innerHeight);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
