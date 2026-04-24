@@ -10,6 +10,7 @@ target/
 *.lock
 out
 *.txf
+*.o3d
 *.AV
 test/
 *.p2s

@@ -14,12 +14,12 @@ var o3dCmd = &cobra.Command{
 	Long:  `test o3d parsing`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		// data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/21_-RESOURCES-EGG.O3D.o3d")
+		data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/32_-RESOURCES-STOPSIGN.O3D.o3d")
 		// data, err := os.ReadFile("../OUT-FEB-7/MP2 - Car Go/o3d/5_-RESOURCES-GL_L.O3D.o3d")
-		data, err := os.ReadFile("../unk.o3d")
+		// data, err := os.ReadFile("../eagle.o3d")
 
 		if err != nil {
-			panic("unable to open file")
+			panic(err)
 		}
 
 		// fmt.Println(hex.Dump(data))
