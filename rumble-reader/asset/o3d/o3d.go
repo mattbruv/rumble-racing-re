@@ -1,17 +1,23 @@
 package o3d
 
+import "rumble-reader/chunk/shoc"
+
 type O3D struct {
 	rawData      []byte
 	resourceName string
+	shocHeader   shoc.SHDR
 
 	Gmd *Gmd
 	Obf *Obf
 }
 
-func ParseO3D(buf []byte, resName string) (*O3D, error) {
+func ParseO3D(buf []byte, header shoc.SHDR, resName string) (*O3D, error) {
 	o3dAsset := O3D{
-		// rawData:      buf,
-		// resourceName: resName,
+		rawData:      []byte{},
+		resourceName: resName,
+		shocHeader:   header,
+		Gmd:          &Gmd{},
+		Obf:          &Obf{},
 	}
 
 	chunks, err := parseChunks(buf)

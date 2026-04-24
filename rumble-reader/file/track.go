@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"rumble-reader/asset"
+	"rumble-reader/asset/o3d"
 	"rumble-reader/asset/txf"
 	"rumble-reader/chunk"
 	"rumble-reader/chunk/shoc"
@@ -205,6 +206,8 @@ func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error
 	case "txf ", "txf2":
 		name := fmt.Sprintf("%d_%s", resource.ResourceIndex, resource.ResourceName)
 		return txf.ParseTXF(data, *header, name)
+	case "o3d":
+		return o3d.ParseO3D(data, *header, resource.ResourceName)
 	default:
 		return asset.ParseGenericAsset(data, strings.TrimSpace(resource.TypeTag), *header)
 	}

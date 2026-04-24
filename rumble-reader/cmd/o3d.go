@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"rumble-reader/asset/o3d"
+	"rumble-reader/chunk/shoc"
 
 	"github.com/spf13/cobra"
 )
@@ -24,7 +25,7 @@ var o3dCmd = &cobra.Command{
 
 		// fmt.Println(hex.Dump(data))
 
-		o3dData, err := o3d.ParseO3D(data, "test")
+		o3dData, err := o3d.ParseO3D(data, shoc.SHDR{}, "test")
 
 		for _, thing := range o3dData.Obf.ELDAs {
 			// fmt.Println(hex.Dump(thing.Data), len(thing.Data))
