@@ -14,24 +14,26 @@ import (
 func (o *O3D) GetConvertedFiles() []asset.ConvertedAssetFile {
 	var out []asset.ConvertedAssetFile
 
-	for eldaIdx, elda := range o.Obf.ELDAs {
-		if len(elda.Data) == 0 {
-			continue
+	for obfIdx, obf := range o.Obfs {
+		for eldaIdx, elda := range obf.ELDAs {
+			if len(elda.Data) == 0 {
+				continue
+			}
+
+			entries := elda.ParseVif()
+			strips := extractStrips(entries)
+			if len(strips) == 0 {
+				continue
+			}
+
+			mesh := stripsToMesh(strips)
+			objData := writeOBJ(mesh)
+
+			out = append(out, asset.ConvertedAssetFile{
+				FullFileName: fmt.Sprintf("%s_obf_%d_elda_%d.obj", o.resourceName, obfIdx, eldaIdx),
+				Data:         objData,
+			})
 		}
-
-		entries := elda.ParseVif()
-		strips := extractStrips(entries)
-		if len(strips) == 0 {
-			continue
-		}
-
-		mesh := stripsToMesh(strips)
-		objData := writeOBJ(mesh)
-
-		out = append(out, asset.ConvertedAssetFile{
-			FullFileName: fmt.Sprintf("%s_elda_%d.obj", o.resourceName, eldaIdx),
-			Data:         objData,
-		})
 	}
 
 	return out

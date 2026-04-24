@@ -1,5 +1,6 @@
 package cmd
 
+/*
 import (
 	"fmt"
 	"os"
@@ -95,3 +96,5 @@ var o3dCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(o3dCmd)
 }
+
+*/
