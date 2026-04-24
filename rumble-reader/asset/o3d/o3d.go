@@ -57,7 +57,7 @@ func ParseO3D(buf []byte, header shoc.SHDR, resName string) (*O3D, error) {
 			}
 		default:
 			{
-				return nil, errors.New("Unhandled o3d Chunk Magic: " + chunk.MagicString())
+				// return nil, errors.New("Unhandled o3d Chunk Magic: " + chunk.MagicString())
 				// panic("UNRECOGNIZED CHUNK MAGIC: " + chunk.MagicString())
 			}
 		}

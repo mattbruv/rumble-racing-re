@@ -29,7 +29,7 @@ func (o *O3D) GetConvertedFiles() []asset.ConvertedAssetFile {
 		objData := writeOBJ(mesh)
 
 		out = append(out, asset.ConvertedAssetFile{
-			FullFileName: fmt.Sprintf("elda_%d.obj", eldaIdx),
+			FullFileName: fmt.Sprintf("%s_elda_%d.obj", o.resourceName, eldaIdx),
 			Data:         objData,
 		})
 	}
