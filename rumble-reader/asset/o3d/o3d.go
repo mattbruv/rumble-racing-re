@@ -1,6 +1,9 @@
 package o3d
 
-import "rumble-reader/chunk/shoc"
+import (
+	"errors"
+	"rumble-reader/chunk/shoc"
+)
 
 type O3D struct {
 	rawData      []byte
@@ -13,11 +16,11 @@ type O3D struct {
 
 func ParseO3D(buf []byte, header shoc.SHDR, resName string) (*O3D, error) {
 	o3dAsset := O3D{
-		rawData:      []byte{},
+		rawData:      buf,
 		resourceName: resName,
 		shocHeader:   header,
-		Gmd:          &Gmd{},
-		Obf:          &Obf{},
+		Gmd:          nil,
+		Obf:          nil,
 	}
 
 	chunks, err := parseChunks(buf)
@@ -43,18 +46,19 @@ func ParseO3D(buf []byte, header shoc.SHDR, resName string) (*O3D, error) {
 			{
 				obf, err := parseObf(chunk.Payload)
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 				// panic if multiple obfs in the file, don't know if this can happen yet
 				if o3dAsset.Obf != nil {
-					panic("Need to handle multiple OBFs in o3d file...")
+					return nil, errors.New("Need to handle multiple OBFs in o3d file...")
 				}
 				o3dAsset.Obf = obf
 				break
 			}
 		default:
 			{
-				panic("UNRECOGNIZED CHUNK MAGIC: " + chunk.MagicString())
+				return nil, errors.New("Unhandled o3d Chunk Magic: " + chunk.MagicString())
+				// panic("UNRECOGNIZED CHUNK MAGIC: " + chunk.MagicString())
 			}
 		}
 	}
