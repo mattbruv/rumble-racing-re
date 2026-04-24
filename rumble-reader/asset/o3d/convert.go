@@ -112,7 +112,8 @@ func stripsToMesh(strips []strip) mesh {
 			m.normals = append(m.normals, [3]float32{n.V1, n.V2, n.V3})
 		}
 		for _, uv := range s.uvs {
-			m.uvs = append(m.uvs, [2]float32{uv.V1, uv.V2})
+			// Updated the UV push into the mesh to invert the V coordinate:
+			m.uvs = append(m.uvs, [2]float32{uv.V1, 1.0 - uv.V2})
 		}
 
 		// triangle strip decomposition, alternating winding
