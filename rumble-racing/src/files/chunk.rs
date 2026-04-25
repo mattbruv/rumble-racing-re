@@ -11,8 +11,8 @@ pub enum GenericChunkParseError {
     #[error("Bad FourCC")]
     InvalidFourCC(#[from] FromUtf8Error),
 
-    #[error("IO error")]
-    IoError(#[from] io::Error),
+    #[error("IO error attempting to read {0} bytes at offset {1}")]
+    IoError(u64, usize),
 
     #[error("Out of bounds")]
     OutOfBounds,
@@ -32,12 +32,21 @@ pub fn parse_generic_chunks(data: &[u8]) -> Result<Vec<GenericChunk<'_>>, Generi
 
     while (cursor.position() as usize) < cursor.get_ref().len() {
         let mut tag_bytes: [u8; 4] = [0; 4];
-        cursor.read_exact(&mut tag_bytes)?; // automatically advances cursor position
+
+        match cursor.read_exact(&mut tag_bytes) {
+            Ok(it) => it,
+            Err(err) => return Err(GenericChunkParseError::IoError(cursor.position(), 4)),
+        }; // automatically advances cursor position
+
         tag_bytes.reverse(); // the tags are backwards, so reverse them
         let fourcc = FourCC::new(tag_bytes)?;
 
         let mut size_bytes: [u8; 4] = [0; 4];
-        cursor.read_exact(&mut size_bytes)?;
+
+        match cursor.read_exact(&mut size_bytes) {
+            Ok(it) => it,
+            Err(err) => return Err(GenericChunkParseError::IoError(cursor.position(), 4)),
+        };
 
         let size = u32::from_le_bytes(size_bytes);
 
@@ -56,7 +65,10 @@ pub fn parse_generic_chunks(data: &[u8]) -> Result<Vec<GenericChunk<'_>>, Generi
             .get(payload_start..end)
             .ok_or(GenericChunkParseError::OutOfBounds)?;
 
-        cursor.seek(io::SeekFrom::Start(end as u64))?;
+        match cursor.seek(io::SeekFrom::Start(end as u64)) {
+            Ok(it) => it,
+            Err(err) => return Err(GenericChunkParseError::IoError(cursor.position(), end)),
+        };
 
         chunks.push(GenericChunk {
             tag: fourcc,

@@ -58,10 +58,14 @@ pub fn parse_obf_data(data: &[u8]) -> Result<Obf, ObfParseError> {
     for obf_chunk in obf_chunks {
         //
         match obf_chunk.tag.as_str() {
-            "HEAD" => {}
+            "HEAD" => {
+                // println!("{:?}, {:?}", obf_chunk.tag, obf_chunk.data);
+            }
             "ELHE" => {}
             "ELTL" => {}
-            "ELDA" => {}
+            "ELDA" => {
+                // println!("{:?}, {:?}", obf_chunk.tag, obf_chunk.data);
+            }
             val => return Err(ObfParseError::UnhandledFourCC(val.into())),
         }
     }
