@@ -31,7 +31,7 @@ fn main() {
     match parse_o3d(&file) {
         Ok(o3d) => {
             println!("Successfully parsed o3d!");
-            println!("{:?}", o3d);
+            // println!("{:?}", o3d);
         }
         Err(err) => println!("Error parsing o3d! {:?}", err),
     };
