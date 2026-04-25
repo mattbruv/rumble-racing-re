@@ -5,7 +5,7 @@ use std::{
 
 use thiserror::Error;
 
-use crate::files::{chunk::GenericChunk, types::FourCC};
+use crate::files::types::FourCC;
 
 #[derive(Error, Debug)]
 pub enum ObfParseError {
@@ -36,7 +36,7 @@ pub struct ELTL {}
 #[derive(Debug)]
 pub struct ELDA {}
 
-pub fn parse_obf(chunk: GenericChunk) -> Result<Obf, ObfParseError> {
+pub fn parse_obf_data(data: &[u8]) -> Result<Obf, ObfParseError> {
     let mut obf = Obf {
         header_bytes: vec![],
         elhes: vec![],
@@ -45,9 +45,8 @@ pub fn parse_obf(chunk: GenericChunk) -> Result<Obf, ObfParseError> {
     };
 
     // Skip the first 16 header bytes, we don't know what this is/if relevant yet
-    let (head, rest) = chunk
-        .data
-        .split_at_checked(16)
+    let (head, rest) = data
+        .split_at_checked(8)
         .ok_or(ObfParseError::HeaderSplitError)?;
 
     println!("{:?}", head);

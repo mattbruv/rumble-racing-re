@@ -2,12 +2,18 @@ use thiserror::Error;
 
 use crate::files::{
     chunk::{GenericChunkParseError, parse_generic_chunks},
-    obf::{Obf, ObfParseError, parse_obf},
+    obf::{Obf, ObfParseError, parse_obf_data},
 };
 
 #[derive(Debug)]
 pub struct O3DFile {
-    pub obfs: Vec<Obf>,
+    pub obfs: Vec<WrappedObf>,
+}
+
+#[derive(Debug)]
+pub struct WrappedObf {
+    pub header_bytes: Vec<u8>,
+    pub obf: Obf,
 }
 
 #[derive(Error, Debug)]
@@ -30,7 +36,19 @@ pub fn parse_o3d(binary: &[u8]) -> Result<O3DFile, O3DParseError> {
     for chunk in generic_chunks {
         match chunk.tag.as_str() {
             "Gmd " => {} // Don't know what Gmd's are, skip them for now
-            "Obf " => o3d.obfs.push(parse_obf(chunk)?),
+            "Obf " => {
+                // Discard the first 8 bytes of the header... Idk what it does for now.
+                // Skip the first 16 header bytes, we don't know what this is/if relevant yet
+                let (header_bytes, rest) = chunk
+                    .data
+                    .split_at_checked(8)
+                    .ok_or(ObfParseError::HeaderSplitError)?;
+
+                o3d.obfs.push(WrappedObf {
+                    header_bytes: header_bytes.into(),
+                    obf: parse_obf_data(rest)?,
+                });
+            }
             tag => return Err(O3DParseError::UnknownChunk(tag.into())),
         }
     }
