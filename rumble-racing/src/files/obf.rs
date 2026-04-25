@@ -30,7 +30,7 @@ pub struct Obf {
     header_bytes: Vec<u8>,
     elhes: Vec<ELHE>,
     eltls: Vec<ELTL>,
-    eldas: Vec<VIFData>,
+    eldas: Vec<Option<VIFData>>,
 }
 
 #[derive(Debug)]
@@ -79,7 +79,12 @@ pub fn parse_obf_data(data: &[u8]) -> Result<Obf, ObfParseError> {
                 });
             }
             "ELDA" => {
-                obf.eldas.push(parse_vif_data(obf_chunk.data)?);
+                let vif_data: Option<VIFData> = match obf_chunk.data.len() {
+                    0 => None,
+                    _ => Some(parse_vif_data(obf_chunk.data)?),
+                };
+
+                obf.eldas.push(vif_data);
             }
             val => return Err(ObfParseError::UnhandledFourCC(val.into())),
         }
