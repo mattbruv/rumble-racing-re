@@ -1,12 +1,27 @@
+use std::{
+    io::{self, Cursor, Read, Seek},
+    string::FromUtf8Error,
+};
+
 use thiserror::Error;
 
-use crate::files::chunk::GenericChunk;
+use crate::files::{chunk::GenericChunk, types::FourCC};
 
 #[derive(Error, Debug)]
-pub enum ObfParseError {}
+pub enum ObfParseError {
+    #[error("Error parsing OBF chunks")]
+    ChunkParsingError(#[from] ObfChunkParseError),
+
+    #[error("OBF Header Split Error")]
+    HeaderSplitError,
+
+    #[error("Unhandled FourCC: '{0}'")]
+    UnhandledFourCC(String),
+}
 
 #[derive(Debug)]
 pub struct Obf {
+    header_bytes: Vec<u8>,
     elhes: Vec<ELHE>,
     eltls: Vec<ELTL>,
     eldas: Vec<ELDA>,
@@ -23,10 +38,91 @@ pub struct ELDA {}
 
 pub fn parse_obf(chunk: GenericChunk) -> Result<Obf, ObfParseError> {
     let mut obf = Obf {
+        header_bytes: vec![],
         elhes: vec![],
         eltls: vec![],
         eldas: vec![],
     };
 
+    // Skip the first 16 header bytes, we don't know what this is/if relevant yet
+    let (head, rest) = chunk
+        .data
+        .split_at_checked(16)
+        .ok_or(ObfParseError::HeaderSplitError)?;
+
+    println!("{:?}", head);
+
+    let obf_chunks = parse_obf_chunks(rest)?;
+
+    for obf_chunk in obf_chunks {
+        //
+        match obf_chunk.tag.as_str() {
+            "HEAD" => {}
+            "ELHE" => {}
+            "ELTL" => {}
+            "ELDA" => {}
+            val => return Err(ObfParseError::UnhandledFourCC(val.into())),
+        }
+    }
+
     Ok(obf)
+}
+
+#[derive(Debug)]
+pub struct ObfChunk<'a> {
+    pub tag: FourCC,
+    pub size: u32,
+    pub data: &'a [u8],
+}
+
+#[derive(Error, Debug)]
+pub enum ObfChunkParseError {
+    #[error("Bad FourCC")]
+    InvalidFourCC(#[from] FromUtf8Error),
+
+    #[error("IO error")]
+    IoError(#[from] io::Error),
+
+    #[error("Out of bounds")]
+    OutOfBounds,
+}
+
+fn parse_obf_chunks(data: &[u8]) -> Result<Vec<ObfChunk<'_>>, ObfChunkParseError> {
+    let mut chunks = Vec::new();
+
+    let mut cursor = Cursor::new(data);
+
+    while (cursor.position() as usize) < cursor.get_ref().len() {
+        let mut tag_bytes: [u8; 4] = [0; 4];
+        cursor.read_exact(&mut tag_bytes)?;
+        let fourcc = FourCC::new(tag_bytes)?;
+        // println!("OBF TAG: {:?}", fourcc);
+
+        let mut size_bytes: [u8; 4] = [0; 4];
+        cursor.read_exact(&mut size_bytes)?;
+
+        // size excludes the 8 byte header
+        let payload_size = u32::from_le_bytes(size_bytes) as usize;
+
+        let payload_start = cursor.position() as usize;
+
+        let end = payload_start
+            .checked_add(payload_size)
+            .ok_or(ObfChunkParseError::OutOfBounds)?;
+
+        let payload_data = cursor
+            .get_ref()
+            .get(payload_start..end)
+            .ok_or(ObfChunkParseError::OutOfBounds)?;
+
+        cursor.seek(io::SeekFrom::Start(end as u64))?;
+
+        chunks.push(ObfChunk {
+            tag: fourcc,
+            size: payload_size as u32,
+            data: payload_data,
+        });
+    }
+
+    Ok(chunks)
 }

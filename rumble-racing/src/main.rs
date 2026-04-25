@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::files::o3d::{O3DParseError, parse_o3d};
+use crate::files::o3d::parse_o3d;
 mod files;
 
 fn main() {
@@ -12,6 +12,6 @@ fn main() {
             println!("Successfully parsed o3d!");
             println!("{:?}", o3d);
         }
-        Err(err) => println!("Error parsing o3d! {}", err),
+        Err(err) => println!("Error parsing o3d! {:?}", err),
     };
 }
