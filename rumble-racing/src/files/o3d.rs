@@ -38,7 +38,6 @@ pub fn parse_o3d(binary: &[u8]) -> Result<O3DFile, O3DParseError> {
             "Gmd " => {} // Don't know what Gmd's are, skip them for now
             "Obf " => {
                 // Discard the first 8 bytes of the header... Idk what it does for now.
-                // Skip the first 16 header bytes, we don't know what this is/if relevant yet
                 let (header_bytes, rest) = chunk
                     .data
                     .split_at_checked(8)

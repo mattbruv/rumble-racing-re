@@ -44,12 +44,14 @@ pub fn parse_obf_data(data: &[u8]) -> Result<Obf, ObfParseError> {
         eldas: vec![],
     };
 
-    // Skip the first 16 header bytes, we don't know what this is/if relevant yet
+    // Skip the first 8 header bytes, we don't know what this is/if relevant yet
     let (head, rest) = data
         .split_at_checked(8)
         .ok_or(ObfParseError::HeaderSplitError)?;
 
-    println!("{:?}", head);
+    obf.header_bytes = head.into();
+
+    // println!("{:?}", head);
 
     let obf_chunks = parse_obf_chunks(rest)?;
 
