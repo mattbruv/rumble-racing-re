@@ -16,6 +16,7 @@ pub struct VIFData {
     //
 }
 
+// https://psi-rockin.github.io/ps2tek/#vifcommands
 pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
     let mut vif = VIFData {};
 
@@ -30,20 +31,28 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
         let num = (command_format >> 16) & 0xFF;
         let immediate = command_format & 0xFF;
 
-        println!("COMMAND FMT: {:?}", command_format);
-        println!("COMMAND: {:?}", command);
-        println!("NUM: {:?}", num);
-        println!("IMMEDIATE: {:?}", immediate);
+        // println!("COMMAND FMT: {:?}", command_format);
+        // println!("COMMAND: {:?}", command);
+        // println!("NUM: {:?}", num);
+        // println!("IMMEDIATE: {:?}", immediate);
 
         match command {
-            80 => {}
+            // NOP, does nothing
+            0x00 => {}
+
+            // DIRECT (VIF1)
+            0x50 => {
+                println!("IMMEDIATE: {:?}", immediate);
+            }
+
+            // Unhandled, error
             _ => {
                 return Err(VIFParseError::UnhandledCommand(
                     cursor.position() - 4,
                     command,
                 ));
             }
-        }
+        };
     }
 
     Ok(vif)
