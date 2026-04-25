@@ -1,4 +1,7 @@
-use std::io::{Cursor, Read};
+use std::{
+    io::{Cursor, Read},
+    os::macos::raw::stat,
+};
 
 use thiserror::Error;
 
@@ -21,6 +24,11 @@ pub struct VIFData {
 
 struct EmulateVIFState {
     cycle_register: u16,
+
+    r0: u32,
+    r1: u32,
+    r2: u32,
+    r3: u32,
 }
 
 #[derive(Debug)]
@@ -32,7 +40,13 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
 
     let mut cursor = Cursor::new(data);
 
-    let mut state = EmulateVIFState { cycle_register: 0 };
+    let mut state = EmulateVIFState {
+        cycle_register: 0,
+        r0: 0,
+        r1: 0,
+        r2: 0,
+        r3: 0,
+    };
 
     while (cursor.position() as usize) < data.len() {
         let mut command_buffer: [u8; 4] = [0; 4];
@@ -57,6 +71,20 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // The CYCLE register is used for skipping/filling writes for UNPACK.
             0x01 => {
                 state.cycle_register = immediate;
+            }
+
+            // Sets the R0-R3 row registers to the next 4 32-bit words in the stream.
+            // This is used for UNPACK write filling.
+            0x30 => {
+                let mut word_buf: [u8; 4] = [0; 4];
+                cursor.read_exact(&mut word_buf)?;
+                state.r0 = u32::from_le_bytes(word_buf);
+                cursor.read_exact(&mut word_buf)?;
+                state.r1 = u32::from_le_bytes(word_buf);
+                cursor.read_exact(&mut word_buf)?;
+                state.r2 = u32::from_le_bytes(word_buf);
+                cursor.read_exact(&mut word_buf)?;
+                state.r3 = u32::from_le_bytes(word_buf);
             }
 
             // DIRECT (VIF1)
