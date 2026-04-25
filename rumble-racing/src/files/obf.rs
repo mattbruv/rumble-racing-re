@@ -5,12 +5,18 @@ use std::{
 
 use thiserror::Error;
 
-use crate::files::types::FourCC;
+use crate::files::{
+    types::FourCC,
+    vif::{ELDA, VIFParseError, parse_vif_data},
+};
 
 #[derive(Error, Debug)]
 pub enum ObfParseError {
     #[error("Error parsing OBF chunks")]
     ChunkParsingError(#[from] ObfChunkParseError),
+
+    #[error("Error parsing VIF data")]
+    VIFParseError(#[from] VIFParseError),
 
     #[error("OBF Header Split Error")]
     HeaderSplitError,
@@ -32,9 +38,6 @@ pub struct ELHE {}
 
 #[derive(Debug)]
 pub struct ELTL {}
-
-#[derive(Debug)]
-pub struct ELDA {}
 
 pub fn parse_obf_data(data: &[u8]) -> Result<Obf, ObfParseError> {
     let mut obf = Obf {
@@ -64,7 +67,7 @@ pub fn parse_obf_data(data: &[u8]) -> Result<Obf, ObfParseError> {
             "ELHE" => {}
             "ELTL" => {}
             "ELDA" => {
-                // println!("{:?}, {:?}", obf_chunk.tag, obf_chunk.data);
+                obf.eldas.push(parse_vif_data(obf_chunk.data)?);
             }
             val => return Err(ObfParseError::UnhandledFourCC(val.into())),
         }
