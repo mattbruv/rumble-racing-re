@@ -1,6 +1,6 @@
 use std::{
+    cmp,
     io::{Cursor, Read},
-    os::macos::raw::stat,
 };
 
 use thiserror::Error;
@@ -13,6 +13,9 @@ pub enum VIFParseError {
     #[error("Unhandled VIF command at {0}: {1}")]
     UnhandledCommand(u64, u8),
 
+    #[error("Unhandled Unpack Type {0}")]
+    UnhandledUnpackType(String),
+
     #[error("Unimplemented Immediate Function")]
     UnimplementedImmediate,
 }
@@ -22,6 +25,7 @@ pub struct VIFData {
     gif_data: Vec<Quadword>,
 }
 
+#[derive(Debug)]
 struct EmulateVIFState {
     cycle_register: u16,
 
@@ -29,6 +33,30 @@ struct EmulateVIFState {
     r1: u32,
     r2: u32,
     r3: u32,
+}
+
+#[derive(Debug)]
+enum UnpackExtendType {
+    Zero,
+    Signed,
+}
+
+#[derive(Debug)]
+enum UnpackType {
+    /// 0x6C, 0x7C
+    V4_32,
+
+    Unsupported,
+}
+
+#[derive(Debug)]
+struct UnpackInfo {
+    address: u64,
+    extend_type: UnpackExtendType,
+    unpack_type: UnpackType,
+
+    add_tops_to_address: bool,
+    perform_unpack_write_masking: bool,
 }
 
 #[derive(Debug)]
@@ -52,10 +80,11 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
         let mut command_buffer: [u8; 4] = [0; 4];
         cursor.read_exact(&mut command_buffer)?;
 
-        let command_format = u32::from_le_bytes(command_buffer);
-        let command: u8 = (command_format >> 24) as u8;
-        let num: u8 = ((command_format >> 16) & 0xFF) as u8;
-        let immediate: u16 = (command_format & 0xFFFF) as u16;
+        let command_u32 = u32::from_le_bytes(command_buffer);
+
+        let command: u8 = (command_u32 >> 24) as u8;
+        let num: u8 = ((command_u32 >> 16) & 0xFF) as u8;
+        let immediate: u16 = (command_u32 & 0xFFFF) as u16;
 
         // println!("COMMAND FMT: {:?}", command_format);
         // println!("COMMAND: {:?}", command);
@@ -105,6 +134,22 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                 }
             }
 
+            // UNPACK
+            0x60..=0x7F => {
+                let unpack_info: UnpackInfo = get_unpack_info(command, immediate);
+                match unpack_info.unpack_type {
+                    UnpackType::V4_32 => {
+                        // TODO
+                    }
+                    UnpackType::Unsupported => {
+                        return Err(VIFParseError::UnhandledUnpackType(format!(
+                            "{:?}",
+                            unpack_info.unpack_type
+                        )));
+                    }
+                }
+            }
+
             // Unhandled, error
             _ => {
                 return Err(VIFParseError::UnhandledCommand(
@@ -116,4 +161,31 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
     }
 
     Ok(vif)
+}
+
+fn get_unpack_info(command: u8, immediate: u16) -> UnpackInfo {
+    UnpackInfo {
+        // Decompresses data in various formats to
+        // the given address in bits 0-9 of IMMEDIATE multiplied by 16
+        address: (((immediate & 0b1111111111) as u64) * 16),
+
+        // If bit 14 of IMMEDIATE is set, the decompressed data is zero-extended.
+        // Otherwise, it is sign-extended
+        extend_type: match (immediate >> 14) & 0b1 {
+            1 => UnpackExtendType::Zero,
+            _ => UnpackExtendType::Signed,
+        },
+
+        unpack_type: match command {
+            0x6C | 0x7C => UnpackType::V4_32,
+            _ => UnpackType::Unsupported,
+        },
+
+        // If bit 15 of IMMEDIATE is set, TOPS is added to the starting address.
+        // This is only applicable for VIF1.
+        add_tops_to_address: (immediate >> 15) & 0b1 == 1,
+
+        // Bit 4 of CMD performs UNPACK write masking if set.
+        perform_unpack_write_masking: (command & 0b10000) != 0,
+    }
 }
