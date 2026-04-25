@@ -23,6 +23,7 @@ pub enum VIFParseError {
 #[derive(Debug)]
 pub struct VIFData {
     gif_data: Vec<Quadword>,
+    unpacked_data: Vec<UnpackedData>,
 }
 
 #[derive(Debug)]
@@ -50,6 +51,11 @@ enum UnpackType {
 }
 
 #[derive(Debug)]
+enum UnpackedData {
+    V4_32((f32, f32, f32, f32)),
+}
+
+#[derive(Debug)]
 struct UnpackInfo {
     address: u64,
     extend_type: UnpackExtendType,
@@ -64,7 +70,10 @@ pub struct Quadword([u8; 4 * 4]);
 
 // https://psi-rockin.github.io/ps2tek/#vifcommands
 pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
-    let mut vif = VIFData { gif_data: vec![] };
+    let mut vif = VIFData {
+        gif_data: vec![],
+        unpacked_data: vec![],
+    };
 
     let mut cursor = Cursor::new(data);
 
@@ -137,17 +146,39 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // UNPACK
             0x60..=0x7F => {
                 let unpack_info: UnpackInfo = get_unpack_info(command, immediate);
-                match unpack_info.unpack_type {
-                    UnpackType::V4_32 => {
-                        // TODO
-                    }
-                    UnpackType::Unsupported => {
-                        return Err(VIFParseError::UnhandledUnpackType(format!(
-                            "{:?}",
-                            unpack_info.unpack_type
-                        )));
+                for _ in 0..num {
+                    match unpack_info.unpack_type {
+                        UnpackType::V4_32 => {
+                            let mut buf: [u8; 4] = [0; 4];
+                            cursor.read_exact(&mut buf)?;
+                            let v1 = f32::from_le_bytes(buf);
+                            cursor.read_exact(&mut buf)?;
+                            let v2 = f32::from_le_bytes(buf);
+                            cursor.read_exact(&mut buf)?;
+                            let v3 = f32::from_le_bytes(buf);
+                            cursor.read_exact(&mut buf)?;
+                            let v4 = f32::from_le_bytes(buf);
+
+                            vif.unpacked_data
+                                .push(UnpackedData::V4_32((v1, v2, v3, v4)));
+                            // println!("{:?}", vif.unpacked_data);
+                        }
+                        UnpackType::Unsupported => {
+                            return Err(VIFParseError::UnhandledUnpackType(format!(
+                                "{:?}",
+                                unpack_info.unpack_type
+                            )));
+                        }
                     }
                 }
+
+                // for thing in &vif.unpacked_data {
+                //     match thing {
+                //         UnpackedData::V4_32(data) => {
+                //             println!("{:?}", data);
+                //         }
+                //     }
+                // }
             }
 
             // Unhandled, error
