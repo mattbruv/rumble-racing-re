@@ -7,7 +7,7 @@ use thiserror::Error;
 
 use crate::files::{
     types::FourCC,
-    vif::{ELDA, VIFParseError, parse_vif_data},
+    vif::{VIFData, VIFParseError, parse_vif_data},
 };
 
 #[derive(Error, Debug)]
@@ -30,14 +30,18 @@ pub struct Obf {
     header_bytes: Vec<u8>,
     elhes: Vec<ELHE>,
     eltls: Vec<ELTL>,
-    eldas: Vec<ELDA>,
+    eldas: Vec<VIFData>,
 }
 
 #[derive(Debug)]
-pub struct ELHE {}
+pub struct ELHE {
+    pub raw_data: Vec<u8>,
+}
 
 #[derive(Debug)]
-pub struct ELTL {}
+pub struct ELTL {
+    pub raw_data: Vec<u8>,
+}
 
 pub fn parse_obf_data(data: &[u8]) -> Result<Obf, ObfParseError> {
     let mut obf = Obf {
@@ -64,8 +68,16 @@ pub fn parse_obf_data(data: &[u8]) -> Result<Obf, ObfParseError> {
             "HEAD" => {
                 // println!("{:?}, {:?}", obf_chunk.tag, obf_chunk.data);
             }
-            "ELHE" => {}
-            "ELTL" => {}
+            "ELHE" => {
+                obf.elhes.push(ELHE {
+                    raw_data: obf_chunk.data.into(),
+                });
+            }
+            "ELTL" => {
+                obf.eltls.push(ELTL {
+                    raw_data: obf_chunk.data.into(),
+                });
+            }
             "ELDA" => {
                 obf.eldas.push(parse_vif_data(obf_chunk.data)?);
             }
