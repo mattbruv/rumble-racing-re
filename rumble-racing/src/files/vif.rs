@@ -9,16 +9,22 @@ pub enum VIFParseError {
 
     #[error("Unhandled VIF command at {0}: {1}")]
     UnhandledCommand(u64, u32),
+
+    #[error("Unimplemented Immediate Function")]
+    UnimplementedImmediate,
 }
 
 #[derive(Debug)]
 pub struct VIFData {
-    //
+    gif_data: Vec<Quadword>,
 }
+
+#[derive(Debug)]
+pub struct Quadword([u8; 4 * 4]);
 
 // https://psi-rockin.github.io/ps2tek/#vifcommands
 pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
-    let mut vif = VIFData {};
+    let mut vif = VIFData { gif_data: vec![] };
 
     let mut cursor = Cursor::new(data);
 
@@ -42,7 +48,20 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
 
             // DIRECT (VIF1)
             0x50 => {
-                println!("IMMEDIATE: {:?}", immediate);
+                // println!("IMMEDIATE: {:?}", immediate);
+                match immediate {
+                    // If IMMEDIATE is 0, 65,536 quadwords are transferred.
+                    0 => return Err(VIFParseError::UnimplementedImmediate),
+                    // Transfers IMMEDIATE quadwords to the GIF
+                    n => {
+                        // a quadword on the PS2 is 16 bytes ( 4 bytes (u32) * 4 = quad )
+                        let mut quadword: [u8; 4 * 4] = [0; 16];
+                        for _ in 0..n {
+                            cursor.read_exact(&mut quadword)?;
+                            vif.gif_data.push(Quadword(quadword));
+                        }
+                    }
+                }
             }
 
             // Unhandled, error
