@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::files::o3d::parse_o3d;
+use crate::files::{o3d::parse_o3d, obf::parse_obf_data};
 mod files;
 
 fn main() {
@@ -14,4 +14,14 @@ fn main() {
         }
         Err(err) => println!("Error parsing o3d! {:?}", err),
     };
+
+    // let file = fs::read("../OUT-FEB-7/SE1 - True Grits/obf/1_-RESOURCES-TRACK.OBF.obf").unwrap();
+
+    // match parse_obf_data(&file) {
+    //     Ok(obf) => {
+    //         println!("Successfully parsed track obf!");
+    //         println!("{:?}", obf);
+    //     }
+    //     Err(err) => println!("Error parsing o3d! {:?}", err),
+    // };
 }
