@@ -12,7 +12,12 @@ pub enum O3DParseError {
 
 pub fn parse_o3d(binary: &[u8]) -> Result<O3DFile, O3DParseError> {
     let generic_chunks = parse_generic_chunks(binary)?;
-    println!("CHUNKS: {:?}", generic_chunks);
+
+    for chunk in generic_chunks {
+        println!("CHUNKS: {:?}", chunk);
+        println!("SIZE: {}", chunk.data.len())
+        // break;
+    }
 
     return Ok(O3DFile {});
 }
