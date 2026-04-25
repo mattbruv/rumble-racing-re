@@ -8,7 +8,7 @@ pub enum VIFParseError {
     IOError(#[from] std::io::Error),
 
     #[error("Unhandled VIF command at {0}: {1}")]
-    UnhandledCommand(u64, u32),
+    UnhandledCommand(u64, u8),
 
     #[error("Unimplemented Immediate Function")]
     UnimplementedImmediate,
@@ -17,6 +17,10 @@ pub enum VIFParseError {
 #[derive(Debug)]
 pub struct VIFData {
     gif_data: Vec<Quadword>,
+}
+
+struct EmulateVIFState {
+    cycle_register: u16,
 }
 
 #[derive(Debug)]
@@ -28,14 +32,16 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
 
     let mut cursor = Cursor::new(data);
 
+    let mut state = EmulateVIFState { cycle_register: 0 };
+
     while (cursor.position() as usize) < data.len() {
         let mut command_buffer: [u8; 4] = [0; 4];
         cursor.read_exact(&mut command_buffer)?;
 
         let command_format = u32::from_le_bytes(command_buffer);
-        let command = command_format >> 24;
-        let num = (command_format >> 16) & 0xFF;
-        let immediate = command_format & 0xFF;
+        let command: u8 = (command_format >> 24) as u8;
+        let num: u8 = ((command_format >> 16) & 0xFF) as u8;
+        let immediate: u16 = (command_format & 0xFFFF) as u16;
 
         // println!("COMMAND FMT: {:?}", command_format);
         // println!("COMMAND: {:?}", command);
@@ -45,6 +51,13 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
         match command {
             // NOP, does nothing
             0x00 => {}
+
+            // Sets the CYCLE register to IMMEDIATE.
+            // In particular, CYCLE.CL is set to bits 0-7 and CYCLE.WL is set to bits 8-15.
+            // The CYCLE register is used for skipping/filling writes for UNPACK.
+            0x01 => {
+                state.cycle_register = immediate;
+            }
 
             // DIRECT (VIF1)
             0x50 => {
