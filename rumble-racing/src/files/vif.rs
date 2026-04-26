@@ -1,5 +1,6 @@
 use std::{
     cmp::{self, max_by_key},
+    fs,
     io::{Cursor, Read},
 };
 
@@ -14,7 +15,7 @@ pub enum VIFParseError {
     UnhandledCommand(u64, u8),
 
     #[error("Unhandled Unpack Type {0}")]
-    UnhandledUnpackType(u8),
+    UnhandledUnpackType(u64, u8),
 
     #[error("Unimplemented Immediate Function")]
     UnimplementedImmediate,
@@ -57,6 +58,8 @@ enum UnpackType {
     /// 0x6C, 0x7C
     V4_32,
 
+    /// 6Eh/7Eh UNPACK V4-8
+    // V4_8,
     Unsupported(u8),
 }
 
@@ -145,6 +148,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                 state.mask_register = mask;
             }
 
+            // STROW
             // Sets the R0-R3 row registers to the next 4 32-bit words in the stream.
             // This is used for UNPACK write filling.
             0x30 => {
@@ -226,7 +230,6 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                     }
 
                     // Two vectors of 32 bits
-                    // UNPACK V2-32
                     UnpackType::V2_32 => {
                         let mut out = vec![];
 
@@ -242,8 +245,11 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                         vif.unpacked_data.push(UnpackedData::V2_32(out));
                     }
 
+                    // Four vectors of 8 bits ??
+                    // UnpackType::V4_8 => return Err(VIFParseError::UnimplementedImmediate),
+                    //
                     UnpackType::Unsupported(val) => {
-                        return Err(VIFParseError::UnhandledUnpackType(val));
+                        return Err(VIFParseError::UnhandledUnpackType(cursor.position(), val));
                     }
                 }
 
@@ -287,6 +293,7 @@ fn get_unpack_info(command: u8, immediate: u16) -> UnpackInfo {
             0x64 | 0x74 => UnpackType::V2_32,
             0x68 | 0x78 => UnpackType::V3_32,
             0x6C | 0x7C => UnpackType::V4_32,
+            // 0x6E | 0x7E => UnpackType::V4_8,
             _ => UnpackType::Unsupported(command),
         },
 

@@ -1,4 +1,5 @@
 use std::{
+    fs,
     io::{self, Cursor, Read, Seek},
     string::FromUtf8Error,
 };
