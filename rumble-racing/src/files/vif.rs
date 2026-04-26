@@ -52,7 +52,7 @@ enum UnpackType {
 
 #[derive(Debug)]
 enum UnpackedData {
-    V4_32((f32, f32, f32, f32)),
+    V4_32(Vec<(f32, f32, f32, f32)>),
 }
 
 #[derive(Debug)]
@@ -146,9 +146,12 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // UNPACK
             0x60..=0x7F => {
                 let unpack_info: UnpackInfo = get_unpack_info(command, immediate);
-                for _ in 0..num {
-                    match unpack_info.unpack_type {
-                        UnpackType::V4_32 => {
+                match unpack_info.unpack_type {
+                    // Four vectors of 32 bits
+                    UnpackType::V4_32 => {
+                        let mut out = vec![];
+
+                        for _ in 0..num {
                             let mut buf: [u8; 4] = [0; 4];
                             cursor.read_exact(&mut buf)?;
                             let v1 = f32::from_le_bytes(buf);
@@ -158,17 +161,18 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             let v3 = f32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
                             let v4 = f32::from_le_bytes(buf);
+                            out.push((v1, v2, v3, v4));
+                        }
 
-                            vif.unpacked_data
-                                .push(UnpackedData::V4_32((v1, v2, v3, v4)));
-                            // println!("{:?}", vif.unpacked_data);
-                        }
-                        UnpackType::Unsupported => {
-                            return Err(VIFParseError::UnhandledUnpackType(format!(
-                                "{:?}",
-                                unpack_info.unpack_type
-                            )));
-                        }
+                        vif.unpacked_data.push(UnpackedData::V4_32(out));
+
+                        // println!("{:?}", vif.unpacked_data);
+                    }
+                    UnpackType::Unsupported => {
+                        return Err(VIFParseError::UnhandledUnpackType(format!(
+                            "{:?}",
+                            unpack_info.unpack_type
+                        )));
                     }
                 }
 
