@@ -40,9 +40,13 @@ fn main() {
     match parse_o3d(&file) {
         Ok(_o3d) => {
             println!("Successfully parsed o3d!");
-            let asset = _o3d.foo();
-            println!("Asset: {:?}", asset);
-            // println!("{:?}", o3d);
+            let asset = _o3d.get_converted_asset();
+
+            fs::write(
+                format!("./{}.{}", asset.file_name, asset.file_extension),
+                asset.file_bytes,
+            )
+            .unwrap();
         }
         Err(err) => println!("Error parsing o3d! {:?}", err),
     };

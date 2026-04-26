@@ -9,6 +9,7 @@ ipums/
 target/
 *.lock
 out
+*.obj
 *.txf
 *.o3d
 *.AV
