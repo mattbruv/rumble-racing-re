@@ -335,7 +335,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                         // should we care about V4s?
                         let start = cursor.position();
                         // skip past them for now?
-                        cursor.set_position(cursor.position() + (4 * num) as u64);
+                        cursor.set_position(cursor.position() + (4 * num as u64));
                         // vif.unpacked_data.push();
                         vif.unpacked_data.push(UnpackedData::V4_8(start));
 
