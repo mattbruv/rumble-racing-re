@@ -124,6 +124,10 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                 state.cycle_register = immediate;
             }
 
+            // 10h FLUSHE
+            // Stalls the VIF until the VU is finished executing a microprogram.
+            0x10 => {}
+
             // 17h MSCNT
             // Starts microprogram execution starting at the VU's TPC register
             // this usually means the instruction right after the end of the previous microprogram.
