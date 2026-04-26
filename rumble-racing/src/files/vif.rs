@@ -1,5 +1,5 @@
 use std::{
-    cmp,
+    cmp::{self, max_by_key},
     io::{Cursor, Read},
 };
 
@@ -14,7 +14,7 @@ pub enum VIFParseError {
     UnhandledCommand(u64, u8),
 
     #[error("Unhandled Unpack Type {0}")]
-    UnhandledUnpackType(String),
+    UnhandledUnpackType(u8),
 
     #[error("Unimplemented Immediate Function")]
     UnimplementedImmediate,
@@ -34,6 +34,7 @@ struct EmulateVIFState {
     r1: u32,
     r2: u32,
     r3: u32,
+    mask_register: u32,
 }
 
 #[derive(Debug)]
@@ -47,7 +48,7 @@ enum UnpackType {
     /// 0x6C, 0x7C
     V4_32,
 
-    Unsupported,
+    Unsupported(u8),
 }
 
 #[derive(Debug)]
@@ -83,6 +84,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
         r1: 0,
         r2: 0,
         r3: 0,
+        mask_register: 0,
     };
 
     while (cursor.position() as usize) < data.len() {
@@ -109,6 +111,15 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // The CYCLE register is used for skipping/filling writes for UNPACK.
             0x01 => {
                 state.cycle_register = immediate;
+            }
+
+            // Sets the MASK register to the next 32-bit word in the stream.
+            // This is used for UNPACK write masking.
+            0x20 => {
+                let mut word_buf: [u8; 4] = [0; 4];
+                cursor.read_exact(&mut word_buf)?;
+                let mask = u32::from_le_bytes(word_buf);
+                state.mask_register = mask;
             }
 
             // Sets the R0-R3 row registers to the next 4 32-bit words in the stream.
@@ -165,14 +176,9 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                         }
 
                         vif.unpacked_data.push(UnpackedData::V4_32(out));
-
-                        // println!("{:?}", vif.unpacked_data);
                     }
-                    UnpackType::Unsupported => {
-                        return Err(VIFParseError::UnhandledUnpackType(format!(
-                            "{:?}",
-                            unpack_info.unpack_type
-                        )));
+                    UnpackType::Unsupported(val) => {
+                        return Err(VIFParseError::UnhandledUnpackType(val));
                     }
                 }
 
@@ -213,7 +219,7 @@ fn get_unpack_info(command: u8, immediate: u16) -> UnpackInfo {
 
         unpack_type: match command {
             0x6C | 0x7C => UnpackType::V4_32,
-            _ => UnpackType::Unsupported,
+            _ => UnpackType::Unsupported(command),
         },
 
         // If bit 15 of IMMEDIATE is set, TOPS is added to the starting address.
