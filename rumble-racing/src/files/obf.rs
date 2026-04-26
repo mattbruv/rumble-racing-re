@@ -32,9 +32,9 @@ pub struct Obf {
 }
 
 pub struct Mesh {
-    pub positions: Vec<(f32, f32, f32, u64)>,
-    pub normals: Vec<(f32, f32, f32, u64)>,
-    pub uvs: Vec<(f32, f32, u64)>,
+    pub positions: Vec<(f32, f32, f32, String)>,
+    pub normals: Vec<(f32, f32, f32, String)>,
+    pub uvs: Vec<(f32, f32, String)>,
     pub faces: Vec<[[usize; 3]; 3]>,
 }
 

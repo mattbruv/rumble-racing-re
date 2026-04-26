@@ -61,9 +61,9 @@ enum UnpackType {
 
 #[derive(Debug)]
 enum UnpackedData {
-    V2_32(Vec<(f32, f32, u64)>),
-    V3_32(Vec<(f32, f32, f32, u64)>),
-    V4_32(Vec<(f32, f32, f32, f32, u64)>),
+    V2_32(Vec<(f32, f32, String)>),
+    V3_32(Vec<(f32, f32, f32, String)>),
+    V4_32(Vec<(f32, f32, f32, f32, String)>),
 }
 
 #[derive(Debug)]
@@ -202,7 +202,13 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             let v3 = f32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
                             let v4 = f32::from_le_bytes(buf);
-                            out.push((v1, v2, v3, v4, start));
+                            out.push((
+                                v1,
+                                v2,
+                                v3,
+                                v4,
+                                format!("offset: {}, {:?}", start, unpack_info),
+                            ));
                         }
 
                         vif.unpacked_data.push(UnpackedData::V4_32(out));
@@ -221,7 +227,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             let v2 = f32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
                             let v3 = f32::from_le_bytes(buf);
-                            out.push((v1, v2, v3, start));
+                            out.push((v1, v2, v3, format!("offset: {}, {:?}", start, unpack_info)));
                         }
 
                         vif.unpacked_data.push(UnpackedData::V3_32(out));
@@ -238,7 +244,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             let v1 = f32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
                             let v2 = f32::from_le_bytes(buf);
-                            out.push((v1, v2, start));
+                            out.push((v1, v2, format!("offset: {}, {:?}", start, unpack_info)));
                         }
 
                         vif.unpacked_data.push(UnpackedData::V2_32(out));
@@ -340,9 +346,9 @@ impl VIFData {
 }
 
 pub(crate) struct Mesh {
-    pub positions: Vec<(f32, f32, f32, u64)>,
-    pub normals: Vec<(f32, f32, f32, u64)>,
-    pub uvs: Vec<(f32, f32, u64)>,
+    pub positions: Vec<(f32, f32, f32, String)>,
+    pub normals: Vec<(f32, f32, f32, String)>,
+    pub uvs: Vec<(f32, f32, String)>,
     pub faces: Vec<[[usize; 3]; 3]>,
 }
 
