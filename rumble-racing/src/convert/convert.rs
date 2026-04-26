@@ -6,5 +6,5 @@ pub struct ConvertedAsset {
 }
 
 pub trait ConvertableAsset {
-    fn get_converted_asset(&self) -> ConvertedAsset;
+    fn get_converted_asset(&self, file_name: &str) -> ConvertedAsset;
 }

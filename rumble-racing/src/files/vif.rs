@@ -276,6 +276,116 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
     Ok(vif)
 }
 
+impl VIFData {
+    pub fn vertices(&self) -> Vec<(f32, f32, f32)> {
+        let mut vertices = Vec::new();
+
+        for unpacked in &self.unpacked_data {
+            match unpacked {
+                UnpackedData::V3_32(data) => vertices.extend(data.iter().cloned()),
+                UnpackedData::V4_32(data) => {
+                    vertices.extend(data.iter().map(|&(x, y, z, _w)| (x, y, z)))
+                }
+                _ => {}
+            }
+        }
+
+        vertices
+    }
+
+    pub fn uvs(&self) -> Vec<(f32, f32)> {
+        let mut uvs = Vec::new();
+
+        for unpacked in &self.unpacked_data {
+            if let UnpackedData::V2_32(data) = unpacked {
+                uvs.extend(data.iter().cloned());
+            }
+        }
+
+        uvs
+    }
+
+    pub fn to_mesh(&self) -> Mesh {
+        let mut mesh = Mesh::new();
+        let mut i = 0;
+
+        while i < self.unpacked_data.len() {
+            if let UnpackedData::V4_32(_) = &self.unpacked_data[i] {
+                i += 1;
+                continue;
+            }
+
+            if i + 2 >= self.unpacked_data.len() {
+                break;
+            }
+
+            match (
+                &self.unpacked_data[i],
+                &self.unpacked_data[i + 1],
+                &self.unpacked_data[i + 2],
+            ) {
+                (
+                    UnpackedData::V3_32(norms),
+                    UnpackedData::V3_32(positions),
+                    UnpackedData::V2_32(uvs),
+                ) if norms.len() == positions.len() && positions.len() == uvs.len() => {
+                    let start = mesh.positions.len();
+
+                    for position in positions.iter().cloned() {
+                        mesh.positions.push(position);
+                    }
+                    for normal in norms.iter().cloned() {
+                        mesh.normals.push(normal);
+                    }
+                    for uv in uvs.iter().cloned() {
+                        mesh.uvs.push((uv.0, 1.0 - uv.1));
+                    }
+
+                    for j in 0..positions.len().saturating_sub(2) {
+                        let (i0, i1, i2) = if j % 2 == 0 {
+                            (j, j + 1, j + 2)
+                        } else {
+                            (j, j + 2, j + 1)
+                        };
+
+                        let face = [
+                            [start + i0 + 1, start + i0 + 1, start + i0 + 1],
+                            [start + i1 + 1, start + i1 + 1, start + i1 + 1],
+                            [start + i2 + 1, start + i2 + 1, start + i2 + 1],
+                        ];
+                        mesh.faces.push(face);
+                    }
+
+                    i += 3;
+                }
+                _ => {
+                    i += 1;
+                }
+            }
+        }
+
+        mesh
+    }
+}
+
+pub(crate) struct Mesh {
+    pub positions: Vec<(f32, f32, f32)>,
+    pub normals: Vec<(f32, f32, f32)>,
+    pub uvs: Vec<(f32, f32)>,
+    pub faces: Vec<[[usize; 3]; 3]>,
+}
+
+impl Mesh {
+    pub fn new() -> Self {
+        Self {
+            positions: Vec::new(),
+            normals: Vec::new(),
+            uvs: Vec::new(),
+            faces: Vec::new(),
+        }
+    }
+}
+
 fn get_unpack_info(command: u8, immediate: u16) -> UnpackInfo {
     UnpackInfo {
         // Decompresses data in various formats to

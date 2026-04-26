@@ -1,8 +1,5 @@
-use std::{
-    fs,
-    io::{self, Cursor, Read, Seek},
-    string::FromUtf8Error,
-};
+use std::io::{self, Cursor, Read, Seek};
+use std::string::FromUtf8Error;
 
 use thiserror::Error;
 
@@ -32,6 +29,69 @@ pub struct Obf {
     elhes: Vec<ELHE>,
     eltls: Vec<ELTL>,
     eldas: Vec<Option<VIFData>>,
+}
+
+pub struct Mesh {
+    pub positions: Vec<(f32, f32, f32)>,
+    pub normals: Vec<(f32, f32, f32)>,
+    pub uvs: Vec<(f32, f32)>,
+    pub faces: Vec<[[usize; 3]; 3]>,
+}
+
+impl Mesh {
+    pub fn new() -> Self {
+        Self {
+            positions: Vec::new(),
+            normals: Vec::new(),
+            uvs: Vec::new(),
+            faces: Vec::new(),
+        }
+    }
+}
+
+impl Obf {
+    pub fn vertices(&self) -> Vec<(f32, f32, f32)> {
+        let mut vertices = Vec::new();
+
+        for elda in self.eldas.iter().flatten() {
+            vertices.extend(elda.vertices());
+        }
+
+        vertices
+    }
+
+    pub fn uvs(&self) -> Vec<(f32, f32)> {
+        let mut uvs = Vec::new();
+
+        for elda in self.eldas.iter().flatten() {
+            uvs.extend(elda.uvs());
+        }
+
+        uvs
+    }
+
+    pub fn to_mesh(&self) -> Mesh {
+        let mut mesh = Mesh::new();
+
+        for elda in self.eldas.iter().flatten() {
+            let sub_mesh = elda.to_mesh();
+            let base = mesh.positions.len();
+
+            mesh.positions.extend(sub_mesh.positions.iter().cloned());
+            mesh.normals.extend(sub_mesh.normals.iter().cloned());
+            mesh.uvs.extend(sub_mesh.uvs.iter().cloned());
+
+            for face in sub_mesh.faces {
+                mesh.faces.push([
+                    [face[0][0] + base, face[0][1] + base, face[0][2] + base],
+                    [face[1][0] + base, face[1][1] + base, face[1][2] + base],
+                    [face[2][0] + base, face[2][1] + base, face[2][2] + base],
+                ]);
+            }
+        }
+
+        mesh
+    }
 }
 
 #[derive(Debug)]
