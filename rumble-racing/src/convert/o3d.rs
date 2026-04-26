@@ -3,6 +3,19 @@ use crate::{
     files::o3d::O3DFile,
 };
 
+impl O3DFile {
+    pub fn get_text_file(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        for (_obf_idx, wrapped_obf) in self.obfs.iter().enumerate() {
+            let txt = wrapped_obf.obf.to_text_bytes();
+            out.extend_from_slice(&txt);
+        }
+
+        out
+    }
+}
+
 impl ConvertableAsset for O3DFile {
     fn get_converted_asset(&self, file_name: &str) -> super::convert::ConvertedAsset {
         let mut lines = vec!["# Exported from O3D".to_string()];

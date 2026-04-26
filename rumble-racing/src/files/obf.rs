@@ -1,12 +1,17 @@
+use std::fs::File;
+use std::hint::select_unpredictable;
 use std::io::{self, Cursor, Read, Seek};
 use std::string::FromUtf8Error;
 
 use thiserror::Error;
 
+use crate::convert::convert::ConvertedAsset;
 use crate::files::{
     types::FourCC,
     vif::{VIFData, VIFParseError, parse_vif_data},
 };
+
+use super::vif::UnpackedData;
 
 #[derive(Error, Debug)]
 pub enum ObfParseError {
@@ -50,6 +55,49 @@ impl Mesh {
 }
 
 impl Obf {
+    pub fn to_text_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        for x in &self.eldas {
+            if let Some(vif_data) = x {
+                for (i, entry) in vif_data.unpacked_data.iter().enumerate() {
+                    match entry {
+                        UnpackedData::V2_32((v, _)) => {
+                            for (a, b, tag) in v {
+                                let line = format!("{i}: V2_32 {} {} {}\n", a, b, tag);
+                                out.extend_from_slice(line.as_bytes());
+                            }
+                        }
+
+                        UnpackedData::V3_32((v, _)) => {
+                            for (a, b, c, tag) in v {
+                                let line = format!("{i}: V3_32 {} {} {} {}\n", a, b, c, tag);
+                                out.extend_from_slice(line.as_bytes());
+                            }
+                        }
+
+                        UnpackedData::V4_32((v, _)) => {
+                            for (a, b, c, d, tag) in v {
+                                let line = format!("{i}: V4_32 {} {} {} {} {}\n", a, b, c, d, tag);
+                                out.extend_from_slice(line.as_bytes());
+                            }
+                        }
+
+                        UnpackedData::V4_8(v) => {
+                            // for (a, b, c, d, tag) in v {
+                            // let line = format!("V4_8 {} {} {} {} {}\n", a, b, c, d, tag);
+                            let line = format!("{i}: V4_8 {} \n", v);
+                            out.extend_from_slice(line.as_bytes());
+                            // }
+                        }
+                    }
+                }
+            }
+        }
+
+        out
+    }
+
     pub fn to_mesh(&self) -> Mesh {
         let mut mesh = Mesh::new();
 

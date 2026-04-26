@@ -1,6 +1,12 @@
-use std::io::{Cursor, Read};
+use std::{
+    fs,
+    io::{Cursor, Read, Seek},
+    thread::current,
+};
 
 use thiserror::Error;
+
+use crate::convert::convert::ConvertedAsset;
 
 #[derive(Error, Debug)]
 pub enum VIFParseError {
@@ -22,8 +28,8 @@ pub enum VIFParseError {
 
 #[derive(Debug)]
 pub struct VIFData {
-    gif_data: Vec<Quadword>,
-    unpacked_data: Vec<UnpackedData>,
+    pub gif_data: Vec<Quadword>,
+    pub unpacked_data: Vec<UnpackedData>,
 }
 
 #[derive(Debug)]
@@ -59,16 +65,19 @@ enum UnpackType {
     /// 0x6C, 0x7C
     V4_32,
 
-    /// 6Eh/7Eh UNPACK V4-8
-    // V4_8,
+    // / 6Eh/7Eh UNPACK V4-8
+    V4_8,
+
+    /// Unsupported
     Unsupported(u8),
 }
 
 #[derive(Debug)]
-enum UnpackedData {
-    V2_32(Vec<(f32, f32, String)>),
-    V3_32(Vec<(f32, f32, f32, String)>),
-    V4_32(Vec<(f32, f32, f32, f32, String)>),
+pub enum UnpackedData {
+    V2_32((Vec<(f32, f32, String)>, u64)),
+    V3_32((Vec<(f32, f32, f32, String)>, u64)),
+    V4_32((Vec<(f32, f32, f32, f32, String)>, u64)),
+    V4_8(u64),
 }
 
 #[derive(Debug)]
@@ -219,6 +228,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                     // Four vectors of 32 bits
                     UnpackType::V4_32 => {
                         let mut out = vec![];
+                        let command_start = cursor.position();
 
                         for _ in 0..num {
                             let start = cursor.position(); // debug
@@ -243,12 +253,14 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             ));
                         }
 
-                        vif.unpacked_data.push(UnpackedData::V4_32(out));
+                        vif.unpacked_data
+                            .push(UnpackedData::V4_32((out, command_start)));
                     }
 
                     // Three vectors of 32 bits
                     UnpackType::V3_32 => {
                         let mut out = vec![];
+                        let command_start = cursor.position();
 
                         for _ in 0..num {
                             let start = cursor.position(); // debug
@@ -270,12 +282,14 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             ));
                         }
 
-                        vif.unpacked_data.push(UnpackedData::V3_32(out));
+                        vif.unpacked_data
+                            .push(UnpackedData::V3_32((out, command_start)));
                     }
 
                     // Two vectors of 32 bits
                     UnpackType::V2_32 => {
                         let mut out = vec![];
+                        let command_start = cursor.position();
 
                         for _ in 0..num {
                             let start = cursor.position(); // debug
@@ -294,13 +308,25 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             ));
                         }
 
-                        vif.unpacked_data.push(UnpackedData::V2_32(out));
+                        vif.unpacked_data
+                            .push(UnpackedData::V2_32((out, command_start)));
                     }
 
                     // Four vectors of 8 bits ??
-                    // UnpackType::V4_8 => return Err(VIFParseError::UnimplementedImmediate),
-                    //
+                    UnpackType::V4_8 => {
+                        // should we care about V4s?
+                        let start = cursor.position();
+                        // skip past them for now?
+                        cursor.set_position(cursor.position() + (4 * num) as u64);
+                        // vif.unpacked_data.push();
+                        vif.unpacked_data.push(UnpackedData::V4_8(start));
+
+                        // println!("num: {}", num);
+                        // println!("next: {}", cursor.position());
+                    }
+
                     UnpackType::Unsupported(val) => {
+                        println!("{:?}, {:?}", state, unpack_info);
                         return Err(VIFParseError::UnhandledUnpackType(cursor.position(), val));
                     }
                 }
@@ -349,9 +375,9 @@ impl VIFData {
                 &self.unpacked_data[i + 2],
             ) {
                 (
-                    UnpackedData::V3_32(norms),
-                    UnpackedData::V3_32(positions),
-                    UnpackedData::V2_32(uvs),
+                    UnpackedData::V3_32((norms, _)),
+                    UnpackedData::V3_32((positions, _)),
+                    UnpackedData::V2_32((uvs, _)),
                 ) if norms.len() == positions.len() && positions.len() == uvs.len() => {
                     let start = mesh.positions.len();
 
@@ -382,7 +408,37 @@ impl VIFData {
 
                     i += 3;
                 }
-                _ => {
+                (a, b, c) => {
+                    // for thing in &self.unpacked_data {
+                    //     let x = match thing {
+                    //         UnpackedData::V2_32(items) => format!("V2_32 at: {}", items.1),
+                    //         UnpackedData::V3_32(items) => format!("V3_32 at: {}", items.1),
+                    //         UnpackedData::V4_32(items) => format!("V4_32 at: {}", items.1),
+                    //         UnpackedData::V4_8(addr) => format!("V4_8 at: {}", addr),
+                    //     };
+                    //     println!("{}", x);
+                    // }
+                    println!(
+                        "Data: {:?}, {:?}, {:?}",
+                        match a {
+                            UnpackedData::V2_32(items) => "V2_32",
+                            UnpackedData::V3_32(items) => "V3_32",
+                            UnpackedData::V4_32(items) => "V4_32",
+                            UnpackedData::V4_8(items) => "V4_8",
+                        },
+                        match b {
+                            UnpackedData::V2_32(items) => "V2_32",
+                            UnpackedData::V3_32(items) => "V3_32",
+                            UnpackedData::V4_32(items) => "V4_32",
+                            UnpackedData::V4_8(items) => "V4_8",
+                        },
+                        match c {
+                            UnpackedData::V2_32(items) => "V2_32",
+                            UnpackedData::V3_32(items) => "V3_32",
+                            UnpackedData::V4_32(items) => "V4_32",
+                            UnpackedData::V4_8(items) => "V4_8",
+                        }
+                    );
                     i += 1;
                 }
             }
@@ -427,7 +483,7 @@ fn get_unpack_info(command: u8, immediate: u16) -> UnpackInfo {
             0x64 | 0x74 => UnpackType::V2_32,
             0x68 | 0x78 => UnpackType::V3_32,
             0x6C | 0x7C => UnpackType::V4_32,
-            // 0x6E | 0x7E => UnpackType::V4_8,
+            0x6E | 0x7E => UnpackType::V4_8,
             _ => UnpackType::Unsupported(command),
         },
 
