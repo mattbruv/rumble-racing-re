@@ -37,18 +37,18 @@ impl ConvertableAsset for O3DFile {
         if positions.is_empty() {
             lines.push("# no vertex data found".to_string());
         } else {
-            for (x, y, z) in positions {
-                lines.push(format!("v {} {} {}", x, y, z));
+            for (x, y, z, pos) in positions {
+                lines.push(format!("v {} {} {} # {}", x, y, z, pos));
             }
             lines.push(String::new());
 
-            for (u, v) in uvs {
-                lines.push(format!("vt {} {}", u, v));
+            for (u, v, pos) in uvs {
+                lines.push(format!("vt {} {} # {}", u, v, pos));
             }
             lines.push(String::new());
 
-            for (x, y, z) in normals {
-                lines.push(format!("vn {} {} {}", x, y, z));
+            for (x, y, z, pos) in normals {
+                lines.push(format!("vn {} {} {} # {}", x, y, z, pos));
             }
             lines.push(String::new());
 

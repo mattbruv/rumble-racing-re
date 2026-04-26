@@ -61,9 +61,9 @@ enum UnpackType {
 
 #[derive(Debug)]
 enum UnpackedData {
-    V2_32(Vec<(f32, f32)>),
-    V3_32(Vec<(f32, f32, f32)>),
-    V4_32(Vec<(f32, f32, f32, f32)>),
+    V2_32(Vec<(f32, f32, u64)>),
+    V3_32(Vec<(f32, f32, f32, u64)>),
+    V4_32(Vec<(f32, f32, f32, f32, u64)>),
 }
 
 #[derive(Debug)]
@@ -192,6 +192,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                         let mut out = vec![];
 
                         for _ in 0..num {
+                            let start = cursor.position(); // debug
                             let mut buf: [u8; 4] = [0; 4];
                             cursor.read_exact(&mut buf)?;
                             let v1 = f32::from_le_bytes(buf);
@@ -201,7 +202,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             let v3 = f32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
                             let v4 = f32::from_le_bytes(buf);
-                            out.push((v1, v2, v3, v4));
+                            out.push((v1, v2, v3, v4, start));
                         }
 
                         vif.unpacked_data.push(UnpackedData::V4_32(out));
@@ -212,6 +213,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                         let mut out = vec![];
 
                         for _ in 0..num {
+                            let start = cursor.position(); // debug
                             let mut buf: [u8; 4] = [0; 4];
                             cursor.read_exact(&mut buf)?;
                             let v1 = f32::from_le_bytes(buf);
@@ -219,7 +221,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             let v2 = f32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
                             let v3 = f32::from_le_bytes(buf);
-                            out.push((v1, v2, v3));
+                            out.push((v1, v2, v3, start));
                         }
 
                         vif.unpacked_data.push(UnpackedData::V3_32(out));
@@ -230,12 +232,13 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                         let mut out = vec![];
 
                         for _ in 0..num {
+                            let start = cursor.position(); // debug
                             let mut buf: [u8; 4] = [0; 4];
                             cursor.read_exact(&mut buf)?;
                             let v1 = f32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
                             let v2 = f32::from_le_bytes(buf);
-                            out.push((v1, v2));
+                            out.push((v1, v2, start));
                         }
 
                         vif.unpacked_data.push(UnpackedData::V2_32(out));
@@ -306,7 +309,7 @@ impl VIFData {
                         mesh.normals.push(normal);
                     }
                     for uv in uvs.iter().cloned() {
-                        mesh.uvs.push((uv.0, 1.0 - uv.1));
+                        mesh.uvs.push((uv.0, 1.0 - uv.1, uv.2));
                     }
 
                     for j in 0..positions.len().saturating_sub(2) {
@@ -337,9 +340,9 @@ impl VIFData {
 }
 
 pub(crate) struct Mesh {
-    pub positions: Vec<(f32, f32, f32)>,
-    pub normals: Vec<(f32, f32, f32)>,
-    pub uvs: Vec<(f32, f32)>,
+    pub positions: Vec<(f32, f32, f32, u64)>,
+    pub normals: Vec<(f32, f32, f32, u64)>,
+    pub uvs: Vec<(f32, f32, u64)>,
     pub faces: Vec<[[usize; 3]; 3]>,
 }
 
