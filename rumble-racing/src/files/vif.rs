@@ -30,10 +30,15 @@ pub struct VIFData {
 struct EmulateVIFState {
     cycle_register: u16,
 
-    r0: u32,
-    r1: u32,
-    r2: u32,
-    r3: u32,
+    // row registers
+    row_registers: [u32; 4],
+    // column registers
+    // col_registers: [u32; 4],
+
+    // r0: u32,
+    // r1: u32,
+    // r2: u32,
+    // r3: u32,
     mask_register: u32,
 }
 
@@ -90,10 +95,11 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
 
     let mut state = EmulateVIFState {
         cycle_register: 0,
-        r0: 0,
-        r1: 0,
-        r2: 0,
-        r3: 0,
+        row_registers: [0; 4],
+        // r0: 0,
+        // r1: 0,
+        // r2: 0,
+        // r3: 0,
         mask_register: 0,
     };
 
@@ -133,6 +139,10 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // If the VU is currently active, MSCNT stalls like MSCAL.
             0x17 => {
                 // Idk what this means or if I need to do anything
+                // We might need to figure out if there is a VU program we need to emulate
+                // at a high level here.
+                // for example, KatamariDamacy emulates a high level program here.
+                // but KingdomHearts2 just resets the state.
             }
 
             // Sets the MASK register to the next 32-bit word in the stream.
@@ -150,13 +160,14 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             0x30 => {
                 let mut word_buf: [u8; 4] = [0; 4];
                 cursor.read_exact(&mut word_buf)?;
-                state.r0 = u32::from_le_bytes(word_buf);
+                let r0 = u32::from_le_bytes(word_buf);
                 cursor.read_exact(&mut word_buf)?;
-                state.r1 = u32::from_le_bytes(word_buf);
+                let r1 = u32::from_le_bytes(word_buf);
                 cursor.read_exact(&mut word_buf)?;
-                state.r2 = u32::from_le_bytes(word_buf);
+                let r2 = u32::from_le_bytes(word_buf);
                 cursor.read_exact(&mut word_buf)?;
-                state.r3 = u32::from_le_bytes(word_buf);
+                let r3 = u32::from_le_bytes(word_buf);
+                state.row_registers = [r0, r1, r2, r3];
             }
 
             // DIRECT (VIF1)
@@ -207,7 +218,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                                 v2,
                                 v3,
                                 v4,
-                                format!("offset: {}, {:?}", start, unpack_info),
+                                format!("offset: {}, {:?}", start, state.row_registers),
                             ));
                         }
 
@@ -227,7 +238,12 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             let v2 = f32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
                             let v3 = f32::from_le_bytes(buf);
-                            out.push((v1, v2, v3, format!("offset: {}, {:?}", start, unpack_info)));
+                            out.push((
+                                v1,
+                                v2,
+                                v3,
+                                format!("offset: {}, {:?}", start, state.row_registers),
+                            ));
                         }
 
                         vif.unpacked_data.push(UnpackedData::V3_32(out));
@@ -244,7 +260,11 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             let v1 = f32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
                             let v2 = f32::from_le_bytes(buf);
-                            out.push((v1, v2, format!("offset: {}, {:?}", start, unpack_info)));
+                            out.push((
+                                v1,
+                                v2,
+                                format!("offset: {}, {:?}", start, state.row_registers),
+                            ));
                         }
 
                         vif.unpacked_data.push(UnpackedData::V2_32(out));
