@@ -48,12 +48,16 @@ enum UnpackType {
     /// 0x6C, 0x7C
     V4_32,
 
+    /// 0x68, 0x78
+    V3_32,
+
     Unsupported(u8),
 }
 
 #[derive(Debug)]
 enum UnpackedData {
     V4_32(Vec<(f32, f32, f32, f32)>),
+    V3_32(Vec<(f32, f32, f32)>),
 }
 
 #[derive(Debug)]
@@ -177,6 +181,25 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
 
                         vif.unpacked_data.push(UnpackedData::V4_32(out));
                     }
+
+                    // Three vectors of 32 bits
+                    UnpackType::V3_32 => {
+                        let mut out = vec![];
+
+                        for _ in 0..num {
+                            let mut buf: [u8; 4] = [0; 4];
+                            cursor.read_exact(&mut buf)?;
+                            let v1 = f32::from_le_bytes(buf);
+                            cursor.read_exact(&mut buf)?;
+                            let v2 = f32::from_le_bytes(buf);
+                            cursor.read_exact(&mut buf)?;
+                            let v3 = f32::from_le_bytes(buf);
+                            out.push((v1, v2, v3));
+                        }
+
+                        vif.unpacked_data.push(UnpackedData::V3_32(out));
+                    }
+
                     UnpackType::Unsupported(val) => {
                         return Err(VIFParseError::UnhandledUnpackType(val));
                     }
@@ -187,6 +210,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                 //         UnpackedData::V4_32(data) => {
                 //             println!("{:?}", data);
                 //         }
+                //         UnpackedData::V3_32(items) => println!("{:?}", items),
                 //     }
                 // }
             }
@@ -219,6 +243,7 @@ fn get_unpack_info(command: u8, immediate: u16) -> UnpackInfo {
 
         unpack_type: match command {
             0x6C | 0x7C => UnpackType::V4_32,
+            0x68 | 0x78 => UnpackType::V3_32,
             _ => UnpackType::Unsupported(command),
         },
 
