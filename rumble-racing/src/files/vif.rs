@@ -1,8 +1,4 @@
-use std::{
-    cmp::{self, max_by_key},
-    fs,
-    io::{Cursor, Read},
-};
+use std::io::{Cursor, Read};
 
 use thiserror::Error;
 
@@ -277,34 +273,6 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
 }
 
 impl VIFData {
-    pub fn vertices(&self) -> Vec<(f32, f32, f32)> {
-        let mut vertices = Vec::new();
-
-        for unpacked in &self.unpacked_data {
-            match unpacked {
-                UnpackedData::V3_32(data) => vertices.extend(data.iter().cloned()),
-                UnpackedData::V4_32(data) => {
-                    vertices.extend(data.iter().map(|&(x, y, z, _w)| (x, y, z)))
-                }
-                _ => {}
-            }
-        }
-
-        vertices
-    }
-
-    pub fn uvs(&self) -> Vec<(f32, f32)> {
-        let mut uvs = Vec::new();
-
-        for unpacked in &self.unpacked_data {
-            if let UnpackedData::V2_32(data) = unpacked {
-                uvs.extend(data.iter().cloned());
-            }
-        }
-
-        uvs
-    }
-
     pub fn to_mesh(&self) -> Mesh {
         let mut mesh = Mesh::new();
         let mut i = 0;

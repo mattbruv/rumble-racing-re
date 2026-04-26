@@ -35,7 +35,7 @@ pub fn parse_generic_chunks(data: &[u8]) -> Result<Vec<GenericChunk<'_>>, Generi
 
         match cursor.read_exact(&mut tag_bytes) {
             Ok(it) => it,
-            Err(err) => return Err(GenericChunkParseError::IoError(cursor.position(), 4)),
+            Err(_err) => return Err(GenericChunkParseError::IoError(cursor.position(), 4)),
         }; // automatically advances cursor position
 
         tag_bytes.reverse(); // the tags are backwards, so reverse them
@@ -45,7 +45,7 @@ pub fn parse_generic_chunks(data: &[u8]) -> Result<Vec<GenericChunk<'_>>, Generi
 
         match cursor.read_exact(&mut size_bytes) {
             Ok(it) => it,
-            Err(err) => return Err(GenericChunkParseError::IoError(cursor.position(), 4)),
+            Err(_err) => return Err(GenericChunkParseError::IoError(cursor.position(), 4)),
         };
 
         let size = u32::from_le_bytes(size_bytes);
@@ -67,7 +67,7 @@ pub fn parse_generic_chunks(data: &[u8]) -> Result<Vec<GenericChunk<'_>>, Generi
 
         match cursor.seek(io::SeekFrom::Start(end as u64)) {
             Ok(it) => it,
-            Err(err) => return Err(GenericChunkParseError::IoError(cursor.position(), end)),
+            Err(_err) => return Err(GenericChunkParseError::IoError(cursor.position(), end)),
         };
 
         chunks.push(GenericChunk {

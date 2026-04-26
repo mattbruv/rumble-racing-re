@@ -50,26 +50,6 @@ impl Mesh {
 }
 
 impl Obf {
-    pub fn vertices(&self) -> Vec<(f32, f32, f32)> {
-        let mut vertices = Vec::new();
-
-        for elda in self.eldas.iter().flatten() {
-            vertices.extend(elda.vertices());
-        }
-
-        vertices
-    }
-
-    pub fn uvs(&self) -> Vec<(f32, f32)> {
-        let mut uvs = Vec::new();
-
-        for elda in self.eldas.iter().flatten() {
-            uvs.extend(elda.uvs());
-        }
-
-        uvs
-    }
-
     pub fn to_mesh(&self) -> Mesh {
         let mut mesh = Mesh::new();
 
