@@ -138,6 +138,11 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // this usually means the instruction right after the end of the previous microprogram.
             // If the VU is currently active, MSCNT stalls like MSCAL.
             0x17 => {
+                // state = EmulateVIFState {
+                //     cycle_register: 0,
+                //     row_registers: [0; 4],
+                //     mask_register: 0,
+                // }
                 // Idk what this means or if I need to do anything
                 // We might need to figure out if there is a VU program we need to emulate
                 // at a high level here.
@@ -193,8 +198,21 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                 let unpack_info: UnpackInfo = get_unpack_info(command, immediate);
 
                 if unpack_info.perform_unpack_write_masking {
-                    // TODO: Uncomment and fix
-                    // return Err(VIFParseError::WriteMaskingNotImplemented(cursor.position()));
+                    let supported = matches!(
+                        (
+                            &unpack_info.unpack_type,
+                            state.mask_register,
+                            state.row_registers
+                        ),
+                        // normals: XYZ from stream, W = row, row registers all 1.0f
+                        (UnpackType::V3_32, 0x40404040, [1065353216, 1065353216, 1065353216, 1065353216]) |
+                        // UVs: XY from stream, Z/W = row, row registers all 1.0f
+                        (UnpackType::V2_32, 0x50505050, [1065353216, 1065353216, 1065353216, 1065353216])
+                    );
+
+                    if !supported {
+                        return Err(VIFParseError::WriteMaskingNotImplemented(cursor.position()));
+                    }
                 }
 
                 match unpack_info.unpack_type {
@@ -218,7 +236,10 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                                 v2,
                                 v3,
                                 v4,
-                                format!("offset: {}, {:?}", start, state.row_registers),
+                                format!(
+                                    "offset: {}, row regs: {:?} mask: {:?}",
+                                    start, state.row_registers, state.mask_register
+                                ),
                             ));
                         }
 
@@ -242,7 +263,10 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                                 v1,
                                 v2,
                                 v3,
-                                format!("offset: {}, {:?}", start, state.row_registers),
+                                format!(
+                                    "offset: {}, row regs: {:?} mask: {:?}",
+                                    start, state.row_registers, state.mask_register
+                                ),
                             ));
                         }
 
@@ -263,7 +287,10 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             out.push((
                                 v1,
                                 v2,
-                                format!("offset: {}, {:?}", start, state.row_registers),
+                                format!(
+                                    "offset: {}, row regs: {:?} mask: {:?}",
+                                    start, state.row_registers, state.mask_register
+                                ),
                             ));
                         }
 
