@@ -78,6 +78,15 @@ pub enum UnpackedData {
     V3_32((Vec<(f32, f32, f32, String)>, u64)),
     V4_32((Vec<(f32, f32, f32, f32, String)>, u64)),
     V4_8(u64),
+
+    // debugging so I can see when certain commands are processed in order
+    DIRECT,
+    STROW,
+    MASK,
+    MSCNT,
+    FLUSHE,
+    CYCLE,
+    NOP,
 }
 
 #[derive(Debug)]
@@ -129,24 +138,30 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
 
         match command {
             // NOP, does nothing
-            0x00 => {}
+            0x00 => {
+                vif.unpacked_data.push(UnpackedData::NOP);
+            }
 
             // Sets the CYCLE register to IMMEDIATE.
             // In particular, CYCLE.CL is set to bits 0-7 and CYCLE.WL is set to bits 8-15.
             // The CYCLE register is used for skipping/filling writes for UNPACK.
             0x01 => {
+                vif.unpacked_data.push(UnpackedData::CYCLE);
                 state.cycle_register = immediate;
             }
 
             // 10h FLUSHE
             // Stalls the VIF until the VU is finished executing a microprogram.
-            0x10 => {}
+            0x10 => {
+                vif.unpacked_data.push(UnpackedData::FLUSHE);
+            }
 
             // 17h MSCNT
             // Starts microprogram execution starting at the VU's TPC register
             // this usually means the instruction right after the end of the previous microprogram.
             // If the VU is currently active, MSCNT stalls like MSCAL.
             0x17 => {
+                vif.unpacked_data.push(UnpackedData::MSCNT);
                 // state = EmulateVIFState {
                 //     cycle_register: 0,
                 //     row_registers: [0; 4],
@@ -162,6 +177,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // Sets the MASK register to the next 32-bit word in the stream.
             // This is used for UNPACK write masking.
             0x20 => {
+                vif.unpacked_data.push(UnpackedData::MASK);
                 let mut word_buf: [u8; 4] = [0; 4];
                 cursor.read_exact(&mut word_buf)?;
                 let mask = u32::from_le_bytes(word_buf);
@@ -172,6 +188,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // Sets the R0-R3 row registers to the next 4 32-bit words in the stream.
             // This is used for UNPACK write filling.
             0x30 => {
+                vif.unpacked_data.push(UnpackedData::STROW);
                 let mut word_buf: [u8; 4] = [0; 4];
                 cursor.read_exact(&mut word_buf)?;
                 let r0 = u32::from_le_bytes(word_buf);
@@ -187,6 +204,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // DIRECT (VIF1)
             0x50 => {
                 // println!("IMMEDIATE: {:?}", immediate);
+                vif.unpacked_data.push(UnpackedData::DIRECT);
                 match immediate {
                     // If IMMEDIATE is 0, 65,536 quadwords are transferred.
                     0 => return Err(VIFParseError::UnimplementedImmediate),
@@ -418,27 +436,27 @@ impl VIFData {
                     //     };
                     //     println!("{}", x);
                     // }
-                    println!(
-                        "Data: {:?}, {:?}, {:?}",
-                        match a {
-                            UnpackedData::V2_32(items) => "V2_32",
-                            UnpackedData::V3_32(items) => "V3_32",
-                            UnpackedData::V4_32(items) => "V4_32",
-                            UnpackedData::V4_8(items) => "V4_8",
-                        },
-                        match b {
-                            UnpackedData::V2_32(items) => "V2_32",
-                            UnpackedData::V3_32(items) => "V3_32",
-                            UnpackedData::V4_32(items) => "V4_32",
-                            UnpackedData::V4_8(items) => "V4_8",
-                        },
-                        match c {
-                            UnpackedData::V2_32(items) => "V2_32",
-                            UnpackedData::V3_32(items) => "V3_32",
-                            UnpackedData::V4_32(items) => "V4_32",
-                            UnpackedData::V4_8(items) => "V4_8",
-                        }
-                    );
+                    // println!(
+                    //     "Data: {:?}, {:?}, {:?}",
+                    //     match a {
+                    //         UnpackedData::V2_32(items) => "V2_32",
+                    //         UnpackedData::V3_32(items) => "V3_32",
+                    //         UnpackedData::V4_32(items) => "V4_32",
+                    //         UnpackedData::V4_8(items) => "V4_8",
+                    //     },
+                    //     match b {
+                    //         UnpackedData::V2_32(items) => "V2_32",
+                    //         UnpackedData::V3_32(items) => "V3_32",
+                    //         UnpackedData::V4_32(items) => "V4_32",
+                    //         UnpackedData::V4_8(items) => "V4_8",
+                    //     },
+                    //     match c {
+                    //         UnpackedData::V2_32(items) => "V2_32",
+                    //         UnpackedData::V3_32(items) => "V3_32",
+                    //         UnpackedData::V4_32(items) => "V4_32",
+                    //         UnpackedData::V4_8(items) => "V4_8",
+                    //     }
+                    // );
                     i += 1;
                 }
             }

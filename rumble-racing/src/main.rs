@@ -43,8 +43,8 @@ fn main() {
 
     // let elapsed = start.elapsed();
     // println!("Took: {:?}", elapsed);
-    let path = Path::new("../OUT-FEB-7/SE1 - True Grits/o3d/23_SOURCES-SE_CHICKENA.O3D.o3d");
-    // let path = Path::new("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d");
+    // let path = Path::new("../OUT-FEB-7/SE1 - True Grits/o3d/23_SOURCES-SE_CHICKENA.O3D.o3d");
+    let path = Path::new("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d");
     let file = fs::read(path).unwrap();
 
     match parse_o3d(&file) {

@@ -62,6 +62,16 @@ impl Obf {
             if let Some(vif_data) = x {
                 for (i, entry) in vif_data.unpacked_data.iter().enumerate() {
                     match entry {
+                        UnpackedData::DIRECT
+                        | UnpackedData::CYCLE
+                        | UnpackedData::FLUSHE
+                        | UnpackedData::STROW
+                        | UnpackedData::MSCNT
+                        | UnpackedData::NOP
+                        | UnpackedData::MASK => {
+                            let line = format!("{i}: {:?}\n", entry);
+                            out.extend_from_slice(line.as_bytes());
+                        }
                         UnpackedData::V2_32((v, _)) => {
                             for (a, b, tag) in v {
                                 let line = format!("{i}: V2_32 {} {} {}\n", a, b, tag);
