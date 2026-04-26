@@ -18,6 +18,9 @@ pub enum VIFParseError {
 
     #[error("Unimplemented Immediate Function")]
     UnimplementedImmediate,
+
+    #[error("Unimplemented Write Masking")]
+    WriteMaskingNotImplemented(u64),
 }
 
 #[derive(Debug)]
@@ -121,6 +124,14 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                 state.cycle_register = immediate;
             }
 
+            // 17h MSCNT
+            // Starts microprogram execution starting at the VU's TPC register
+            // this usually means the instruction right after the end of the previous microprogram.
+            // If the VU is currently active, MSCNT stalls like MSCAL.
+            0x17 => {
+                // Idk what this means or if I need to do anything
+            }
+
             // Sets the MASK register to the next 32-bit word in the stream.
             // This is used for UNPACK write masking.
             0x20 => {
@@ -165,6 +176,12 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // UNPACK
             0x60..=0x7F => {
                 let unpack_info: UnpackInfo = get_unpack_info(command, immediate);
+
+                if unpack_info.perform_unpack_write_masking {
+                    // TODO: Uncomment and fix
+                    // return Err(VIFParseError::WriteMaskingNotImplemented(cursor.position()));
+                }
+
                 match unpack_info.unpack_type {
                     // Four vectors of 32 bits
                     UnpackType::V4_32 => {
