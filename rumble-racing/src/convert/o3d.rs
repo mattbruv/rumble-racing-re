@@ -158,7 +158,7 @@ impl Obf {
             lines.push(String::new());
 
             for (x, y, z, pos) in normals {
-                lines.push(format!("vn {} {} {} # {}", x, y, z, pos));
+                // lines.push(format!("vn {} {} {} # {}", x, y, z, pos));
             }
             lines.push(String::new());
 
