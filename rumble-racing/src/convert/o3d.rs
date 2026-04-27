@@ -50,10 +50,10 @@ impl Obf {
             for (entry_idx, entry) in section.iter().enumerate() {
                 match entry.as_slice() {
                     // This should cover the first type of OBF VU data
-                    // Which consists of Verts -> Normals -> UVs
+                    // Which consists of Normals -> Vertices -> UVs
                     &[
-                        VifCommand::UNPACK(UnpackedData::V3_32(verts)),
                         VifCommand::UNPACK(UnpackedData::V3_32(norms)),
+                        VifCommand::UNPACK(UnpackedData::V3_32(verts)),
                         VifCommand::UNPACK(UnpackedData::V2_32(uvs_data)),
                     ] => {
                         let base = positions.len();
@@ -158,7 +158,7 @@ impl Obf {
             lines.push(String::new());
 
             for (x, y, z, pos) in normals {
-                // lines.push(format!("vn {} {} {} # {}", x, y, z, pos));
+                lines.push(format!("vn {} {} {} # {}", x, y, z, pos));
             }
             lines.push(String::new());
 
