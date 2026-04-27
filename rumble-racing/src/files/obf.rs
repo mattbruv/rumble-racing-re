@@ -56,53 +56,73 @@ impl Mesh {
 }
 
 impl Obf {
-    pub fn unpack_relevant_vif(&self) -> Vec<&VifCommand> {
+    /// I'm guessing on what is relevant based on pattern recognition.
+    /// With that said, I'm discarding everything before the first MASK command on each run,
+    /// which usually is consistently numbered V4_32 entries as some kind of header.
+    /// May need to come back and get those if something isn't right?
+    pub fn unpack_relevant_vif(&self) -> Vec<Vec<&VifCommand>> {
+        // Need to split them on MSCNTs
         self.eldas
             .iter()
             .filter_map(Option::as_ref)
             .flat_map(|x| &x.commands)
+            .collect::<Vec<_>>()
+            .split(|x| matches!(x, VifCommand::MSCNT))
+            .filter_map(|chunk| {
+                chunk
+                    .iter()
+                    .skip_while(|x| !matches!(x, VifCommand::MASK))
+                    .skip(1)
+                    .copied()
+                    .collect::<Vec<_>>()
+                    .into()
+            })
             .collect()
     }
 
     pub fn vif_to_text_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        for (i, entry) in self.unpack_relevant_vif().iter().enumerate() {
-            match entry {
-                VifCommand::DIRECT
-                | VifCommand::CYCLE
-                | VifCommand::FLUSHE
-                | VifCommand::STROW
-                | VifCommand::MSCNT
-                | VifCommand::NOP
-                | VifCommand::MASK => {
-                    let line = format!("{i}: {:?}\n", entry);
-                    out.extend_from_slice(line.as_bytes());
-                }
-                VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
-                    for (a, b, tag) in v {
-                        let line = format!("{i}: V2_32 {} {} {}\n", a, b, tag);
+        for (sec_idx, section) in self.unpack_relevant_vif().iter().enumerate() {
+            out.extend_from_slice(format!("SECTION: {}\n\n", sec_idx).as_bytes());
+
+            for (i, entry) in section.iter().enumerate() {
+                match entry {
+                    VifCommand::DIRECT
+                    | VifCommand::CYCLE
+                    | VifCommand::FLUSHE
+                    | VifCommand::STROW
+                    | VifCommand::MSCNT
+                    | VifCommand::NOP
+                    | VifCommand::MASK => {
+                        let line = format!("{i}: {:?}\n", entry);
                         out.extend_from_slice(line.as_bytes());
                     }
-                }
+                    VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
+                        for (a, b, tag) in v {
+                            let line = format!("{i}: V2_32 {} {} {}\n", a, b, tag);
+                            out.extend_from_slice(line.as_bytes());
+                        }
+                    }
 
-                VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
-                    for (a, b, c, tag) in v {
-                        let line = format!("{i}: V3_32 {} {} {} {}\n", a, b, c, tag);
+                    VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
+                        for (a, b, c, tag) in v {
+                            let line = format!("{i}: V3_32 {} {} {} {}\n", a, b, c, tag);
+                            out.extend_from_slice(line.as_bytes());
+                        }
+                    }
+
+                    VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
+                        for (a, b, c, d, tag) in v {
+                            let line = format!("{i}: V4_32 {} {} {} {} {}\n", a, b, c, d, tag);
+                            out.extend_from_slice(line.as_bytes());
+                        }
+                    }
+
+                    VifCommand::UNPACK(UnpackedData::V4_8(v)) => {
+                        let line = format!("{i}: V4_8 {} \n", v);
                         out.extend_from_slice(line.as_bytes());
                     }
-                }
-
-                VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
-                    for (a, b, c, d, tag) in v {
-                        let line = format!("{i}: V4_32 {} {} {} {} {}\n", a, b, c, d, tag);
-                        out.extend_from_slice(line.as_bytes());
-                    }
-                }
-
-                VifCommand::UNPACK(UnpackedData::V4_8(v)) => {
-                    let line = format!("{i}: V4_8 {} \n", v);
-                    out.extend_from_slice(line.as_bytes());
                 }
             }
         }
