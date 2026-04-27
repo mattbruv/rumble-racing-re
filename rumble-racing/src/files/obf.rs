@@ -56,49 +56,53 @@ impl Mesh {
 }
 
 impl Obf {
+    pub fn unpack_relevant_vif(&self) -> Vec<&VifCommand> {
+        self.eldas
+            .iter()
+            .filter_map(Option::as_ref)
+            .flat_map(|x| &x.commands)
+            .collect()
+    }
+
     pub fn vif_to_text_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        for x in &self.eldas {
-            if let Some(vif_data) = x {
-                for (i, entry) in vif_data.commands.iter().enumerate() {
-                    match entry {
-                        VifCommand::DIRECT
-                        | VifCommand::CYCLE
-                        | VifCommand::FLUSHE
-                        | VifCommand::STROW
-                        | VifCommand::MSCNT
-                        | VifCommand::NOP
-                        | VifCommand::MASK => {
-                            let line = format!("{i}: {:?}\n", entry);
-                            out.extend_from_slice(line.as_bytes());
-                        }
-                        VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
-                            for (a, b, tag) in v {
-                                let line = format!("{i}: V2_32 {} {} {}\n", a, b, tag);
-                                out.extend_from_slice(line.as_bytes());
-                            }
-                        }
-
-                        VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
-                            for (a, b, c, tag) in v {
-                                let line = format!("{i}: V3_32 {} {} {} {}\n", a, b, c, tag);
-                                out.extend_from_slice(line.as_bytes());
-                            }
-                        }
-
-                        VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
-                            for (a, b, c, d, tag) in v {
-                                let line = format!("{i}: V4_32 {} {} {} {} {}\n", a, b, c, d, tag);
-                                out.extend_from_slice(line.as_bytes());
-                            }
-                        }
-
-                        VifCommand::UNPACK(UnpackedData::V4_8(v)) => {
-                            let line = format!("{i}: V4_8 {} \n", v);
-                            out.extend_from_slice(line.as_bytes());
-                        }
+        for (i, entry) in self.unpack_relevant_vif().iter().enumerate() {
+            match entry {
+                VifCommand::DIRECT
+                | VifCommand::CYCLE
+                | VifCommand::FLUSHE
+                | VifCommand::STROW
+                | VifCommand::MSCNT
+                | VifCommand::NOP
+                | VifCommand::MASK => {
+                    let line = format!("{i}: {:?}\n", entry);
+                    out.extend_from_slice(line.as_bytes());
+                }
+                VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
+                    for (a, b, tag) in v {
+                        let line = format!("{i}: V2_32 {} {} {}\n", a, b, tag);
+                        out.extend_from_slice(line.as_bytes());
                     }
+                }
+
+                VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
+                    for (a, b, c, tag) in v {
+                        let line = format!("{i}: V3_32 {} {} {} {}\n", a, b, c, tag);
+                        out.extend_from_slice(line.as_bytes());
+                    }
+                }
+
+                VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
+                    for (a, b, c, d, tag) in v {
+                        let line = format!("{i}: V4_32 {} {} {} {} {}\n", a, b, c, d, tag);
+                        out.extend_from_slice(line.as_bytes());
+                    }
+                }
+
+                VifCommand::UNPACK(UnpackedData::V4_8(v)) => {
+                    let line = format!("{i}: V4_8 {} \n", v);
+                    out.extend_from_slice(line.as_bytes());
                 }
             }
         }
