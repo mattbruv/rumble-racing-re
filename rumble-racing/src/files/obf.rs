@@ -55,13 +55,17 @@ impl Mesh {
     }
 }
 
+fn group_by_3<'a>(chunk: &[&'a VifCommand]) -> Vec<Vec<&'a VifCommand>> {
+    chunk.chunks(3).map(|c| c.to_vec()).collect()
+}
+
 impl Obf {
     /// I'm guessing on what is relevant based on pattern recognition.
     /// With that said, I'm discarding everything before the first MASK command on each run,
     /// which usually is consistently numbered V4_32 entries as some kind of header.
     /// May need to come back and get those if something isn't right?
     /// Maybe this could have the texture mapping?
-    pub fn unpack_relevant_vif(&self) -> Vec<Vec<&VifCommand>> {
+    pub fn unpack_relevant_vif(&self) -> Vec<Vec<Vec<&VifCommand>>> {
         // Need to split them on MSCNTs
         self.eldas
             .iter()
@@ -70,13 +74,19 @@ impl Obf {
             .collect::<Vec<_>>()
             .split(|x| matches!(x, VifCommand::MSCNT))
             .filter_map(|chunk| {
-                chunk
+                let filtered: Vec<&VifCommand> = chunk
                     .iter()
                     .skip_while(|x| !matches!(x, VifCommand::MASK))
                     .skip(1)
                     .copied()
-                    .collect::<Vec<_>>()
-                    .into()
+                    .filter(|x| !matches!(x, VifCommand::MASK))
+                    .collect();
+
+                if filtered.is_empty() {
+                    return None;
+                }
+
+                Some(group_by_3(&filtered))
             })
             .collect()
     }
@@ -87,46 +97,62 @@ impl Obf {
         for (sec_idx, section) in self.unpack_relevant_vif().iter().enumerate() {
             out.extend_from_slice(format!("SECTION: {}\n\n", sec_idx).as_bytes());
 
-            for (i, entry) in section.iter().enumerate() {
-                match entry {
-                    VifCommand::DIRECT
-                    | VifCommand::CYCLE
-                    | VifCommand::FLUSHE
-                    | VifCommand::STROW
-                    | VifCommand::MSCNT
-                    | VifCommand::NOP
-                    | VifCommand::MASK => {
-                        let line = format!("{i}: {:?}\n", entry);
-                        out.extend_from_slice(line.as_bytes());
-                    }
-                    VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
-                        for (a, b, tag) in v {
-                            let line = format!("{i}: V2_32 {} {} {}\n", a, b, tag);
+            for (entry_idx, entry) in section.iter().enumerate() {
+                for (group_idx, group) in entry.iter().enumerate() {
+                    match group {
+                        VifCommand::DIRECT
+                        | VifCommand::CYCLE
+                        | VifCommand::FLUSHE
+                        | VifCommand::STROW
+                        | VifCommand::MSCNT
+                        | VifCommand::NOP
+                        | VifCommand::MASK => {
+                            let line =
+                                format!("{sec_idx} -> {entry_idx} -> {group_idx} {:?}\n", entry);
                             out.extend_from_slice(line.as_bytes());
                         }
-                    }
-
-                    VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
-                        for (a, b, c, tag) in v {
-                            let line = format!("{i}: V3_32 {} {} {} {}\n", a, b, c, tag);
-                            out.extend_from_slice(line.as_bytes());
+                        VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
+                            for (a, b, tag) in v {
+                                let line = format!(
+                                    "{sec_idx} -> {entry_idx} -> {group_idx} V2_32 {} {} {}\n",
+                                    a, b, tag
+                                );
+                                out.extend_from_slice(line.as_bytes());
+                            }
                         }
-                    }
 
-                    VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
-                        for (a, b, c, d, tag) in v {
-                            let line = format!("{i}: V4_32 {} {} {} {} {}\n", a, b, c, d, tag);
-                            out.extend_from_slice(line.as_bytes());
+                        VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
+                            for (a, b, c, tag) in v {
+                                let line = format!(
+                                    "{sec_idx} -> {entry_idx} -> {group_idx} V3_32 {} {} {} {}\n",
+                                    a, b, c, tag
+                                );
+                                out.extend_from_slice(line.as_bytes());
+                            }
                         }
-                    }
 
-                    VifCommand::UNPACK(UnpackedData::V4_8((v, _))) => {
-                        for (a, b, c, d, tag) in v {
-                            let line = format!("{i}: V4_8 {} {} {} {} {} \n", a, b, c, d, tag);
-                            out.extend_from_slice(line.as_bytes());
+                        VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
+                            for (a, b, c, d, tag) in v {
+                                let line = format!(
+                                    "{sec_idx} -> {entry_idx} -> {group_idx} V4_32 {} {} {} {} {}\n",
+                                    a, b, c, d, tag
+                                );
+                                out.extend_from_slice(line.as_bytes());
+                            }
+                        }
+
+                        VifCommand::UNPACK(UnpackedData::V4_8((v, _))) => {
+                            for (a, b, c, d, tag) in v {
+                                let line = format!(
+                                    "{sec_idx} -> {entry_idx} -> {group_idx} V4_8 {} {} {} {} {} \n",
+                                    a, b, c, d, tag
+                                );
+                                out.extend_from_slice(line.as_bytes());
+                            }
                         }
                     }
                 }
+                out.extend_from_slice("\n".as_bytes());
             }
         }
 
