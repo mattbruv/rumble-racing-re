@@ -83,11 +83,11 @@ impl ConvertableAsset for O3DFile {
 
         vec![
             // obj
-            // ConvertedAsset {
-            //     file_name: file_name.into(),
-            //     file_extension: "obj".into(),
-            //     file_bytes: lines.join("\n").into_bytes(),
-            // },
+            ConvertedAsset {
+                file_name: file_name.into(),
+                file_extension: "obj".into(),
+                file_bytes: lines.join("\n").into_bytes(),
+            },
             ConvertedAsset {
                 file_name: file_name.into(),
                 file_extension: "vif.dat".into(),
