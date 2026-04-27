@@ -6,9 +6,10 @@ use std::string::FromUtf8Error;
 use thiserror::Error;
 
 use crate::convert::convert::ConvertedAsset;
+use crate::files::vif::VifCommand;
 use crate::files::{
     types::FourCC,
-    vif::{VIFData, VIFParseError, parse_vif_data},
+    vif::{VIFData, VIFParseError, parse_vif_commands},
 };
 
 use super::vif::UnpackedData;
@@ -60,45 +61,42 @@ impl Obf {
 
         for x in &self.eldas {
             if let Some(vif_data) = x {
-                for (i, entry) in vif_data.unpacked_data.iter().enumerate() {
+                for (i, entry) in vif_data.commands.iter().enumerate() {
                     match entry {
-                        UnpackedData::DIRECT
-                        | UnpackedData::CYCLE
-                        | UnpackedData::FLUSHE
-                        | UnpackedData::STROW
-                        | UnpackedData::MSCNT
-                        | UnpackedData::NOP
-                        | UnpackedData::MASK => {
+                        VifCommand::DIRECT
+                        | VifCommand::CYCLE
+                        | VifCommand::FLUSHE
+                        | VifCommand::STROW
+                        | VifCommand::MSCNT
+                        | VifCommand::NOP
+                        | VifCommand::MASK => {
                             let line = format!("{i}: {:?}\n", entry);
                             out.extend_from_slice(line.as_bytes());
                         }
-                        UnpackedData::V2_32((v, _)) => {
+                        VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
                             for (a, b, tag) in v {
                                 let line = format!("{i}: V2_32 {} {} {}\n", a, b, tag);
                                 out.extend_from_slice(line.as_bytes());
                             }
                         }
 
-                        UnpackedData::V3_32((v, _)) => {
+                        VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
                             for (a, b, c, tag) in v {
                                 let line = format!("{i}: V3_32 {} {} {} {}\n", a, b, c, tag);
                                 out.extend_from_slice(line.as_bytes());
                             }
                         }
 
-                        UnpackedData::V4_32((v, _)) => {
+                        VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
                             for (a, b, c, d, tag) in v {
                                 let line = format!("{i}: V4_32 {} {} {} {} {}\n", a, b, c, d, tag);
                                 out.extend_from_slice(line.as_bytes());
                             }
                         }
 
-                        UnpackedData::V4_8(v) => {
-                            // for (a, b, c, d, tag) in v {
-                            // let line = format!("V4_8 {} {} {} {} {}\n", a, b, c, d, tag);
+                        VifCommand::UNPACK(UnpackedData::V4_8(v)) => {
                             let line = format!("{i}: V4_8 {} \n", v);
                             out.extend_from_slice(line.as_bytes());
-                            // }
                         }
                     }
                 }
@@ -180,7 +178,7 @@ pub fn parse_obf_data(data: &[u8]) -> Result<Obf, ObfParseError> {
             "ELDA" => {
                 let vif_data: Option<VIFData> = match obf_chunk.data.len() {
                     0 => None,
-                    _ => Some(parse_vif_data(obf_chunk.data)?),
+                    _ => Some(parse_vif_commands(obf_chunk.data)?),
                 };
 
                 obf.eldas.push(vif_data);

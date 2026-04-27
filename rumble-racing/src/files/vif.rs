@@ -29,7 +29,7 @@ pub enum VIFParseError {
 #[derive(Debug)]
 pub struct VIFData {
     pub gif_data: Vec<Quadword>,
-    pub unpacked_data: Vec<UnpackedData>,
+    pub commands: Vec<VifCommand>,
 }
 
 #[derive(Debug)]
@@ -73,20 +73,23 @@ enum UnpackType {
 }
 
 #[derive(Debug)]
-pub enum UnpackedData {
-    V2_32((Vec<(f32, f32, String)>, u64)),
-    V3_32((Vec<(f32, f32, f32, String)>, u64)),
-    V4_32((Vec<(f32, f32, f32, f32, String)>, u64)),
-    V4_8(u64),
-
-    // debugging so I can see when certain commands are processed in order
+pub enum VifCommand {
+    NOP,
     DIRECT,
     STROW,
     MASK,
     MSCNT,
     FLUSHE,
     CYCLE,
-    NOP,
+    UNPACK(UnpackedData),
+}
+
+#[derive(Debug)]
+pub enum UnpackedData {
+    V2_32((Vec<(f32, f32, String)>, u64)),
+    V3_32((Vec<(f32, f32, f32, String)>, u64)),
+    V4_32((Vec<(f32, f32, f32, f32, String)>, u64)),
+    V4_8(u64),
 }
 
 #[derive(Debug)]
@@ -103,10 +106,10 @@ struct UnpackInfo {
 pub struct Quadword([u8; 4 * 4]);
 
 // https://psi-rockin.github.io/ps2tek/#vifcommands
-pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
+pub fn parse_vif_commands(data: &[u8]) -> Result<VIFData, VIFParseError> {
     let mut vif = VIFData {
         gif_data: vec![],
-        unpacked_data: vec![],
+        commands: vec![],
     };
 
     let mut cursor = Cursor::new(data);
@@ -139,21 +142,21 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
         match command {
             // NOP, does nothing
             0x00 => {
-                vif.unpacked_data.push(UnpackedData::NOP);
+                vif.commands.push(VifCommand::NOP);
             }
 
             // Sets the CYCLE register to IMMEDIATE.
             // In particular, CYCLE.CL is set to bits 0-7 and CYCLE.WL is set to bits 8-15.
             // The CYCLE register is used for skipping/filling writes for UNPACK.
             0x01 => {
-                vif.unpacked_data.push(UnpackedData::CYCLE);
+                vif.commands.push(VifCommand::CYCLE);
                 state.cycle_register = immediate;
             }
 
             // 10h FLUSHE
             // Stalls the VIF until the VU is finished executing a microprogram.
             0x10 => {
-                vif.unpacked_data.push(UnpackedData::FLUSHE);
+                vif.commands.push(VifCommand::FLUSHE);
             }
 
             // 17h MSCNT
@@ -161,7 +164,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // this usually means the instruction right after the end of the previous microprogram.
             // If the VU is currently active, MSCNT stalls like MSCAL.
             0x17 => {
-                vif.unpacked_data.push(UnpackedData::MSCNT);
+                vif.commands.push(VifCommand::MSCNT);
                 // state = EmulateVIFState {
                 //     cycle_register: 0,
                 //     row_registers: [0; 4],
@@ -177,7 +180,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // Sets the MASK register to the next 32-bit word in the stream.
             // This is used for UNPACK write masking.
             0x20 => {
-                vif.unpacked_data.push(UnpackedData::MASK);
+                vif.commands.push(VifCommand::MASK);
                 let mut word_buf: [u8; 4] = [0; 4];
                 cursor.read_exact(&mut word_buf)?;
                 let mask = u32::from_le_bytes(word_buf);
@@ -188,7 +191,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // Sets the R0-R3 row registers to the next 4 32-bit words in the stream.
             // This is used for UNPACK write filling.
             0x30 => {
-                vif.unpacked_data.push(UnpackedData::STROW);
+                vif.commands.push(VifCommand::STROW);
                 let mut word_buf: [u8; 4] = [0; 4];
                 cursor.read_exact(&mut word_buf)?;
                 let r0 = u32::from_le_bytes(word_buf);
@@ -204,7 +207,7 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // DIRECT (VIF1)
             0x50 => {
                 // println!("IMMEDIATE: {:?}", immediate);
-                vif.unpacked_data.push(UnpackedData::DIRECT);
+                vif.commands.push(VifCommand::DIRECT);
                 match immediate {
                     // If IMMEDIATE is 0, 65,536 quadwords are transferred.
                     0 => return Err(VIFParseError::UnimplementedImmediate),
@@ -271,8 +274,10 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             ));
                         }
 
-                        vif.unpacked_data
-                            .push(UnpackedData::V4_32((out, command_start)));
+                        vif.commands.push(VifCommand::UNPACK(UnpackedData::V4_32((
+                            out,
+                            command_start,
+                        ))));
                     }
 
                     // Three vectors of 32 bits
@@ -300,8 +305,10 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             ));
                         }
 
-                        vif.unpacked_data
-                            .push(UnpackedData::V3_32((out, command_start)));
+                        vif.commands.push(VifCommand::UNPACK(UnpackedData::V3_32((
+                            out,
+                            command_start,
+                        ))));
                     }
 
                     // Two vectors of 32 bits
@@ -326,8 +333,10 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             ));
                         }
 
-                        vif.unpacked_data
-                            .push(UnpackedData::V2_32((out, command_start)));
+                        vif.commands.push(VifCommand::UNPACK(UnpackedData::V2_32((
+                            out,
+                            command_start,
+                        ))));
                     }
 
                     // Four vectors of 8 bits ??
@@ -337,7 +346,8 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
                         // skip past them for now?
                         cursor.set_position(cursor.position() + (4 * num as u64));
                         // vif.unpacked_data.push();
-                        vif.unpacked_data.push(UnpackedData::V4_8(start));
+                        vif.commands
+                            .push(VifCommand::UNPACK(UnpackedData::V4_8(start)));
 
                         // println!("num: {}", num);
                         // println!("next: {}", cursor.position());
@@ -374,93 +384,93 @@ pub fn parse_vif_data(data: &[u8]) -> Result<VIFData, VIFParseError> {
 
 impl VIFData {
     pub fn to_mesh(&self) -> Mesh {
-        let mut mesh = Mesh::new();
-        let mut i = 0;
+        let mesh = Mesh::new();
+        // let mut i = 0;
 
-        while i < self.unpacked_data.len() {
-            if let UnpackedData::V4_32(_) = &self.unpacked_data[i] {
-                i += 1;
-                continue;
-            }
+        // while i < self.commands.len() {
+        //     if let UnpackedData::V4_32(_) = &self.unpacked_data[i] {
+        //         i += 1;
+        //         continue;
+        //     }
 
-            if i + 2 >= self.unpacked_data.len() {
-                break;
-            }
+        //     if i + 2 >= self.commands.len() {
+        //         break;
+        //     }
 
-            match (
-                &self.unpacked_data[i],
-                &self.unpacked_data[i + 1],
-                &self.unpacked_data[i + 2],
-            ) {
-                (
-                    UnpackedData::V3_32((norms, _)),
-                    UnpackedData::V3_32((positions, _)),
-                    UnpackedData::V2_32((uvs, _)),
-                ) if norms.len() == positions.len() && positions.len() == uvs.len() => {
-                    let start = mesh.positions.len();
+        //     match (
+        //         &self.commands[i],
+        //         &self.commands[i + 1],
+        //         &self.commands[i + 2],
+        //     ) {
+        //         (
+        //             UnpackedData::V3_32((norms, _)),
+        //             UnpackedData::V3_32((positions, _)),
+        //             UnpackedData::V2_32((uvs, _)),
+        //         ) if norms.len() == positions.len() && positions.len() == uvs.len() => {
+        //             let start = mesh.positions.len();
 
-                    for position in positions.iter().cloned() {
-                        mesh.positions.push(position);
-                    }
-                    for normal in norms.iter().cloned() {
-                        mesh.normals.push(normal);
-                    }
-                    for uv in uvs.iter().cloned() {
-                        mesh.uvs.push((uv.0, 1.0 - uv.1, uv.2));
-                    }
+        //             for position in positions.iter().cloned() {
+        //                 mesh.positions.push(position);
+        //             }
+        //             for normal in norms.iter().cloned() {
+        //                 mesh.normals.push(normal);
+        //             }
+        //             for uv in uvs.iter().cloned() {
+        //                 mesh.uvs.push((uv.0, 1.0 - uv.1, uv.2));
+        //             }
 
-                    for j in 0..positions.len().saturating_sub(2) {
-                        let (i0, i1, i2) = if j % 2 == 0 {
-                            (j, j + 1, j + 2)
-                        } else {
-                            (j, j + 2, j + 1)
-                        };
+        //             for j in 0..positions.len().saturating_sub(2) {
+        //                 let (i0, i1, i2) = if j % 2 == 0 {
+        //                     (j, j + 1, j + 2)
+        //                 } else {
+        //                     (j, j + 2, j + 1)
+        //                 };
 
-                        let face = [
-                            [start + i0 + 1, start + i0 + 1, start + i0 + 1],
-                            [start + i1 + 1, start + i1 + 1, start + i1 + 1],
-                            [start + i2 + 1, start + i2 + 1, start + i2 + 1],
-                        ];
-                        mesh.faces.push(face);
-                    }
+        //                 let face = [
+        //                     [start + i0 + 1, start + i0 + 1, start + i0 + 1],
+        //                     [start + i1 + 1, start + i1 + 1, start + i1 + 1],
+        //                     [start + i2 + 1, start + i2 + 1, start + i2 + 1],
+        //                 ];
+        //                 mesh.faces.push(face);
+        //             }
 
-                    i += 3;
-                }
-                (a, b, c) => {
-                    // for thing in &self.unpacked_data {
-                    //     let x = match thing {
-                    //         UnpackedData::V2_32(items) => format!("V2_32 at: {}", items.1),
-                    //         UnpackedData::V3_32(items) => format!("V3_32 at: {}", items.1),
-                    //         UnpackedData::V4_32(items) => format!("V4_32 at: {}", items.1),
-                    //         UnpackedData::V4_8(addr) => format!("V4_8 at: {}", addr),
-                    //     };
-                    //     println!("{}", x);
-                    // }
-                    // println!(
-                    //     "Data: {:?}, {:?}, {:?}",
-                    //     match a {
-                    //         UnpackedData::V2_32(items) => "V2_32",
-                    //         UnpackedData::V3_32(items) => "V3_32",
-                    //         UnpackedData::V4_32(items) => "V4_32",
-                    //         UnpackedData::V4_8(items) => "V4_8",
-                    //     },
-                    //     match b {
-                    //         UnpackedData::V2_32(items) => "V2_32",
-                    //         UnpackedData::V3_32(items) => "V3_32",
-                    //         UnpackedData::V4_32(items) => "V4_32",
-                    //         UnpackedData::V4_8(items) => "V4_8",
-                    //     },
-                    //     match c {
-                    //         UnpackedData::V2_32(items) => "V2_32",
-                    //         UnpackedData::V3_32(items) => "V3_32",
-                    //         UnpackedData::V4_32(items) => "V4_32",
-                    //         UnpackedData::V4_8(items) => "V4_8",
-                    //     }
-                    // );
-                    i += 1;
-                }
-            }
-        }
+        //             i += 3;
+        //         }
+        //         (a, b, c) => {
+        //             // for thing in &self.unpacked_data {
+        //             //     let x = match thing {
+        //             //         UnpackedData::V2_32(items) => format!("V2_32 at: {}", items.1),
+        //             //         UnpackedData::V3_32(items) => format!("V3_32 at: {}", items.1),
+        //             //         UnpackedData::V4_32(items) => format!("V4_32 at: {}", items.1),
+        //             //         UnpackedData::V4_8(addr) => format!("V4_8 at: {}", addr),
+        //             //     };
+        //             //     println!("{}", x);
+        //             // }
+        //             // println!(
+        //             //     "Data: {:?}, {:?}, {:?}",
+        //             //     match a {
+        //             //         UnpackedData::V2_32(items) => "V2_32",
+        //             //         UnpackedData::V3_32(items) => "V3_32",
+        //             //         UnpackedData::V4_32(items) => "V4_32",
+        //             //         UnpackedData::V4_8(items) => "V4_8",
+        //             //     },
+        //             //     match b {
+        //             //         UnpackedData::V2_32(items) => "V2_32",
+        //             //         UnpackedData::V3_32(items) => "V3_32",
+        //             //         UnpackedData::V4_32(items) => "V4_32",
+        //             //         UnpackedData::V4_8(items) => "V4_8",
+        //             //     },
+        //             //     match c {
+        //             //         UnpackedData::V2_32(items) => "V2_32",
+        //             //         UnpackedData::V3_32(items) => "V3_32",
+        //             //         UnpackedData::V4_32(items) => "V4_32",
+        //             //         UnpackedData::V4_8(items) => "V4_8",
+        //             //     }
+        //             // );
+        //             i += 1;
+        //         }
+        //     }
+        // }
 
         mesh
     }
