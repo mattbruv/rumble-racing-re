@@ -46,101 +46,106 @@ impl Obf {
         let mut uvs = Vec::new();
         let mut faces = Vec::new();
 
-        for (sec_idx, section) in self.unpack_relevant_vif().iter().enumerate() {
-            for (entry_idx, entry) in section.iter().enumerate() {
-                match entry.as_slice() {
-                    // This should cover the first type of OBF VU data
-                    // Which consists of Normals -> Vertices -> UVs
-                    &[
-                        VifCommand::UNPACK(UnpackedData::V3_32(norms)),
-                        VifCommand::UNPACK(UnpackedData::V3_32(verts)),
-                        VifCommand::UNPACK(UnpackedData::V2_32(uvs_data)),
-                    ] => {
-                        let base = positions.len();
-                        positions.extend(
-                            verts
-                                .0
-                                .iter()
-                                .enumerate()
-                                .map(|(i, v)| (v.0, v.1, v.2, base + i)),
-                        );
-                        normals.extend(
-                            norms
-                                .0
-                                .iter()
-                                .enumerate()
-                                .map(|(i, n)| (n.0, n.1, n.2, base + i)),
-                        );
-                        uvs.extend(
-                            uvs_data
-                                .0
-                                .iter()
-                                .enumerate()
-                                .map(|(i, u)| (u.0, u.1, base + i)),
-                        );
+        for section in self.unpack_relevant_vif().eldas.iter() {
+            for entry in section.segments.iter() {
+                for group in entry.groups.iter() {
+                    match &group.commands {
+                        [
+                            VifCommand::UNPACK(UnpackedData::V3_32(norms)),
+                            VifCommand::UNPACK(UnpackedData::V3_32(verts)),
+                            VifCommand::UNPACK(UnpackedData::V2_32(uvs_data)),
+                        ] => {
+                            let base = positions.len();
 
-                        for j in 0..verts.0.len().saturating_sub(2) {
-                            let (i0, i1, i2) = if j % 2 == 0 {
-                                (j, j + 1, j + 2)
-                            } else {
-                                (j, j + 2, j + 1)
-                            };
-                            let face = [
-                                [base + i0 + 1, base + i0 + 1, base + i0 + 1],
-                                [base + i1 + 1, base + i1 + 1, base + i1 + 1],
-                                [base + i2 + 1, base + i2 + 1, base + i2 + 1],
-                            ];
-                            faces.push(face);
-                        }
-                    }
-                    // And this should cover the second type, which appears to be
-                    // Verts -> UVs -> Normals (compressed?)
-                    &[
-                        VifCommand::UNPACK(UnpackedData::V3_32(verts)),
-                        VifCommand::UNPACK(UnpackedData::V2_32(uvs_data)),
-                        VifCommand::UNPACK(UnpackedData::V4_8(maybe_normals)),
-                    ] => {
-                        let base = positions.len();
-                        positions.extend(
-                            verts
-                                .0
-                                .iter()
-                                .enumerate()
-                                .map(|(i, v)| (v.0, v.1, v.2, base + i)),
-                        );
-                        // Convert V4_8 to normals, assuming signed bytes
-                        normals.extend(maybe_normals.0.iter().enumerate().map(|(i, n)| {
-                            (
-                                n.0 as f32 / 127.0,
-                                n.1 as f32 / 127.0,
-                                n.2 as f32 / 127.0,
-                                base + i,
-                            )
-                        }));
-                        uvs.extend(
-                            uvs_data
-                                .0
-                                .iter()
-                                .enumerate()
-                                .map(|(i, u)| (u.0, u.1, base + i)),
-                        );
+                            positions.extend(
+                                verts
+                                    .0
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(i, v)| (v.0, v.1, v.2, base + i)),
+                            );
 
-                        for j in 0..verts.0.len().saturating_sub(2) {
-                            let (i0, i1, i2) = if j % 2 == 0 {
-                                (j, j + 1, j + 2)
-                            } else {
-                                (j, j + 2, j + 1)
-                            };
-                            let face = [
-                                [base + i0 + 1, base + i0 + 1, base + i0 + 1],
-                                [base + i1 + 1, base + i1 + 1, base + i1 + 1],
-                                [base + i2 + 1, base + i2 + 1, base + i2 + 1],
-                            ];
-                            faces.push(face);
+                            normals.extend(
+                                norms
+                                    .0
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(i, n)| (n.0, n.1, n.2, base + i)),
+                            );
+
+                            uvs.extend(
+                                uvs_data
+                                    .0
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(i, u)| (u.0, u.1, base + i)),
+                            );
+
+                            for j in 0..verts.0.len().saturating_sub(2) {
+                                let (i0, i1, i2) = if j % 2 == 0 {
+                                    (j, j + 1, j + 2)
+                                } else {
+                                    (j, j + 2, j + 1)
+                                };
+
+                                faces.push([
+                                    [base + i0 + 1, base + i0 + 1, base + i0 + 1],
+                                    [base + i1 + 1, base + i1 + 1, base + i1 + 1],
+                                    [base + i2 + 1, base + i2 + 1, base + i2 + 1],
+                                ]);
+                            }
                         }
+
+                        [
+                            VifCommand::UNPACK(UnpackedData::V3_32(verts)),
+                            VifCommand::UNPACK(UnpackedData::V2_32(uvs_data)),
+                            VifCommand::UNPACK(UnpackedData::V4_8(maybe_normals)),
+                        ] => {
+                            let base = positions.len();
+
+                            positions.extend(
+                                verts
+                                    .0
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(i, v)| (v.0, v.1, v.2, base + i)),
+                            );
+
+                            normals.extend(maybe_normals.0.iter().enumerate().map(|(i, n)| {
+                                (
+                                    n.0 as f32 / 127.0,
+                                    n.1 as f32 / 127.0,
+                                    n.2 as f32 / 127.0,
+                                    base + i,
+                                )
+                            }));
+
+                            uvs.extend(
+                                uvs_data
+                                    .0
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(i, u)| (u.0, u.1, base + i)),
+                            );
+
+                            for j in 0..verts.0.len().saturating_sub(2) {
+                                let (i0, i1, i2) = if j % 2 == 0 {
+                                    (j, j + 1, j + 2)
+                                } else {
+                                    (j, j + 2, j + 1)
+                                };
+
+                                faces.push([
+                                    [base + i0 + 1, base + i0 + 1, base + i0 + 1],
+                                    [base + i1 + 1, base + i1 + 1, base + i1 + 1],
+                                    [base + i2 + 1, base + i2 + 1, base + i2 + 1],
+                                ]);
+                            }
+                        }
+
+                        _ => {}
                     }
-                    _ => {}
-                };
+                }
             }
         }
 

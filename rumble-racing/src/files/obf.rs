@@ -59,100 +59,136 @@ fn group_by_3<'a>(chunk: &[&'a VifCommand]) -> Vec<Vec<&'a VifCommand>> {
     chunk.chunks(3).map(|c| c.to_vec()).collect()
 }
 
+pub struct RelevantVif<'a> {
+    pub eldas: Vec<EldaChunk<'a>>,
+}
+
+pub struct EldaChunk<'a> {
+    pub segments: Vec<VifSegment<'a>>,
+}
+
+pub struct VifSegment<'a> {
+    pub groups: Vec<VifGroup<'a>>,
+}
+
+pub struct VifGroup<'a> {
+    pub commands: [&'a VifCommand; 3],
+}
+
 impl Obf {
     /// I'm guessing on what is relevant based on pattern recognition.
     /// With that said, I'm discarding everything before the first MASK command on each run,
     /// which usually is consistently numbered V4_32 entries as some kind of header.
     /// May need to come back and get those if something isn't right?
     /// Maybe this could have the texture mapping?
-    pub fn unpack_relevant_vif(&self) -> Vec<Vec<Vec<&VifCommand>>> {
-        // Need to split them on MSCNTs
-        self.eldas
-            .iter()
-            .filter_map(Option::as_ref)
-            .flat_map(|x| &x.commands)
-            .collect::<Vec<_>>()
-            .split(|x| matches!(x, VifCommand::MSCNT))
-            .filter_map(|chunk| {
-                let filtered: Vec<&VifCommand> = chunk
-                    .iter()
-                    .skip_while(|x| !matches!(x, VifCommand::MASK))
-                    .skip(1)
-                    .copied()
-                    .filter(|x| !matches!(x, VifCommand::MASK))
-                    .collect();
+    pub fn unpack_relevant_vif(&self) -> RelevantVif<'_> {
+        RelevantVif {
+            eldas: self
+                .eldas
+                .iter()
+                .filter_map(Option::as_ref)
+                .map(|elda| EldaChunk {
+                    segments: elda
+                        .commands
+                        .split(|cmd| matches!(cmd, VifCommand::MSCNT))
+                        .filter_map(|chunk| {
+                            let filtered: Vec<&VifCommand> = chunk
+                                .iter()
+                                .skip_while(|cmd| !matches!(cmd, VifCommand::MASK))
+                                .skip(1)
+                                .filter(|cmd| !matches!(cmd, VifCommand::MASK))
+                                .collect();
 
-                if filtered.is_empty() {
-                    return None;
-                }
-
-                Some(group_by_3(&filtered))
-            })
-            .collect()
+                            if filtered.is_empty() {
+                                None
+                            } else {
+                                Some(VifSegment {
+                                    groups: group_by_3(&filtered)
+                                        .into_iter()
+                                        .filter_map(|g| match g.as_slice() {
+                                            [a, b, c] => Some(VifGroup {
+                                                commands: [*a, *b, *c],
+                                            }),
+                                            _ => None,
+                                        })
+                                        .collect(),
+                                })
+                            }
+                        })
+                        .collect(),
+                })
+                .collect(),
+        }
     }
 
     pub fn vif_to_text_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        for (sec_idx, section) in self.unpack_relevant_vif().iter().enumerate() {
+        for (sec_idx, section) in self.unpack_relevant_vif().eldas.into_iter().enumerate() {
             out.extend_from_slice(format!("SECTION: {}\n\n", sec_idx).as_bytes());
 
-            for (entry_idx, entry) in section.iter().enumerate() {
-                for (group_idx, group) in entry.iter().enumerate() {
-                    match group {
-                        VifCommand::DIRECT
-                        | VifCommand::CYCLE
-                        | VifCommand::FLUSHE
-                        | VifCommand::STROW
-                        | VifCommand::MSCNT
-                        | VifCommand::NOP
-                        | VifCommand::MASK => {
-                            let line =
-                                format!("{sec_idx} -> {entry_idx} -> {group_idx} {:?}\n", entry);
-                            out.extend_from_slice(line.as_bytes());
-                        }
-                        VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
-                            for (a, b, tag) in v {
+            for (entry_idx, entry) in section.segments.iter().enumerate() {
+                for (group_idx, group) in entry.groups.iter().enumerate() {
+                    for command in &group.commands {
+                        match command {
+                            VifCommand::DIRECT
+                            | VifCommand::CYCLE
+                            | VifCommand::FLUSHE
+                            | VifCommand::STROW
+                            | VifCommand::MSCNT
+                            | VifCommand::NOP
+                            | VifCommand::MASK => {
                                 let line = format!(
-                                    "{sec_idx} -> {entry_idx} -> {group_idx} V2_32 {} {} {}\n",
-                                    a, b, tag
+                                    "{sec_idx} -> {entry_idx} -> {group_idx} {:?}\n",
+                                    command
                                 );
                                 out.extend_from_slice(line.as_bytes());
                             }
-                        }
 
-                        VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
-                            for (a, b, c, tag) in v {
-                                let line = format!(
-                                    "{sec_idx} -> {entry_idx} -> {group_idx} V3_32 {} {} {} {}\n",
-                                    a, b, c, tag
-                                );
-                                out.extend_from_slice(line.as_bytes());
+                            VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
+                                for (a, b, tag) in v {
+                                    let line = format!(
+                                        "{sec_idx} -> {entry_idx} -> {group_idx} V2_32 {} {} {}\n",
+                                        a, b, tag
+                                    );
+                                    out.extend_from_slice(line.as_bytes());
+                                }
                             }
-                        }
 
-                        VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
-                            for (a, b, c, d, tag) in v {
-                                let line = format!(
-                                    "{sec_idx} -> {entry_idx} -> {group_idx} V4_32 {} {} {} {} {}\n",
-                                    a, b, c, d, tag
-                                );
-                                out.extend_from_slice(line.as_bytes());
+                            VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
+                                for (a, b, c, tag) in v {
+                                    let line = format!(
+                                        "{sec_idx} -> {entry_idx} -> {group_idx} V3_32 {} {} {} {}\n",
+                                        a, b, c, tag
+                                    );
+                                    out.extend_from_slice(line.as_bytes());
+                                }
                             }
-                        }
 
-                        VifCommand::UNPACK(UnpackedData::V4_8((v, _))) => {
-                            for (a, b, c, d, tag) in v {
-                                let line = format!(
-                                    "{sec_idx} -> {entry_idx} -> {group_idx} V4_8 {} {} {} {} {} \n",
-                                    a, b, c, d, tag
-                                );
-                                out.extend_from_slice(line.as_bytes());
+                            VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
+                                for (a, b, c, d, tag) in v {
+                                    let line = format!(
+                                        "{sec_idx} -> {entry_idx} -> {group_idx} V4_32 {} {} {} {} {}\n",
+                                        a, b, c, d, tag
+                                    );
+                                    out.extend_from_slice(line.as_bytes());
+                                }
+                            }
+
+                            VifCommand::UNPACK(UnpackedData::V4_8((v, _))) => {
+                                for (a, b, c, d, tag) in v {
+                                    let line = format!(
+                                        "{sec_idx} -> {entry_idx} -> {group_idx} V4_8 {} {} {} {} {}\n",
+                                        a, b, c, d, tag
+                                    );
+                                    out.extend_from_slice(line.as_bytes());
+                                }
                             }
                         }
                     }
                 }
-                out.extend_from_slice("\n".as_bytes());
+
+                out.extend_from_slice(b"\n");
             }
         }
 

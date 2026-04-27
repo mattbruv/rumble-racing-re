@@ -20,7 +20,7 @@ enum DoThing {
 fn main() {
     let start = Instant::now();
 
-    match DoThing::Map {
+    match DoThing::Chicken {
         DoThing::AllFiles => {
             for entry in WalkDir::new("../OUT-FEB-7/")
                 .into_iter()
