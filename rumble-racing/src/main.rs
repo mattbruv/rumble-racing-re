@@ -8,6 +8,7 @@ use walkdir::WalkDir;
 
 use crate::convert::convert::ConvertableAsset;
 use crate::files::o3d::parse_o3d;
+use crate::files::obf::parse_obf_data;
 
 fn main() {
     // let start = Instant::now();
@@ -44,38 +45,44 @@ fn main() {
     // let elapsed = start.elapsed();
     // println!("Took: {:?}", elapsed);
     // let path = Path::new("../OUT-FEB-7/SE1 - True Grits/o3d/23_SOURCES-SE_CHICKENA.O3D.o3d");
-    let path = Path::new("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d");
-    let file = fs::read(path).unwrap();
+    // let path = Path::new("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d");
+    // let file = fs::read(path).unwrap();
 
-    match parse_o3d(&file) {
-        Ok(_o3d) => {
-            println!("Successfully parsed o3d!");
+    // match parse_o3d(&file) {
+    //     Ok(_o3d) => {
+    //         println!("Successfully parsed o3d!");
 
-            let file_stem = path
-                .file_stem()
-                .and_then(|stem| stem.to_str())
-                .unwrap_or("o3d_model");
+    //         let file_stem = path
+    //             .file_stem()
+    //             .and_then(|stem| stem.to_str())
+    //             .unwrap_or("o3d_model");
 
-            let assets = _o3d.get_converted_assets(file_stem);
+    //         let assets = _o3d.get_converted_assets(file_stem);
 
-            for asset in assets {
-                fs::write(
-                    format!("./{}.{}", asset.file_name, asset.file_extension),
-                    asset.file_bytes, // asset.file_bytes,
-                )
-                .unwrap();
-            }
-        }
-        Err(err) => println!("Error parsing o3d! {:?}", err),
-    };
-
-    // let file = fs::read("../OUT-FEB-7/SE1 - True Grits/obf/1_-RESOURCES-TRACK.OBF.obf").unwrap();
-
-    // match parse_obf_data(&file) {
-    //     Ok(obf) => {
-    //         println!("Successfully parsed track obf!");
-    //         println!("{:?}", obf);
+    //         for asset in assets {
+    //             fs::write(
+    //                 format!("./{}.{}", asset.file_name, asset.file_extension),
+    //                 asset.file_bytes, // asset.file_bytes,
+    //             )
+    //             .unwrap();
+    //         }
     //     }
     //     Err(err) => println!("Error parsing o3d! {:?}", err),
     // };
+
+    let file = fs::read("../OUT-FEB-7/SE1 - True Grits/obf/1_-RESOURCES-TRACK.OBF.obf").unwrap();
+
+    match parse_obf_data(&file) {
+        Ok(obf) => {
+            let out = obf.to_asset("MAP_TEST.OBF", 0);
+            fs::write(
+                format!("{}.{}", out.file_name, out.file_extension),
+                out.file_bytes,
+            )
+            .unwrap();
+            println!("Successfully parsed track obf!");
+            println!("{:?}", obf);
+        }
+        Err(err) => println!("Error parsing o3d! {:?}", err),
+    };
 }
