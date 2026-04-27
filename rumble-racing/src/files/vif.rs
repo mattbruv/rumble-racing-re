@@ -89,7 +89,7 @@ pub enum UnpackedData {
     V2_32((Vec<(f32, f32, String)>, u64)),
     V3_32((Vec<(f32, f32, f32, String)>, u64)),
     V4_32((Vec<(u32, u32, u32, u32, String)>, u64)),
-    V4_8(u64),
+    V4_8((Vec<(u8, u8, u8, u8, String)>, u64)),
 }
 
 #[derive(Debug)]
@@ -342,15 +342,27 @@ pub fn parse_vif_commands(data: &[u8]) -> Result<VIFData, VIFParseError> {
                     // Four vectors of 8 bits ??
                     UnpackType::V4_8 => {
                         // should we care about V4s?
-                        let start = cursor.position();
+                        let mut out = vec![];
+                        let mut v4_start = cursor.position();
                         // skip past them for now?
-                        cursor.set_position(cursor.position() + (4 * num as u64));
-                        // vif.unpacked_data.push();
+                        for _ in 0..num {
+                            let start = cursor.position();
+                            let mut buf = [0; 4];
+                            cursor.read_exact(&mut buf)?;
+                            out.push((
+                                buf[0],
+                                buf[1],
+                                buf[2],
+                                buf[3],
+                                format!(
+                                    "offset: {}, row regs: {:?} mask: {:?}",
+                                    start, state.row_registers, state.mask_register
+                                ),
+                            ));
+                            // cursor.set_position(cursor.position() + (4 * num as u64));
+                        }
                         vif.commands
-                            .push(VifCommand::UNPACK(UnpackedData::V4_8(start)));
-
-                        // println!("num: {}", num);
-                        // println!("next: {}", cursor.position());
+                            .push(VifCommand::UNPACK(UnpackedData::V4_8((out, v4_start))));
                     }
 
                     UnpackType::Unsupported(val) => {

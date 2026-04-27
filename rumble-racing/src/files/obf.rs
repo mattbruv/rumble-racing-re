@@ -120,9 +120,11 @@ impl Obf {
                         }
                     }
 
-                    VifCommand::UNPACK(UnpackedData::V4_8(v)) => {
-                        let line = format!("{i}: V4_8 {} \n", v);
-                        out.extend_from_slice(line.as_bytes());
+                    VifCommand::UNPACK(UnpackedData::V4_8((v, _))) => {
+                        for (a, b, c, d, tag) in v {
+                            let line = format!("{i}: V4_8 {} {} {} {} {} \n", a, b, c, d, tag);
+                            out.extend_from_slice(line.as_bytes());
+                        }
                     }
                 }
             }
