@@ -88,7 +88,7 @@ pub enum VifCommand {
 pub enum UnpackedData {
     V2_32((Vec<(f32, f32, String)>, u64)),
     V3_32((Vec<(f32, f32, f32, String)>, u64)),
-    V4_32((Vec<(f32, f32, f32, f32, String)>, u64)),
+    V4_32((Vec<(u32, u32, u32, u32, String)>, u64)),
     V4_8(u64),
 }
 
@@ -255,13 +255,13 @@ pub fn parse_vif_commands(data: &[u8]) -> Result<VIFData, VIFParseError> {
                             let start = cursor.position(); // debug
                             let mut buf: [u8; 4] = [0; 4];
                             cursor.read_exact(&mut buf)?;
-                            let v1 = f32::from_le_bytes(buf);
+                            let v1 = u32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
-                            let v2 = f32::from_le_bytes(buf);
+                            let v2 = u32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
-                            let v3 = f32::from_le_bytes(buf);
+                            let v3 = u32::from_le_bytes(buf);
                             cursor.read_exact(&mut buf)?;
-                            let v4 = f32::from_le_bytes(buf);
+                            let v4 = u32::from_le_bytes(buf);
                             out.push((
                                 v1,
                                 v2,

@@ -60,6 +60,7 @@ impl Obf {
     /// With that said, I'm discarding everything before the first MASK command on each run,
     /// which usually is consistently numbered V4_32 entries as some kind of header.
     /// May need to come back and get those if something isn't right?
+    /// Maybe this could have the texture mapping?
     pub fn unpack_relevant_vif(&self) -> Vec<Vec<&VifCommand>> {
         // Need to split them on MSCNTs
         self.eldas
