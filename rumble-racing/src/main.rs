@@ -43,8 +43,8 @@ fn main() {
 
     // let elapsed = start.elapsed();
     // println!("Took: {:?}", elapsed);
-    // let path = Path::new("../OUT-FEB-7/SE1 - True Grits/o3d/23_SOURCES-SE_CHICKENA.O3D.o3d");
-    let path = Path::new("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d");
+    let path = Path::new("../OUT-FEB-7/SE1 - True Grits/o3d/23_SOURCES-SE_CHICKENA.O3D.o3d");
+    // let path = Path::new("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d");
     let file = fs::read(path).unwrap();
 
     match parse_o3d(&file) {
@@ -56,13 +56,15 @@ fn main() {
                 .and_then(|stem| stem.to_str())
                 .unwrap_or("o3d_model");
 
-            let asset = _o3d.get_converted_asset(file_stem);
+            let assets = _o3d.get_converted_assets(file_stem);
 
-            fs::write(
-                format!("./{}.{}", asset.file_name, asset.file_extension),
-                _o3d.get_text_file(), // asset.file_bytes,
-            )
-            .unwrap();
+            for asset in assets {
+                fs::write(
+                    format!("./{}.{}", asset.file_name, asset.file_extension),
+                    asset.file_bytes, // asset.file_bytes,
+                )
+                .unwrap();
+            }
         }
         Err(err) => println!("Error parsing o3d! {:?}", err),
     };

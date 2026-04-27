@@ -55,7 +55,7 @@ impl Mesh {
 }
 
 impl Obf {
-    pub fn to_text_bytes(&self) -> Vec<u8> {
+    pub fn vif_to_text_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         for x in &self.eldas {

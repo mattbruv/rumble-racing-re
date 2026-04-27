@@ -4,11 +4,11 @@ use crate::{
 };
 
 impl O3DFile {
-    pub fn get_text_file(&self) -> Vec<u8> {
+    pub fn get_vif_text_file(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         for (_obf_idx, wrapped_obf) in self.obfs.iter().enumerate() {
-            let txt = wrapped_obf.obf.to_text_bytes();
+            let txt = wrapped_obf.obf.vif_to_text_bytes();
             out.extend_from_slice(&txt);
         }
 
@@ -17,7 +17,7 @@ impl O3DFile {
 }
 
 impl ConvertableAsset for O3DFile {
-    fn get_converted_asset(&self, file_name: &str) -> super::convert::ConvertedAsset {
+    fn get_converted_assets(&self, file_name: &str) -> Vec<ConvertedAsset> {
         let mut lines = vec!["# Exported from O3D".to_string()];
         let mut positions = Vec::new();
         let mut normals = Vec::new();
@@ -81,10 +81,18 @@ impl ConvertableAsset for O3DFile {
             }
         }
 
-        ConvertedAsset {
-            file_name: file_name.into(),
-            file_extension: "obj".into(),
-            file_bytes: lines.join("\n").into_bytes(),
-        }
+        vec![
+            // obj
+            // ConvertedAsset {
+            //     file_name: file_name.into(),
+            //     file_extension: "obj".into(),
+            //     file_bytes: lines.join("\n").into_bytes(),
+            // },
+            ConvertedAsset {
+                file_name: file_name.into(),
+                file_extension: "vif.dat".into(),
+                file_bytes: self.get_vif_text_file(),
+            },
+        ]
     }
 }
