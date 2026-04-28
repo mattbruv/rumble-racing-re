@@ -124,16 +124,22 @@ impl Obf {
     pub fn vif_to_text_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        for (elda_index, commands) in self
+        for (elda_index, (vif_data, header)) in self
             .eldas
             .iter()
-            .filter_map(Option::as_ref)
-            .map(|x| &x.commands)
+            .zip(self.elhes.iter())
+            .filter_map(|(a, b)| a.as_ref().map(|a| (a, b)))
+            // .map(|(data, header)| &x.commands)
             .enumerate()
         {
-            out.extend_from_slice(format!("ELDA #: {}\n\n", elda_index).as_bytes());
+            out.extend_from_slice(format!("ELHEADER #{}\n", elda_index).as_bytes());
 
-            for (cmd_idx, command) in commands.iter().enumerate() {
+            for row in header.raw_data.chunks(8) {
+                out.extend_from_slice(format!(" {:?} \n", row).as_bytes());
+            }
+            out.extend_from_slice(format!("ELDA #{}:\n\n", elda_index).as_bytes());
+
+            for (cmd_idx, command) in vif_data.commands.iter().enumerate() {
                 match command {
                     VifCommand::DIRECT(_)
                     | VifCommand::CYCLE(_)
