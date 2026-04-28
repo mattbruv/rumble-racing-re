@@ -180,12 +180,12 @@ impl Obf {
                     lines.push(String::new());
 
                     for (u, v, pos) in uvs {
-                        lines.push(format!("vt {} {} # {}", u, v, pos));
+                        lines.push(format!("vt {} {} # {}", u, 1.0 - v, pos));
                     }
                     lines.push(String::new());
 
                     for (x, y, z, pos) in normals {
-                        lines.push(format!("vn {} {} {} # {}", x, y, z, pos));
+                        // lines.push(format!("vn {} {} {} # {}", x, y, z, pos));
                     }
                     lines.push(String::new());
 
