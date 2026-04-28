@@ -124,66 +124,63 @@ impl Obf {
     pub fn vif_to_text_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        for (sec_idx, section) in self.unpack_relevant_vif().eldas.into_iter().enumerate() {
-            out.extend_from_slice(format!("SECTION: {}\n\n", sec_idx).as_bytes());
+        for (elda_index, commands) in self
+            .eldas
+            .iter()
+            .filter_map(Option::as_ref)
+            .map(|x| &x.commands)
+            .enumerate()
+        {
+            out.extend_from_slice(format!("ELDA #: {}\n\n", elda_index).as_bytes());
 
-            for (entry_idx, entry) in section.segments.iter().enumerate() {
-                for (group_idx, group) in entry.groups.iter().enumerate() {
-                    for command in &group.commands {
-                        match command {
-                            VifCommand::DIRECT
-                            | VifCommand::CYCLE
-                            | VifCommand::FLUSHE
-                            | VifCommand::STROW
-                            | VifCommand::MSCNT
-                            | VifCommand::NOP
-                            | VifCommand::MASK => {
-                                let line = format!(
-                                    "{sec_idx} -> {entry_idx} -> {group_idx} {:?}\n",
-                                    command
-                                );
-                                out.extend_from_slice(line.as_bytes());
-                            }
+            for (cmd_idx, command) in commands.iter().enumerate() {
+                match command {
+                    VifCommand::DIRECT
+                    | VifCommand::CYCLE
+                    | VifCommand::FLUSHE
+                    | VifCommand::STROW
+                    | VifCommand::MSCNT
+                    | VifCommand::NOP
+                    | VifCommand::MASK => {
+                        let line = format!("{elda_index} -> {cmd_idx}  {:?}\n", command);
+                        out.extend_from_slice(line.as_bytes());
+                    }
 
-                            VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
-                                for (a, b, tag) in v {
-                                    let line = format!(
-                                        "{sec_idx} -> {entry_idx} -> {group_idx} V2_32 {} {} {}\n",
-                                        a, b, tag
-                                    );
-                                    out.extend_from_slice(line.as_bytes());
-                                }
-                            }
+                    VifCommand::UNPACK(UnpackedData::V2_32((v, _))) => {
+                        for (a, b, tag) in v {
+                            let line =
+                                format!("{elda_index} -> {cmd_idx}  V2_32 {} {} {}\n", a, b, tag);
+                            out.extend_from_slice(line.as_bytes());
+                        }
+                    }
 
-                            VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
-                                for (a, b, c, tag) in v {
-                                    let line = format!(
-                                        "{sec_idx} -> {entry_idx} -> {group_idx} V3_32 {} {} {} {}\n",
-                                        a, b, c, tag
-                                    );
-                                    out.extend_from_slice(line.as_bytes());
-                                }
-                            }
+                    VifCommand::UNPACK(UnpackedData::V3_32((v, _))) => {
+                        for (a, b, c, tag) in v {
+                            let line = format!(
+                                "{elda_index} -> {cmd_idx} V3_32 {} {} {} {}\n",
+                                a, b, c, tag
+                            );
+                            out.extend_from_slice(line.as_bytes());
+                        }
+                    }
 
-                            VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
-                                for (a, b, c, d, tag) in v {
-                                    let line = format!(
-                                        "{sec_idx} -> {entry_idx} -> {group_idx} V4_32 {} {} {} {} {}\n",
-                                        a, b, c, d, tag
-                                    );
-                                    out.extend_from_slice(line.as_bytes());
-                                }
-                            }
+                    VifCommand::UNPACK(UnpackedData::V4_32((v, _))) => {
+                        for (a, b, c, d, tag) in v {
+                            let line = format!(
+                                "{elda_index} -> {cmd_idx} V4_32 {} {} {} {} {}\n",
+                                a, b, c, d, tag
+                            );
+                            out.extend_from_slice(line.as_bytes());
+                        }
+                    }
 
-                            VifCommand::UNPACK(UnpackedData::V4_8((v, _))) => {
-                                for (a, b, c, d, tag) in v {
-                                    let line = format!(
-                                        "{sec_idx} -> {entry_idx} -> {group_idx} V4_8 {} {} {} {} {}\n",
-                                        a, b, c, d, tag
-                                    );
-                                    out.extend_from_slice(line.as_bytes());
-                                }
-                            }
+                    VifCommand::UNPACK(UnpackedData::V4_8((v, _))) => {
+                        for (a, b, c, d, tag) in v {
+                            let line = format!(
+                                "{elda_index} -> {cmd_idx} V4_8 {} {} {} {} {}\n",
+                                a, b, c, d, tag
+                            );
+                            out.extend_from_slice(line.as_bytes());
                         }
                     }
                 }
