@@ -74,18 +74,22 @@ fn main() {
                             .and_then(|stem| stem.to_str())
                             .unwrap_or("obf_model");
 
-                        let asset = obf.to_asset(file_stem, 0);
+                        let assets = obf.to_asset(file_stem, 0);
 
+                        for asset in &assets {
+                            let output_dir = entry.path().parent().unwrap();
+                            let output_path = output_dir
+                                .join(format!("{}.{}", asset.file_name, asset.file_extension));
+
+                            let vif_commands = obf.vif_to_text_bytes();
+
+                            fs::write(&output_path, asset.file_bytes.clone()).unwrap();
+                        }
+                        let asset = assets.first().unwrap();
                         let output_dir = entry.path().parent().unwrap();
-                        let output_path = output_dir
-                            .join(format!("{}.{}", asset.file_name, asset.file_extension));
-
-                        let vif_commands = obf.vif_to_text_bytes();
-
-                        fs::write(&output_path, asset.file_bytes).unwrap();
-
                         let output_path =
                             output_dir.join(format!("{}.{}", asset.file_name, "vif.dat"));
+                        let vif_commands = obf.vif_to_text_bytes();
 
                         fs::write(&output_path, vif_commands).unwrap();
                     }
@@ -131,23 +135,23 @@ fn main() {
             let file =
                 fs::read("../OUT-FEB-7/SE1 - True Grits/obf/1_-RESOURCES-TRACK.OBF.obf").unwrap();
 
-            match parse_obf_data(&file) {
-                Ok(obf) => {
-                    let out = obf.to_asset("MAP_TEST.OBF", 0);
-                    fs::write(
-                        format!("{}.{}", out.file_name, out.file_extension),
-                        out.file_bytes,
-                    )
-                    .unwrap();
+            // match parse_obf_data(&file) {
+            //     Ok(obf) => {
+            //         let out = obf.to_asset("MAP_TEST.OBF", 0);
+            //         fs::write(
+            //             format!("{}.{}", out.file_name, out.file_extension),
+            //             out.file_bytes,
+            //         )
+            //         .unwrap();
 
-                    let vif_commands = obf.vif_to_text_bytes();
+            //         let vif_commands = obf.vif_to_text_bytes();
 
-                    fs::write(format!("{}.{}", out.file_name, "vif.dat"), vif_commands).unwrap();
+            //         fs::write(format!("{}.{}", out.file_name, "vif.dat"), vif_commands).unwrap();
 
-                    println!("Successfully parsed track obf!");
-                }
-                Err(err) => println!("Error parsing o3d! {:?}", err),
-            };
+            //         println!("Successfully parsed track obf!");
+            //     }
+            //     Err(err) => println!("Error parsing o3d! {:?}", err),
+            // };
         }
     }
 

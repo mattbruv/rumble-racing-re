@@ -152,7 +152,8 @@ func (t *TXF) GetConvertedFiles() []asset.ConvertedAssetFile {
 				mipmap = "-mipmap"
 			}
 
-			name := fmt.Sprintf("%s-%s-%dx%d%s.png", t.resourceName, texture.Name, f.Width, f.Height, mipmap)
+			// name := fmt.Sprintf("%s-%s-%dx%d%s.png", t.resourceName, texture.Name, f.Width, f.Height, mipmap)
+			name := fmt.Sprintf("%s%s.png", texture.Name, mipmap)
 			out = append(out, asset.ConvertedAssetFile{
 				FullFileName: name,
 				Data:         buf.Bytes(),

@@ -25,7 +25,7 @@ impl ConvertableAsset for O3DFile {
         let mut assets = Vec::new();
 
         for (obf_idx, wrapped_obf) in self.obfs.iter().enumerate() {
-            assets.push(wrapped_obf.obf.to_asset(file_name, obf_idx));
+            assets.extend(wrapped_obf.obf.to_asset(file_name, obf_idx));
         }
 
         assets.push(ConvertedAsset {
@@ -39,19 +39,30 @@ impl ConvertableAsset for O3DFile {
 }
 
 impl Obf {
-    pub fn to_asset(&self, file_name: &str, obf_idx: usize) -> ConvertedAsset {
+    pub fn to_asset(&self, file_name: &str, obf_idx: usize) -> Vec<ConvertedAsset> {
         let mut out_lines: Vec<String> = vec!["# Exported from O3D".to_string()];
+        let asset_name = format!("{}_obf_{}", file_name, obf_idx);
+        let mtl_name = format!("{}.mtl", asset_name);
+
+        out_lines.push(format!("mtllib {}", mtl_name));
+        out_lines.push(String::new());
 
         let relevant_vif = self.unpack_relevant_vif();
 
         let mut global_v = 0usize;
         let mut global_vt = 0usize;
         let mut global_vn = 0usize;
+        let mut mtl_lines: Vec<String> = vec!["# Material library for O3D model".to_string()];
 
         for (e, elda) in relevant_vif.eldas.iter().enumerate() {
+            let material_name = format!("elda_tx_{}_{}", elda.texture_id, e);
+
+            out_lines.push(format!("usemtl {}", material_name));
+            out_lines.push(String::new());
+
             let mut lines: Vec<String> = vec![
                 format!("# start elda {}", e),
-                format!("o elda_tx_{}_{}", elda.texture_id, e),
+                format!("o {}", material_name),
             ];
 
             let mut positions = Vec::new();
@@ -209,12 +220,24 @@ impl Obf {
             }
 
             out_lines.extend(lines);
+
+            // Add material definition to MTL file
+            mtl_lines.push(String::new());
+            mtl_lines.push(format!("newmtl {}", material_name));
+            mtl_lines.push(format!("map_Kd ../txf/texture_{}", elda.texture_id));
         }
 
-        ConvertedAsset {
-            file_name: format!("{}_obf_{}", file_name, obf_idx),
-            file_extension: "obj".into(),
-            file_bytes: out_lines.join("\n").into_bytes(),
-        }
+        vec![
+            ConvertedAsset {
+                file_name: asset_name.clone(),
+                file_extension: "obj".into(),
+                file_bytes: out_lines.join("\n").into_bytes(),
+            },
+            ConvertedAsset {
+                file_name: asset_name,
+                file_extension: "mtl".into(),
+                file_bytes: mtl_lines.join("\n").into_bytes(),
+            },
+        ]
     }
 }
