@@ -94,9 +94,9 @@ impl Obf {
                         .filter_map(|chunk| {
                             let filtered: Vec<&VifCommand> = chunk
                                 .iter()
-                                .skip_while(|cmd| !matches!(cmd, VifCommand::MASK))
+                                .skip_while(|cmd| !matches!(cmd, VifCommand::MASK(_)))
                                 .skip(1)
-                                .filter(|cmd| !matches!(cmd, VifCommand::MASK))
+                                .filter(|cmd| !matches!(cmd, VifCommand::MASK(_)))
                                 .collect();
 
                             if filtered.is_empty() {
@@ -135,13 +135,13 @@ impl Obf {
 
             for (cmd_idx, command) in commands.iter().enumerate() {
                 match command {
-                    VifCommand::DIRECT
-                    | VifCommand::CYCLE
+                    VifCommand::DIRECT(_)
+                    | VifCommand::CYCLE(_)
                     | VifCommand::FLUSHE
-                    | VifCommand::STROW
+                    | VifCommand::STROW(_)
                     | VifCommand::MSCNT
                     | VifCommand::NOP
-                    | VifCommand::MASK => {
+                    | VifCommand::MASK(_) => {
                         let line = format!("{elda_index} -> {cmd_idx}  {:?}\n", command);
                         out.extend_from_slice(line.as_bytes());
                     }

@@ -75,12 +75,12 @@ enum UnpackType {
 #[derive(Debug)]
 pub enum VifCommand {
     NOP,
-    DIRECT,
-    STROW,
-    MASK,
+    DIRECT(Vec<Quadword>),
+    STROW([u32; 4]),
+    MASK(u32),
     MSCNT,
     FLUSHE,
-    CYCLE,
+    CYCLE(u16),
     UNPACK(UnpackedData),
 }
 
@@ -102,7 +102,7 @@ struct UnpackInfo {
     perform_unpack_write_masking: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Quadword([u8; 4 * 4]);
 
 // https://psi-rockin.github.io/ps2tek/#vifcommands
@@ -149,7 +149,7 @@ pub fn parse_vif_commands(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // In particular, CYCLE.CL is set to bits 0-7 and CYCLE.WL is set to bits 8-15.
             // The CYCLE register is used for skipping/filling writes for UNPACK.
             0x01 => {
-                vif.commands.push(VifCommand::CYCLE);
+                vif.commands.push(VifCommand::CYCLE(immediate));
                 state.cycle_register = immediate;
             }
 
@@ -180,18 +180,17 @@ pub fn parse_vif_commands(data: &[u8]) -> Result<VIFData, VIFParseError> {
             // Sets the MASK register to the next 32-bit word in the stream.
             // This is used for UNPACK write masking.
             0x20 => {
-                vif.commands.push(VifCommand::MASK);
                 let mut word_buf: [u8; 4] = [0; 4];
                 cursor.read_exact(&mut word_buf)?;
                 let mask = u32::from_le_bytes(word_buf);
                 state.mask_register = mask;
+                vif.commands.push(VifCommand::MASK(mask));
             }
 
             // STROW
             // Sets the R0-R3 row registers to the next 4 32-bit words in the stream.
             // This is used for UNPACK write filling.
             0x30 => {
-                vif.commands.push(VifCommand::STROW);
                 let mut word_buf: [u8; 4] = [0; 4];
                 cursor.read_exact(&mut word_buf)?;
                 let r0 = u32::from_le_bytes(word_buf);
@@ -201,13 +200,15 @@ pub fn parse_vif_commands(data: &[u8]) -> Result<VIFData, VIFParseError> {
                 let r2 = u32::from_le_bytes(word_buf);
                 cursor.read_exact(&mut word_buf)?;
                 let r3 = u32::from_le_bytes(word_buf);
-                state.row_registers = [r0, r1, r2, r3];
+                let regs = [r0, r1, r2, r3];
+                state.row_registers = regs;
+                vif.commands.push(VifCommand::STROW(regs));
             }
 
             // DIRECT (VIF1)
             0x50 => {
+                let mut unpacked_quads = vec![];
                 // println!("IMMEDIATE: {:?}", immediate);
-                vif.commands.push(VifCommand::DIRECT);
                 match immediate {
                     // If IMMEDIATE is 0, 65,536 quadwords are transferred.
                     0 => return Err(VIFParseError::UnimplementedImmediate),
@@ -217,10 +218,12 @@ pub fn parse_vif_commands(data: &[u8]) -> Result<VIFData, VIFParseError> {
                         let mut quadword: [u8; 4 * 4] = [0; 16];
                         for _ in 0..n {
                             cursor.read_exact(&mut quadword)?;
-                            vif.gif_data.push(Quadword(quadword));
+                            unpacked_quads.push(Quadword(quadword));
                         }
                     }
                 }
+                vif.gif_data.extend(unpacked_quads.clone());
+                vif.commands.push(VifCommand::DIRECT(unpacked_quads));
             }
 
             // UNPACK
