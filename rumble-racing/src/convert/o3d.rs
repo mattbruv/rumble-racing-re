@@ -49,16 +49,16 @@ impl Obf {
         let mut global_vn = 0usize;
 
         for (e, elda) in relevant_vif.eldas.iter().enumerate() {
-            for (seg, segment) in elda.segments.iter().enumerate() {
-                let mut lines: Vec<String> = vec![
-                    format!("# start elda {} segment {}", e, seg),
-                    format!("o elda_{}_segment_{}", e, seg),
-                ];
+            let mut lines: Vec<String> =
+                vec![format!("# start elda {}", e), format!("o elda_{}", e)];
 
-                let mut positions = Vec::new();
-                let mut normals = Vec::new();
-                let mut uvs = Vec::new();
-                let mut faces = Vec::new();
+            let mut positions = Vec::new();
+            let mut normals = Vec::new();
+            let mut uvs = Vec::new();
+            let mut faces = Vec::new();
+
+            for (seg, segment) in elda.segments.iter().enumerate() {
+                lines.push(format!("# segment {}", seg));
 
                 for vif_command_triple in segment.groups.iter() {
                     match &vif_command_triple.commands {
@@ -170,43 +170,43 @@ impl Obf {
                         _ => {}
                     }
                 }
-
-                if positions.is_empty() {
-                    lines.push("# no vertex data found".to_string());
-                } else {
-                    for (x, y, z, pos) in positions {
-                        lines.push(format!("v {} {} {} # {}", x, y, z, pos));
-                    }
-                    lines.push(String::new());
-
-                    for (u, v, pos) in uvs {
-                        lines.push(format!("vt {} {} # {}", u, 1.0 - v, pos));
-                    }
-                    lines.push(String::new());
-
-                    for (x, y, z, pos) in normals {
-                        // lines.push(format!("vn {} {} {} # {}", x, y, z, pos));
-                    }
-                    lines.push(String::new());
-
-                    for face in faces {
-                        lines.push(format!(
-                            "f {}/{}/{} {}/{}/{} {}/{}/{}",
-                            face[0][0],
-                            face[0][1],
-                            face[0][2],
-                            face[1][0],
-                            face[1][1],
-                            face[1][2],
-                            face[2][0],
-                            face[2][1],
-                            face[2][2],
-                        ));
-                    }
-                }
-
-                out_lines.extend(lines);
             }
+
+            if positions.is_empty() {
+                lines.push("# no vertex data found".to_string());
+            } else {
+                for (x, y, z, pos) in positions {
+                    lines.push(format!("v {} {} {} # {}", x, y, z, pos));
+                }
+                lines.push(String::new());
+
+                for (u, v, pos) in uvs {
+                    lines.push(format!("vt {} {} # {}", u, 1.0 - v, pos));
+                }
+                lines.push(String::new());
+
+                for (x, y, z, pos) in normals {
+                    // lines.push(format!("vn {} {} {} # {}", x, y, z, pos));
+                }
+                lines.push(String::new());
+
+                for face in faces {
+                    lines.push(format!(
+                        "f {}/{}/{} {}/{}/{} {}/{}/{}",
+                        face[0][0],
+                        face[0][1],
+                        face[0][2],
+                        face[1][0],
+                        face[1][1],
+                        face[1][2],
+                        face[2][0],
+                        face[2][1],
+                        face[2][2],
+                    ));
+                }
+            }
+
+            out_lines.extend(lines);
         }
 
         ConvertedAsset {
