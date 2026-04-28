@@ -64,6 +64,7 @@ pub struct RelevantVif<'a> {
 }
 
 pub struct EldaChunk<'a> {
+    pub texture_id: u32,
     pub segments: Vec<VifSegment<'a>>,
 }
 
@@ -88,6 +89,7 @@ impl Obf {
                 .iter()
                 .filter_map(Option::as_ref)
                 .map(|elda| EldaChunk {
+                    texture_id: elda.texture_id,
                     segments: elda
                         .commands
                         .split(|cmd| matches!(cmd, VifCommand::MSCNT))

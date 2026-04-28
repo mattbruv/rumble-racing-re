@@ -28,6 +28,7 @@ pub enum VIFParseError {
 
 #[derive(Debug)]
 pub struct VIFData {
+    pub texture_id: u32,
     pub gif_data: Vec<Quadword>,
     pub commands: Vec<VifCommand>,
 }
@@ -110,6 +111,7 @@ pub fn parse_vif_commands(data: &[u8]) -> Result<VIFData, VIFParseError> {
     let mut vif = VIFData {
         gif_data: vec![],
         commands: vec![],
+        texture_id: 0,
     };
 
     let mut cursor = Cursor::new(data);
@@ -393,6 +395,19 @@ pub fn parse_vif_commands(data: &[u8]) -> Result<VIFData, VIFParseError> {
             }
         };
     }
+
+    // force get the texture from this ELDA
+    let sixth = vif
+        .commands
+        .iter()
+        .filter_map(|x| match x {
+            VifCommand::UNPACK(UnpackedData::V4_32(d)) => d.0.iter().nth(5),
+            _ => None,
+        })
+        .nth(0)
+        .unwrap();
+
+    vif.texture_id = sixth.0;
 
     Ok(vif)
 }

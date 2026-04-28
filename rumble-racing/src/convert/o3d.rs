@@ -49,8 +49,10 @@ impl Obf {
         let mut global_vn = 0usize;
 
         for (e, elda) in relevant_vif.eldas.iter().enumerate() {
-            let mut lines: Vec<String> =
-                vec![format!("# start elda {}", e), format!("o elda_{}", e)];
+            let mut lines: Vec<String> = vec![
+                format!("# start elda {}", e),
+                format!("o elda_tx_{}_{}", elda.texture_id, e),
+            ];
 
             let mut positions = Vec::new();
             let mut normals = Vec::new();
