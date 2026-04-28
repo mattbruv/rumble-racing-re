@@ -80,7 +80,14 @@ fn main() {
                         let output_path = output_dir
                             .join(format!("{}.{}", asset.file_name, asset.file_extension));
 
-                        fs::write(output_path, asset.file_bytes).unwrap();
+                        let vif_commands = obf.vif_to_text_bytes();
+
+                        fs::write(&output_path, asset.file_bytes).unwrap();
+
+                        let output_path =
+                            output_dir.join(format!("{}.{}", asset.file_name, "vif.dat"));
+
+                        fs::write(&output_path, vif_commands).unwrap();
                     }
                     Err(err) => println!("Error parsing {:?} o3d! {:?}", entry.path(), err),
                 };
@@ -132,6 +139,11 @@ fn main() {
                         out.file_bytes,
                     )
                     .unwrap();
+
+                    let vif_commands = obf.vif_to_text_bytes();
+
+                    fs::write(format!("{}.{}", out.file_name, "vif.dat"), vif_commands).unwrap();
+
                     println!("Successfully parsed track obf!");
                 }
                 Err(err) => println!("Error parsing o3d! {:?}", err),
