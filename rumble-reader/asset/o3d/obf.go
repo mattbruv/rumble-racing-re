@@ -31,7 +31,7 @@ type ObfNode struct {
 	Child       *ObfNode // 0x28
 }
 
-func parseObf(buf []byte) (*Obf, error) {
+func ParseObf(buf []byte) (*Obf, error) {
 	obfAsset := Obf{
 		rawData:  buf,
 		RootNode: &ObfNode{},
