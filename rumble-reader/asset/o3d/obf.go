@@ -20,7 +20,7 @@ type NodeMetadata struct {
 
 	DataLen      int
 	HeaderOffset int
-	NumTextures  int
+	NumTextures  uint16
 }
 
 type ObfNode struct {
