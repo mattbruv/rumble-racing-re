@@ -1,6 +1,9 @@
 package o3d
 
-import "fmt"
+import (
+	"encoding/hex"
+	"fmt"
+)
 
 type Obf struct {
 	rawData []byte
@@ -27,9 +30,13 @@ func parseObf(buf []byte) (*Obf, error) {
 		return nil, err
 	}
 
-	for _, chunk := range chunks {
+	for i, chunk := range chunks {
+		fmt.Println("CHUNK: ", i)
 		fmt.Println(chunk)
+
+		fmt.Println(hex.Dump(chunk.ELTL.Raw.Payload))
 	}
+
 	fmt.Println("CHUNKS: ", len(chunks))
 
 	return &obfAsset, nil

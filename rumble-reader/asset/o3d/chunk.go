@@ -49,14 +49,17 @@ func parseChunks(data []byte) ([]Chunk, error) {
 
 // Element Header?
 type ELHE struct {
+	Raw Chunk
 }
 
 // Element Texture/Translation?
 type ELTL struct {
+	Raw Chunk
 }
 
 // Raw element Data: mostly VIF + some texture/other metadata
 type ELDA struct {
+	Raw Chunk
 }
 
 type ObfChunk struct {
@@ -115,6 +118,12 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 				panic("NOT AN ELHE!")
 			}
 
+			elhe, err := parseELHE(chunk)
+			if err != nil {
+				panic("FUCK!")
+			}
+			currentObfChunk.ELHE = elhe
+
 		} else if chunkTypeCheck == 1 {
 
 			if currentObfChunk.ELTL != nil {
@@ -124,6 +133,12 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 				panic("NOT AN ELTL!")
 			}
 
+			eltl, err := parseELTL(chunk)
+			if err != nil {
+				panic("FUCK!")
+			}
+			currentObfChunk.ELTL = eltl
+
 		} else if chunkTypeCheck == 2 {
 			if currentObfChunk.ELDA != nil {
 				panic("ELDA NOT NIL")
@@ -132,17 +147,47 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 				panic("NOT AN ELDA!")
 			}
 
+			elda, err := parseELDA(chunk)
+			if err != nil {
+				panic("FUCK!")
+			}
+			currentObfChunk.ELDA = elda
 		}
 
-		fmt.Println(chunkIndex)
-		chunks = append(chunks, currentObfChunk)
 		offset = chunkEnd
 		chunkIndex++
-	}
 
-	if (len(chunks) % 3) != 0 {
-		panic("CHUNKS NOT DIVISIBLE BY 3!")
+		// fmt.Println(chunkIndex)
+		if currentObfChunk.ELDA != nil && currentObfChunk.ELHE != nil && currentObfChunk.ELTL != nil {
+			chunks = append(chunks, currentObfChunk)
+			// fmt.Println("RESET")
+			currentObfChunk = ObfChunk{}
+		}
 	}
 
 	return chunks, nil
+}
+
+func parseELHE(chunk Chunk) (*ELHE, error) {
+	elhe := ELHE{
+		Raw: chunk,
+	}
+
+	return &elhe, nil
+}
+
+func parseELTL(chunk Chunk) (*ELTL, error) {
+	eltl := ELTL{
+		Raw: chunk,
+	}
+
+	return &eltl, nil
+}
+
+func parseELDA(chunk Chunk) (*ELDA, error) {
+	elda := ELDA{
+		Raw: chunk,
+	}
+
+	return &elda, nil
 }
