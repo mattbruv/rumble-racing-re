@@ -18,7 +18,9 @@ type NodeMetadata struct {
 	Z float32
 	W float32
 
-	DataLen int
+	DataLen      int
+	HeaderOffset int
+	NumTextures  int
 }
 
 type ObfNode struct {
@@ -63,6 +65,8 @@ func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
 	node.Metadata.Z = node.RawChunk.ELHE.Z
 	node.Metadata.W = node.RawChunk.ELHE.W
 	node.Metadata.DataLen = int(len(node.RawChunk.ELDA.Raw.Payload))
+	node.Metadata.HeaderOffset = node.RawChunk.ELHE.Raw.Offset
+	node.Metadata.NumTextures = node.RawChunk.ELHE.MaybeNumTextures
 
 	// TODO: extract texture data
 	// .....

@@ -8,6 +8,7 @@ import (
 )
 
 type Chunk struct {
+	Offset  int
 	Magic   [4]byte
 	Size    uint32
 	Payload []byte
@@ -108,6 +109,7 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 
 		// If the chunk is HEAD, ignore it
 		chunk := Chunk{
+			Offset:  offset,
 			Magic:   magic,
 			Size:    size,
 			Payload: payload,
