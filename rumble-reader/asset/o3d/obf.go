@@ -1,7 +1,5 @@
 package o3d
 
-import "fmt"
-
 type Obf struct {
 	rawData []byte
 
@@ -10,10 +8,7 @@ type Obf struct {
 }
 
 type ObfNode struct {
-	X float32 // 0x0
-	Y float32 // 0x4
-	Z float32 // 0x8
-	W float32 // 0xC
+	metadata ObfChunk
 
 	Parent      *ObfNode // 0x1C
 	LastChild   *ObfNode // 0x20
@@ -41,29 +36,40 @@ func parseObf(buf []byte) (*Obf, error) {
 
 	obfAsset.RawObfChunks = chunks
 
-	totalNodes := buildTree(obfAsset.RootNode, 0, chunks)
-	fmt.Println("TOTAL NODES: ", totalNodes)
-	fmt.Println("X: ", obfAsset.RootNode.X)
+	buildTree(obfAsset.RootNode, 0, chunks)
 
 	return &obfAsset, nil
 }
 
 func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
-	meta := data[currDataIndex]
+	node.metadata = data[currDataIndex]
 
-	node.X = meta.ELHE.X
-	node.Y = meta.ELHE.Y
-	node.Z = meta.ELHE.Z
-	node.W = meta.ELHE.W
+	// TODO: extract texture data
+	// .....
 
-	// *node = ObfNode{
+	nodeCount := 1
 
-	// 	Parent:      node.Parent,
-	// 	LastChild:   &ObfNode{},
-	// 	PrevSibling: &ObfNode{},
-	// 	Child:       &ObfNode{},
-	// }
+	if node.metadata.ELHE.ChildCount != 0 {
+		var lastChild *ObfNode
+		nextDataIndex := currDataIndex + 1
 
-	// panic("unimplemented")
-	return 1
+		for i := 0; i < int(node.metadata.ELHE.ChildCount); i++ {
+			childNode := &ObfNode{}
+			childNode.Parent = node
+
+			if i == 0 {
+				childNode.PrevSibling = nil
+			} else {
+				childNode.PrevSibling = lastChild
+			}
+			lastChild = childNode
+			node.LastChild = childNode
+
+			childNodeCount := buildTree(childNode, nextDataIndex, data)
+			nextDataIndex += childNodeCount
+			nodeCount += childNodeCount
+		}
+	}
+
+	return nodeCount
 }
