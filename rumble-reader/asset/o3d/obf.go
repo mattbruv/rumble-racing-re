@@ -1,14 +1,31 @@
 package o3d
 
+import "fmt"
+
 type Obf struct {
 	rawData []byte
 
 	RawObfChunks []ObfChunk
+	RootNode     *ObfNode
+}
+
+type ObfNode struct {
+	X float32 // 0x0
+	Y float32 // 0x4
+	Z float32 // 0x8
+	W float32 // 0xC
+
+	Parent      *ObfNode // 0x1C
+	LastChild   *ObfNode // 0x20
+	PrevSibling *ObfNode // 0x24
+	Child       *ObfNode // 0x28
+
 }
 
 func parseObf(buf []byte) (*Obf, error) {
 	obfAsset := Obf{
-		rawData: buf,
+		rawData:  buf,
+		RootNode: &ObfNode{},
 	}
 
 	// Skip past the .Obf header, like the game does
@@ -24,14 +41,12 @@ func parseObf(buf []byte) (*Obf, error) {
 
 	obfAsset.RawObfChunks = chunks
 
-	// // for _, chunk := range chunks {
-	// // 	// fmt.Println("CHUNK: ", i)
-	// // 	fmt.Println(chunk.ELHE.childCount, chunk.ELHE.maybeNumTextures, chunk.ELHE.unk2)
-	// // 	fmt.Println(chunk.ELHE.X, chunk.ELHE.Y, chunk.ELHE.Z, chunk.ELHE.W)
-	// // 	fmt.Println()
-	// // }
-
-	// fmt.Println("CHUNKS: ", len(chunks))
+	totalNodes := buildTree(obfAsset.RootNode, 0)
+	fmt.Println("TOTAL NODES: ", totalNodes)
 
 	return &obfAsset, nil
+}
+
+func buildTree(node *ObfNode, i int) int {
+	panic("unimplemented")
 }
