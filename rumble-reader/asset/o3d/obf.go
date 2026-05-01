@@ -41,12 +41,29 @@ func parseObf(buf []byte) (*Obf, error) {
 
 	obfAsset.RawObfChunks = chunks
 
-	totalNodes := buildTree(obfAsset.RootNode, 0)
+	totalNodes := buildTree(obfAsset.RootNode, 0, chunks)
 	fmt.Println("TOTAL NODES: ", totalNodes)
+	fmt.Println("X: ", obfAsset.RootNode.X)
 
 	return &obfAsset, nil
 }
 
-func buildTree(node *ObfNode, i int) int {
-	panic("unimplemented")
+func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
+	meta := data[currDataIndex]
+
+	node.X = meta.ELHE.X
+	node.Y = meta.ELHE.Y
+	node.Z = meta.ELHE.Z
+	node.W = meta.ELHE.W
+
+	// *node = ObfNode{
+
+	// 	Parent:      node.Parent,
+	// 	LastChild:   &ObfNode{},
+	// 	PrevSibling: &ObfNode{},
+	// 	Child:       &ObfNode{},
+	// }
+
+	// panic("unimplemented")
+	return 1
 }
