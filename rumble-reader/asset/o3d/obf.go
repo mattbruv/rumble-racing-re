@@ -1,7 +1,6 @@
 package o3d
 
 import (
-	"encoding/hex"
 	"fmt"
 )
 
@@ -30,11 +29,9 @@ func parseObf(buf []byte) (*Obf, error) {
 		return nil, err
 	}
 
-	for i, chunk := range chunks {
-		fmt.Println("CHUNK: ", i)
-		fmt.Println(chunk)
-
-		fmt.Println(hex.Dump(chunk.ELTL.Raw.Payload))
+	for _, chunk := range chunks {
+		// fmt.Println("CHUNK: ", i)
+		fmt.Println(chunk.ELHE.X, chunk.ELHE.Y, chunk.ELHE.Z, chunk.ELHE.W)
 	}
 
 	fmt.Println("CHUNKS: ", len(chunks))

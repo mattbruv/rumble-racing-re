@@ -3,6 +3,7 @@ package o3d
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"rumble-reader/helpers"
 )
 
@@ -50,6 +51,10 @@ func parseChunks(data []byte) ([]Chunk, error) {
 // Element Header?
 type ELHE struct {
 	Raw Chunk
+	X   float32
+	Y   float32
+	Z   float32
+	W   float32
 }
 
 // Element Texture/Translation?
@@ -169,8 +174,13 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 }
 
 func parseELHE(chunk Chunk) (*ELHE, error) {
+	base := 0x8
 	elhe := ELHE{
 		Raw: chunk,
+		X:   math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x48 : base+0x48+4])),
+		Y:   math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x4C : base+0x4C+4])),
+		Z:   math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x50 : base+0x50+4])),
+		W:   math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x54 : base+0x54+4])),
 	}
 
 	return &elhe, nil
