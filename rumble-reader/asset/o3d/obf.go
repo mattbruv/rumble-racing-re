@@ -7,14 +7,28 @@ type Obf struct {
 	RootNode     *ObfNode
 }
 
+type ObfNodeJson struct {
+	Metadata NodeMetadata   `json:"metadata"`
+	Children []*ObfNodeJson `json:"children,omitempty"`
+}
+
+type NodeMetadata struct {
+	X float32
+	Y float32
+	Z float32
+	W float32
+
+	DataLen int
+}
+
 type ObfNode struct {
-	metadata ObfChunk
+	RawChunk ObfChunk
+	Metadata NodeMetadata
 
 	Parent      *ObfNode // 0x1C
 	LastChild   *ObfNode // 0x20
 	PrevSibling *ObfNode // 0x24
 	Child       *ObfNode // 0x28
-
 }
 
 func parseObf(buf []byte) (*Obf, error) {
@@ -42,18 +56,24 @@ func parseObf(buf []byte) (*Obf, error) {
 }
 
 func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
-	node.metadata = data[currDataIndex]
+	node.RawChunk = data[currDataIndex]
+
+	node.Metadata.X = node.RawChunk.ELHE.X
+	node.Metadata.Y = node.RawChunk.ELHE.Y
+	node.Metadata.Z = node.RawChunk.ELHE.Z
+	node.Metadata.W = node.RawChunk.ELHE.W
+	node.Metadata.DataLen = int(len(node.RawChunk.ELDA.Raw.Payload))
 
 	// TODO: extract texture data
 	// .....
 
 	nodeCount := 1
 
-	if node.metadata.ELHE.ChildCount != 0 {
+	if node.RawChunk.ELHE.ChildCount != 0 {
 		var lastChild *ObfNode
 		nextDataIndex := currDataIndex + 1
 
-		for i := 0; i < int(node.metadata.ELHE.ChildCount); i++ {
+		for i := 0; i < int(node.RawChunk.ELHE.ChildCount); i++ {
 			childNode := &ObfNode{}
 			childNode.Parent = node
 
@@ -72,4 +92,16 @@ func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
 	}
 
 	return nodeCount
+}
+
+func NodeToJson(node *ObfNode) *ObfNodeJson {
+	j := &ObfNodeJson{
+		Metadata: node.Metadata,
+	}
+	child := node.LastChild
+	for child != nil {
+		j.Children = append(j.Children, NodeToJson(child))
+		child = child.PrevSibling
+	}
+	return j
 }

@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"rumble-reader/asset/o3d"
 	"rumble-reader/chunk/shoc"
@@ -27,8 +29,13 @@ var o3dCmd = &cobra.Command{
 
 		o3dData, err := o3d.ParseO3D(data, shoc.SHDR{}, "test")
 
-		for _, chunk := range o3dData.Obfs[0].RawObfChunks {
-			fmt.Println(chunk.ELDA.Raw.Size)
+		for _, obf := range o3dData.Obfs {
+			obj := o3d.NodeToJson(obf.RootNode)
+			b, err := json.MarshalIndent(obj, "", "  ")
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(string(b))
 		}
 
 		// for _, thing := range o3dData.Obf.ELDAs {
