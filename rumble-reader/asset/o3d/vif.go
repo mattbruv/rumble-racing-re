@@ -143,48 +143,48 @@ func (elda *ELDA) ParseVif() []UnpackData {
 
 	var out []UnpackData
 	// fmt.Println("LEN:", len(elda.rawData))
-	data := elda.Data
+	// data := elda.Data
 
-	offset := 0
+	// offset := 0
 
-	for offset+4 <= len(data) {
-		word := binary.LittleEndian.Uint32(data[offset : offset+4])
-		cmd := byte(word >> 24)
-		num := byte(word >> 16)
+	// for offset+4 <= len(data) {
+	// 	word := binary.LittleEndian.Uint32(data[offset : offset+4])
+	// 	cmd := byte(word >> 24)
+	// 	num := byte(word >> 16)
 
-		if isUnpack(cmd) {
-			res, err := unpackData(data, &offset, cmd, num)
+	// 	if isUnpack(cmd) {
+	// 		res, err := unpackData(data, &offset, cmd, num)
 
-			if err != nil {
-				fmt.Printf("Skipping unknown unpack command %X at offset 0x%X\n", cmd, offset)
-			}
+	// 		if err != nil {
+	// 			fmt.Printf("Skipping unknown unpack command %X at offset 0x%X\n", cmd, offset)
+	// 		}
 
-			out = append(out, res)
+	// 		out = append(out, res)
 
-			// switch unpacked := res.(type) {
-			// case UnpackV4_32:
-			// 	{
-			// 		fmt.Println(offset)
-			// 		for _, entry := range unpacked.data {
-			// 			fmt.Println(entry.v1, entry.v2, entry.v3, entry.v4)
-			// 		}
-			// 		break
-			// 	}
-			// case UnpackV3_32:
-			// 	{
-			// 		fmt.Println(offset)
-			// 		for _, entry := range unpacked.data {
-			// 			fmt.Println(entry.v1, entry.v2, entry.v3)
-			// 		}
-			// 		break
-			// 	}
+	// 		// switch unpacked := res.(type) {
+	// 		// case UnpackV4_32:
+	// 		// 	{
+	// 		// 		fmt.Println(offset)
+	// 		// 		for _, entry := range unpacked.data {
+	// 		// 			fmt.Println(entry.v1, entry.v2, entry.v3, entry.v4)
+	// 		// 		}
+	// 		// 		break
+	// 		// 	}
+	// 		// case UnpackV3_32:
+	// 		// 	{
+	// 		// 		fmt.Println(offset)
+	// 		// 		for _, entry := range unpacked.data {
+	// 		// 			fmt.Println(entry.v1, entry.v2, entry.v3)
+	// 		// 		}
+	// 		// 		break
+	// 		// 	}
 
-			// }
-			// fmt.Println(num)
-		}
+	// 		// }
+	// 		// fmt.Println(num)
+	// 	}
 
-		offset += 4
-	}
+	// 	offset += 4
+	// }
 
 	return out
 }
