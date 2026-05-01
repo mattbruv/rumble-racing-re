@@ -1,16 +1,9 @@
 package o3d
 
-import (
-	"fmt"
-)
-
 type Obf struct {
 	rawData []byte
 
-	// Head *Head
-	// ELHEs []ELHE
-	// ELTLs []ELTL
-	// ELDAs []ELDA
+	RawObfChunks []ObfChunk
 }
 
 func parseObf(buf []byte) (*Obf, error) {
@@ -29,14 +22,16 @@ func parseObf(buf []byte) (*Obf, error) {
 		return nil, err
 	}
 
-	for _, chunk := range chunks {
-		// fmt.Println("CHUNK: ", i)
-		fmt.Println(chunk.ELHE.childCount, chunk.ELHE.maybeNumTextures, chunk.ELHE.unk2)
-		fmt.Println(chunk.ELHE.X, chunk.ELHE.Y, chunk.ELHE.Z, chunk.ELHE.W)
-		fmt.Println()
-	}
+	obfAsset.RawObfChunks = chunks
 
-	fmt.Println("CHUNKS: ", len(chunks))
+	// // for _, chunk := range chunks {
+	// // 	// fmt.Println("CHUNK: ", i)
+	// // 	fmt.Println(chunk.ELHE.childCount, chunk.ELHE.maybeNumTextures, chunk.ELHE.unk2)
+	// // 	fmt.Println(chunk.ELHE.X, chunk.ELHE.Y, chunk.ELHE.Z, chunk.ELHE.W)
+	// // 	fmt.Println()
+	// // }
+
+	// fmt.Println("CHUNKS: ", len(chunks))
 
 	return &obfAsset, nil
 }

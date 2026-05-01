@@ -27,8 +27,9 @@ var o3dCmd = &cobra.Command{
 
 		o3dData, err := o3d.ParseO3D(data, shoc.SHDR{}, "test")
 
-		fmt.Println(len(o3dData.Gmds))
-		fmt.Println(len(o3dData.Obfs))
+		for _, chunk := range o3dData.Obfs[0].RawObfChunks {
+			fmt.Println(chunk.ELDA.Raw.Size)
+		}
 
 		// for _, thing := range o3dData.Obf.ELDAs {
 		// 	// fmt.Println(hex.Dump(thing.Data), len(thing.Data))
