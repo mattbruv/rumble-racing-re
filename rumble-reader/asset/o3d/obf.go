@@ -31,7 +31,7 @@ func parseObf(buf []byte) (*Obf, error) {
 
 	for _, chunk := range chunks {
 		// fmt.Println("CHUNK: ", i)
-		fmt.Println(chunk.ELHE.childCount, chunk.ELHE.unk1, chunk.ELHE.unk2)
+		fmt.Println(chunk.ELHE.childCount, chunk.ELHE.maybeNumTextures, chunk.ELHE.unk2)
 		fmt.Println(chunk.ELHE.X, chunk.ELHE.Y, chunk.ELHE.Z, chunk.ELHE.W)
 		fmt.Println()
 	}

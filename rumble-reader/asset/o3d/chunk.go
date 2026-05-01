@@ -53,9 +53,9 @@ type ELHE struct {
 	Raw Chunk
 
 	// Relevant Ghidra RE struct data:
-	childCount uint16 // 0x00
-	unk1       int    // 0x02
-	unk2       uint16 // 0x06
+	childCount       uint16 // 0x00
+	maybeNumTextures int    // 0x02
+	unk2             uint16 // 0x06
 
 	X float32 // 0x48
 	Y float32 // 0x4C
@@ -182,14 +182,14 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 func parseELHE(chunk Chunk) (*ELHE, error) {
 	base := 0x8
 	elhe := ELHE{
-		Raw:        chunk,
-		childCount: binary.LittleEndian.Uint16(chunk.Payload[base : base+2]),
-		unk1:       int(binary.LittleEndian.Uint32(chunk.Payload[base+0x2 : base+0x2+0x4])),
-		unk2:       binary.LittleEndian.Uint16(chunk.Payload[base+0x6 : base+0x6+2]),
-		X:          math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x48 : base+0x48+4])),
-		Y:          math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x4C : base+0x4C+4])),
-		Z:          math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x50 : base+0x50+4])),
-		W:          math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x54 : base+0x54+4])),
+		Raw:              chunk,
+		childCount:       binary.LittleEndian.Uint16(chunk.Payload[base : base+2]),
+		maybeNumTextures: int(binary.LittleEndian.Uint32(chunk.Payload[base+0x2 : base+0x2+4])),
+		unk2:             binary.LittleEndian.Uint16(chunk.Payload[base+0x6 : base+0x6+2]),
+		X:                math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x48 : base+0x48+4])),
+		Y:                math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x4C : base+0x4C+4])),
+		Z:                math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x50 : base+0x50+4])),
+		W:                math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x54 : base+0x54+4])),
 	}
 
 	return &elhe, nil
