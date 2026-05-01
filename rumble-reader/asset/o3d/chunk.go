@@ -61,6 +61,8 @@ type ELHE struct {
 	Y float32 // 0x4C
 	Z float32 // 0x50
 	W float32 // 0x54
+
+	RawZDebug uint32
 }
 
 // Element Texture/Translation?
@@ -191,6 +193,8 @@ func parseELHE(chunk Chunk) (*ELHE, error) {
 		Y: math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x4C : base+0x4C+4])),
 		Z: math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x50 : base+0x50+4])),
 		W: math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x54 : base+0x54+4])),
+
+		RawZDebug: binary.LittleEndian.Uint32(chunk.Payload[base+0x50 : base+0x50+4]),
 	}
 
 	return &elhe, nil
