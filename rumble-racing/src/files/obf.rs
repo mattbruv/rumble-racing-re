@@ -37,24 +37,6 @@ pub struct Obf {
     eldas: Vec<Option<VIFData>>,
 }
 
-pub struct Mesh {
-    pub positions: Vec<(f32, f32, f32, String)>,
-    pub normals: Vec<(f32, f32, f32, String)>,
-    pub uvs: Vec<(f32, f32, String)>,
-    pub faces: Vec<[[usize; 3]; 3]>,
-}
-
-impl Mesh {
-    pub fn new() -> Self {
-        Self {
-            positions: Vec::new(),
-            normals: Vec::new(),
-            uvs: Vec::new(),
-            faces: Vec::new(),
-        }
-    }
-}
-
 fn group_by_3<'a>(chunk: &[&'a VifCommand]) -> Vec<Vec<&'a VifCommand>> {
     chunk.chunks(3).map(|c| c.to_vec()).collect()
 }
@@ -204,29 +186,6 @@ impl Obf {
         }
 
         out
-    }
-
-    pub fn to_mesh(&self) -> Mesh {
-        let mut mesh = Mesh::new();
-
-        for elda in self.eldas.iter().flatten() {
-            let sub_mesh = elda.to_mesh();
-            let base = mesh.positions.len();
-
-            mesh.positions.extend(sub_mesh.positions.iter().cloned());
-            mesh.normals.extend(sub_mesh.normals.iter().cloned());
-            mesh.uvs.extend(sub_mesh.uvs.iter().cloned());
-
-            for face in sub_mesh.faces {
-                mesh.faces.push([
-                    [face[0][0] + base, face[0][1] + base, face[0][2] + base],
-                    [face[1][0] + base, face[1][1] + base, face[1][2] + base],
-                    [face[2][0] + base, face[2][1] + base, face[2][2] + base],
-                ]);
-            }
-        }
-
-        mesh
     }
 }
 

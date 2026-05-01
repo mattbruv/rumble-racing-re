@@ -15,12 +15,13 @@ enum DoThing {
     Chicken,
     Map,
     Tornado,
+    DebugObf,
 }
 
 fn main() {
     let start = Instant::now();
 
-    match DoThing::AllFiles {
+    match DoThing::DebugObf {
         DoThing::AllFiles => {
             for entry in WalkDir::new("../OUT-FEB-7/")
                 .into_iter()
@@ -152,6 +153,46 @@ fn main() {
             //     }
             //     Err(err) => println!("Error parsing o3d! {:?}", err),
             // };
+        }
+
+        DoThing::DebugObf => {
+            for entry in WalkDir::new("../OUT-FEB-7/")
+                .into_iter()
+                .filter_map(Result::ok)
+                .filter(|e| {
+                    e.file_type().is_file() && e.path().extension().is_some_and(|ext| ext == "o3d")
+                })
+            {
+                let file = fs::read(&entry.path()).unwrap();
+
+                match parse_o3d(&file) {
+                    Ok(o3d) => {
+                        // println!("Success!: {:?}", entry.path());
+                        println!(
+                            "gmd count: {}, obf count: {}, {:?}",
+                            o3d.gmds.len(),
+                            o3d.obfs.len(),
+                            entry.path()
+                        );
+                        // let file_stem = entry
+                        //     .path()
+                        //     .file_stem()
+                        //     .and_then(|stem| stem.to_str())
+                        //     .unwrap_or("o3d_model");
+
+                        // let assets = o3d.get_converted_assets(file_stem);
+
+                        // for asset in assets {
+                        //     let output_dir = entry.path().parent().unwrap();
+                        //     let output_path = output_dir
+                        //         .join(format!("{}.{}", asset.file_name, asset.file_extension));
+
+                        //     fs::write(output_path, asset.file_bytes).unwrap();
+                        // }
+                    }
+                    Err(err) => println!("Error parsing {:?} o3d! {:?}", entry.path(), err),
+                };
+            }
         }
     }
 
