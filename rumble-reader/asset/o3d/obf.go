@@ -1,5 +1,7 @@
 package o3d
 
+import "fmt"
+
 type Obf struct {
 	rawData []byte
 
@@ -18,11 +20,11 @@ type NodeMetadata struct {
 	Z float32
 	W float32
 
-	RawZDebug uint32
+	RawZDebug string
 
 	DataLen      int
 	HeaderOffset int
-	NumTextures  uint16
+	NumTextures  int16
 }
 
 type ObfNode struct {
@@ -69,7 +71,7 @@ func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
 	node.Metadata.DataLen = int(len(node.RawChunk.ELDA.Raw.Payload))
 	node.Metadata.HeaderOffset = node.RawChunk.ELHE.Raw.Offset
 	node.Metadata.NumTextures = node.RawChunk.ELHE.MaybeNumTextures
-	node.Metadata.RawZDebug = node.RawChunk.ELHE.RawZDebug
+	node.Metadata.RawZDebug = fmt.Sprintf("%08x", node.RawChunk.ELHE.RawZDebug)
 
 	// TODO: extract texture data
 	// .....

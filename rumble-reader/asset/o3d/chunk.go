@@ -55,7 +55,7 @@ type ELHE struct {
 
 	// Relevant Ghidra RE struct data:
 	ChildCount       uint16 // 0x00
-	MaybeNumTextures uint16 // 0x02
+	MaybeNumTextures int16  // 0x02
 
 	X float32 // 0x48
 	Y float32 // 0x4C
@@ -187,7 +187,7 @@ func parseELHE(chunk Chunk) (*ELHE, error) {
 	elhe := ELHE{
 		Raw:              chunk,
 		ChildCount:       binary.LittleEndian.Uint16(chunk.Payload[base : base+2]),
-		MaybeNumTextures: binary.LittleEndian.Uint16(chunk.Payload[base+0x2 : base+0x2+2]),
+		MaybeNumTextures: int16(binary.LittleEndian.Uint16(chunk.Payload[base+0x2 : base+0x2+2])),
 		// Unk2:             binary.LittleEndian.Uint16(chunk.Payload[base+0x6 : base+0x6+2]),
 		X: math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x48 : base+0x48+4])),
 		Y: math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x4C : base+0x4C+4])),
