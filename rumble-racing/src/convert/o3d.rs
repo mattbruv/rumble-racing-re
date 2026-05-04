@@ -224,7 +224,7 @@ impl Obf {
             // Add material definition to MTL file
             mtl_lines.push(String::new());
             mtl_lines.push(format!("newmtl {}", material_name));
-            mtl_lines.push(format!("map_Kd ../txf/texture_{}", elda.texture_id));
+            mtl_lines.push(format!("map_Kd ../txf/texture_{}.png", elda.texture_id));
         }
 
         vec![

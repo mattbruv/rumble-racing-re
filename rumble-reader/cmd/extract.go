@@ -22,7 +22,7 @@ type ExtractSettings struct {
 	convertAutomatically bool
 	createSubFolders     bool
 	exportMipMaps        bool
-	exportHeaders        bool
+	// exportHeaders        bool
 }
 
 var extractCmd = &cobra.Command{
@@ -36,7 +36,7 @@ var extractCmd = &cobra.Command{
 		convertAutomatically, _ := cmd.Flags().GetBool("convert")
 		createSubFolders, _ := cmd.Flags().GetBool("sub-folders")
 		exportMipMaps, _ := cmd.Flags().GetBool("mip-maps")
-		exportHeaders, _ := cmd.Flags().GetBool("save-headers")
+		// exportHeaders, _ := cmd.Flags().GetBool("save-headers")
 
 		opts := ExtractSettings{
 			inputDir:             inputDir,
@@ -44,7 +44,7 @@ var extractCmd = &cobra.Command{
 			convertAutomatically: convertAutomatically,
 			createSubFolders:     createSubFolders,
 			exportMipMaps:        exportMipMaps,
-			exportHeaders:        exportHeaders,
+			// exportHeaders:        exportHeaders,
 		}
 
 		err := extractData(opts)
@@ -176,7 +176,7 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 			converted := false
 			if opts.convertAutomatically {
 				// only flag as converted if we have saved files
-				convertedFiles := theAsset.GetConvertedFiles()
+				convertedFiles := theAsset.GetConvertedFiles(outFileName)
 				if len(convertedFiles) > 0 {
 					converted = true
 
@@ -205,15 +205,15 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 			}
 
 			// write header data
-			if opts.exportHeaders {
-				outFileName = fmt.Sprintf("%d_%s.shdr", entry.ResourceIndex, resName)
-				outFilePath = filepath.Join(outFolder, outFileName)
-				hdr := theAsset.Header()
+			// if opts.exportHeaders {
+			// 	outFileName = fmt.Sprintf("%d_%s.shdr", entry.ResourceIndex, resName)
+			// 	outFilePath = filepath.Join(outFolder, outFileName)
+			// 	// hdr := theAsset.Header()
 
-				if err := os.WriteFile(outFilePath, hdr.Data(), 0644); err != nil {
-					return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
-				}
-			}
+			// 	if err := os.WriteFile(outFilePath, hdr.Data(), 0644); err != nil {
+			// 		return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
+			// 	}
+			// }
 		}
 	}
 

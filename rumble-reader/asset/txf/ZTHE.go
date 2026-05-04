@@ -17,7 +17,7 @@ type ZTHETexture struct {
 	ImageCount         uint8 // Each texture could have up to 4 mip-mapped sub-textures
 	BlockWidthPixels   uint16
 	CLUTHeaderIndex    uint8
-	SomeBullshit       uint16 // Potential texture ID that 3d model looks up?
+	TextureId          uint16 // Potential texture ID that 3d model looks up?
 
 	RawData []byte
 }
@@ -69,7 +69,7 @@ func parseZTHE(buf []byte) (*ZTHE, error) {
 			ImageCount:         imageCount,
 			BlockWidthPixels:   binary.LittleEndian.Uint16(data[0x3e:(0x3e + 2)]),
 			Images:             metaHeaders,
-			SomeBullshit:       binary.LittleEndian.Uint16(data[0x34:(0x34 + 2)]),
+			TextureId:          binary.LittleEndian.Uint16(data[0x34:(0x34 + 2)]),
 			CLUTHeaderIndex:    data[0x44],
 			RawData:            rawTexture,
 		})

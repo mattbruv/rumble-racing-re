@@ -240,9 +240,8 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 	}
 
 	textures = append(textures, Texture{
-		// TODO: SomeBullshit
 		// Name:  fmt.Sprintf("id_%d_%d_%d_%d", zthe.SomeBullshit, ztheIndex, textureIndex, clhe_index),
-		Name:  fmt.Sprintf("texture_%d", zthe.SomeBullshit),
+		Name:  fmt.Sprintf("texture_%d", zthe.TextureId),
 		Files: mipMaps,
 	})
 

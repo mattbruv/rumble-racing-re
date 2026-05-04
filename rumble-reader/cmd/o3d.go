@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"rumble-reader/asset/o3d"
 	"rumble-reader/chunk/shoc"
@@ -17,7 +15,9 @@ var o3dCmd = &cobra.Command{
 	Long:  `test o3d parsing`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/18_RCES-SE_CROP_DUSTER.O3D.o3d")
+		// data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/19_ESOURCES-GSTARTPOLE.O3D.o3d")
+		// data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/23_SOURCES-SE_CHICKENA.O3D.o3d")
+		data, err := os.ReadFile("../OUT-FEB-7/FE2/o3d/1000_S-SPLINEMAPS-TRKDA1.O3D.o3d")
 		// data, err := os.ReadFile("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d")
 		// data, err := os.ReadFile("../eagle.o3d")
 
@@ -29,13 +29,25 @@ var o3dCmd = &cobra.Command{
 
 		o3dData, err := o3d.ParseO3D(data, shoc.SHDR{}, "test")
 
-		for _, obf := range o3dData.Obfs {
-			obj := o3d.NodeToJson(obf.RootNode)
-			b, err := json.MarshalIndent(obj, "", "  ")
-			if err != nil {
-				log.Fatal(err)
+		for obf_index, obf := range o3dData.Obfs {
+
+			os.WriteFile("./CHICKEN_RAW.obf", obf.RawBytes, 0644)
+
+			vifText := obf.DumpAllVifText()
+			vifFileName := fmt.Sprintf("CHICKEN_vif_dump_%d.txt", obf_index)
+
+			for _, file := range o3dData.GetConvertedFiles("idk") {
+				os.WriteFile(fmt.Sprintf("./%s", file.FullFileName), file.Data, 0644)
 			}
-			fmt.Println(string(b))
+
+			os.WriteFile(vifFileName, []byte(vifText), 0644)
+
+			// obj := o3d.NodeToJson(obf.RootNode)
+			// b, err := json.MarshalIndent(obj, "", "  ")
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
+			// fmt.Println(string(b))
 		}
 
 		// for _, thing := range o3dData.Obf.ELDAs {

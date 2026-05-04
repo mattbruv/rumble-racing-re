@@ -4,54 +4,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"rumble-reader/helpers"
+	"rumble-reader/asset"
 )
 
-type Chunk struct {
-	Offset  int
-	Magic   [4]byte
-	Size    uint32
-	Payload []byte
-}
-
-func (c Chunk) MagicString() string {
-	return string(c.Magic[:])
-}
-
-func parseChunks(data []byte) ([]Chunk, error) {
-	var chunks []Chunk
-	offset := 0
-	for offset < len(data) {
-		if offset+8 > len(data) {
-			return nil, fmt.Errorf("incomplete chunk header at offset %d", offset)
-		}
-		var magic [4]byte
-		copy(magic[:], data[offset:offset+4])
-		size := binary.LittleEndian.Uint32(data[offset+4 : offset+8])
-		if size < 8 {
-			return nil, fmt.Errorf("invalid chunk size %d for %q", size, magic)
-		}
-		chunkEnd := offset + int(size)
-		if chunkEnd > len(data) {
-			return nil, fmt.Errorf("chunk %q size %d exceeds remaining data", magic, size)
-		}
-		payload := data[offset:chunkEnd]
-
-		helpers.ReverseBytesInPlace(magic[:])
-
-		chunks = append(chunks, Chunk{
-			Magic:   magic,
-			Size:    size,
-			Payload: payload,
-		})
-		offset = chunkEnd
-	}
-	return chunks, nil
-}
-
 // Element Header?
-type ELHE struct {
-	Raw Chunk
+type ELHE_Header struct {
+	Raw asset.Chunk
 
 	// Relevant Ghidra RE struct data:
 	ChildCount       uint16 // 0x00
@@ -62,23 +20,24 @@ type ELHE struct {
 	Z float32 // 0x50
 	W float32 // 0x54
 
-	RawZDebug uint32
+	RawZDebug   uint32
+	RawZAddress int
 }
 
 // Element Texture/Translation?
-type ELTL struct {
-	Raw Chunk
+type ELTL_TextureList struct {
+	Raw asset.Chunk
 }
 
 // Raw element Data: mostly VIF + some texture/other metadata
-type ELDA struct {
-	Raw Chunk
+type ELDA_Data struct {
+	Raw asset.Chunk
 }
 
 type ObfChunk struct {
-	ELHE *ELHE
-	ELTL *ELTL
-	ELDA *ELDA
+	ELHE *ELHE_Header
+	ELTL *ELTL_TextureList
+	ELDA *ELDA_Data
 }
 
 func parseObfChunks(data []byte) ([]ObfChunk, error) {
@@ -109,7 +68,7 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 		payload := data[offset:chunkEnd]
 
 		// If the chunk is HEAD, ignore it
-		chunk := Chunk{
+		chunk := asset.Chunk{
 			Offset:  offset,
 			Magic:   magic,
 			Size:    size,
@@ -182,9 +141,9 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 	return chunks, nil
 }
 
-func parseELHE(chunk Chunk) (*ELHE, error) {
+func parseELHE(chunk asset.Chunk) (*ELHE_Header, error) {
 	base := 0x8
-	elhe := ELHE{
+	elhe := ELHE_Header{
 		Raw:              chunk,
 		ChildCount:       binary.LittleEndian.Uint16(chunk.Payload[base : base+2]),
 		MaybeNumTextures: int16(binary.LittleEndian.Uint16(chunk.Payload[base+0x2 : base+0x2+2])),
@@ -194,22 +153,23 @@ func parseELHE(chunk Chunk) (*ELHE, error) {
 		Z: math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x50 : base+0x50+4])),
 		W: math.Float32frombits(binary.LittleEndian.Uint32(chunk.Payload[base+0x54 : base+0x54+4])),
 
-		RawZDebug: binary.LittleEndian.Uint32(chunk.Payload[base+0x50 : base+0x50+4]),
+		RawZDebug:   binary.LittleEndian.Uint32(chunk.Payload[base+0x50 : base+0x50+4]),
+		RawZAddress: chunk.Offset + base + 0x50,
 	}
 
 	return &elhe, nil
 }
 
-func parseELTL(chunk Chunk) (*ELTL, error) {
-	eltl := ELTL{
+func parseELTL(chunk asset.Chunk) (*ELTL_TextureList, error) {
+	eltl := ELTL_TextureList{
 		Raw: chunk,
 	}
 
 	return &eltl, nil
 }
 
-func parseELDA(chunk Chunk) (*ELDA, error) {
-	elda := ELDA{
+func parseELDA(chunk asset.Chunk) (*ELDA_Data, error) {
+	elda := ELDA_Data{
 		Raw: chunk,
 	}
 

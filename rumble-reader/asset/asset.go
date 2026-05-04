@@ -12,8 +12,8 @@ type ConvertedAssetFile struct {
 type Asset interface {
 	GetType() string
 	RawData() []byte
-	Header() shoc.SHDR
-	GetConvertedFiles() []ConvertedAssetFile
+	// Header() shoc.SHDR
+	GetConvertedFiles(string) []ConvertedAssetFile
 }
 
 type GenericAsset struct {
@@ -34,7 +34,7 @@ func (g *GenericAsset) Header() shoc.SHDR {
 	return g.header
 }
 
-func (t *GenericAsset) GetConvertedFiles() []ConvertedAssetFile {
+func (t *GenericAsset) GetConvertedFiles(name string) []ConvertedAssetFile {
 	// generic asset represents something we don't know how to convert,
 	// so just return nothing.
 	return make([]ConvertedAssetFile, 0)

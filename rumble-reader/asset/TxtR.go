@@ -30,11 +30,11 @@ func (t *TxtR) Header() shoc.SHDR {
 	return t.header
 }
 
-func (t *TxtR) GetConvertedFiles() []ConvertedAssetFile {
-	name := fmt.Sprintf("TextResource-%d.json", t.header.AssetIndex)
+func (t *TxtR) GetConvertedFiles(name string) []ConvertedAssetFile {
+	fileName := fmt.Sprintf("TextResource-%d.json", t.header.AssetIndex)
 	b, _ := json.MarshalIndent(t.TextEntries, "", "  ")
 	outFile := ConvertedAssetFile{
-		FullFileName: name,
+		FullFileName: fileName,
 		Data:         b,
 	}
 

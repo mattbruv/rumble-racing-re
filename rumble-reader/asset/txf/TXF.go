@@ -136,7 +136,7 @@ func (g *TXF) Header() shoc.SHDR {
 	return g.shocHeader
 }
 
-func (t *TXF) GetConvertedFiles() []asset.ConvertedAssetFile {
+func (t *TXF) GetConvertedFiles(name string) []asset.ConvertedAssetFile {
 
 	var out []asset.ConvertedAssetFile
 

@@ -3,6 +3,7 @@ package o3d
 import (
 	"errors"
 	"fmt"
+	"rumble-reader/asset"
 	"rumble-reader/chunk/shoc"
 )
 
@@ -24,7 +25,7 @@ func ParseO3D(buf []byte, header shoc.SHDR, resName string) (*O3D, error) {
 		Obfs:         []*Obf{},
 	}
 
-	chunks, err := parseChunks(buf)
+	chunks, err := asset.ParseChunks(buf)
 
 	if err != nil {
 		return nil, err
