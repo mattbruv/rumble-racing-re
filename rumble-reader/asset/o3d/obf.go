@@ -307,7 +307,7 @@ func (b *Builder) addNode(node *ObfNode) int {
 
 			// node per strip
 			stripNode := &gltf.Node{
-				Name: fmt.Sprintf("strip_%d", i),
+				Name: fmt.Sprintf("strip_%d_%d", i, strip.Offset),
 				Mesh: &meshIndex,
 			}
 

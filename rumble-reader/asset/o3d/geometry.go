@@ -22,6 +22,7 @@ type UV struct {
 }
 
 type Strip struct {
+	Offset   int
 	Texture  TextureEntry
 	Vertices []Vertex
 	Normals  []Normal
@@ -75,6 +76,7 @@ func (vif *ParsedVif) GetGeometry(textures TextureMeta) (*Geometry, error) {
 		}
 
 		strip := Strip{
+			Offset:  int(cmdA.Unpack.Offset),
 			Texture: *assignedTexture,
 		}
 
