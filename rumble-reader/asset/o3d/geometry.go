@@ -11,6 +11,8 @@ type Vertex struct {
 }
 
 type Normal struct {
+	ADCBitSet bool
+
 	X float32
 	Y float32
 	Z float32
@@ -108,7 +110,7 @@ func (vif *ParsedVif) GetGeometry(textures TextureMeta) (*Geometry, error) {
 		if typeA == UnpackTypeV3_32 && typeB == UnpackTypeV3_32 && typeC == UnpackTypeV2_32 {
 			// Pattern: (normal, vertex, uv)
 			for _, v := range cmdA.Unpack.V3_32 {
-				sub.Normals = append(sub.Normals, Normal{X: v.V1, Y: v.V2, Z: v.V3})
+				sub.Normals = append(sub.Normals, Normal{X: v.V1, Y: v.V2, Z: v.V3, ADCBitSet: v.ADCBitSet})
 			}
 			for _, v := range cmdB.Unpack.V3_32 {
 				sub.Vertices = append(sub.Vertices, Vertex{X: v.V1, Y: v.V2, Z: v.V3})
@@ -125,7 +127,7 @@ func (vif *ParsedVif) GetGeometry(textures TextureMeta) (*Geometry, error) {
 				sub.UVs = append(sub.UVs, UV{U: v.V1, V: v.V2})
 			}
 			for _, v := range cmdC.Unpack.V4_8 {
-				sub.Normals = append(sub.Normals, Normal{X: float32(v.V1) / 255.0, Y: float32(v.V2) / 255.0, Z: float32(v.V3) / 255.0})
+				sub.Normals = append(sub.Normals, Normal{X: float32(v.V1) / 255.0, Y: float32(v.V2) / 255.0, Z: float32(v.V3) / 255.0, ADCBitSet: v.ADCBitSet})
 			}
 		}
 

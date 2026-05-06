@@ -67,6 +67,8 @@ type V4_32Entry struct {
 }
 
 type V3_32Entry struct {
+	ADCBitSet bool
+
 	V1    float32
 	V2    float32
 	V3    float32
@@ -80,12 +82,13 @@ type V2_32Entry struct {
 }
 
 type V4_8Entry struct {
-	V1    uint8
-	V2    uint8
-	V3    uint8
-	V4    uint8
-	Draw  bool
-	Debug string
+	V1 uint8
+	V2 uint8
+	V3 uint8
+	V4 uint8
+
+	ADCBitSet bool
+	Debug     string
 }
 
 type UnpackData struct {
@@ -263,10 +266,11 @@ func (elda *ELDA_Data) ParseVif() (*ParsedVif, error) {
 						return nil, err
 					}
 					unpack.V3_32 = append(unpack.V3_32, V3_32Entry{
-						V1:    math.Float32frombits(raw1),
-						V2:    math.Float32frombits(raw2),
-						V3:    math.Float32frombits(raw3),
-						Debug: fmt.Sprintf("offset: %d, row regs: %v mask: 0x%08X", entryOffset, state.rowRegisters, state.maskRegister),
+						V1:        math.Float32frombits(raw1),
+						V2:        math.Float32frombits(raw2),
+						V3:        math.Float32frombits(raw3),
+						ADCBitSet: (raw3 & 0b1) == 0b1,
+						Debug:     fmt.Sprintf("offset: %d, row regs: %v mask: 0x%08X", entryOffset, state.rowRegisters, state.maskRegister),
 					})
 				}
 
@@ -298,12 +302,12 @@ func (elda *ELDA_Data) ParseVif() (*ParsedVif, error) {
 					}
 					draw := (bytesEntry[2] & 0b1) == 0b1
 					unpack.V4_8 = append(unpack.V4_8, V4_8Entry{
-						V1:    bytesEntry[0],
-						V2:    bytesEntry[1],
-						V3:    bytesEntry[2],
-						V4:    bytesEntry[3],
-						Draw:  draw,
-						Debug: fmt.Sprintf("draw?: %v offset: %d, row regs: %v mask: 0x%08X", draw, entryOffset, state.rowRegisters, state.maskRegister),
+						V1:        bytesEntry[0],
+						V2:        bytesEntry[1],
+						V3:        bytesEntry[2],
+						V4:        bytesEntry[3],
+						ADCBitSet: draw,
+						Debug:     fmt.Sprintf("draw?: %v offset: %d, row regs: %v mask: 0x%08X", draw, entryOffset, state.rowRegisters, state.maskRegister),
 					})
 				}
 			}
