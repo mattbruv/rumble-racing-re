@@ -268,23 +268,51 @@ func (b *Builder) addNode(node *ObfNode) int {
 		b.doc.Meshes = append(b.doc.Meshes, mesh)
 
 		for _, thing := range node.Geometry.Meshes {
-			for _, subThing := range thing.SubMeshes {
-				var indices []uint16
-				var positions [][3]float32
-				var uvs [][2]float32
-				var normals [][3]float32
+			for _, subMesh := range thing.SubMeshes {
+				var (
+					indices   []uint32 // Use uint32 for safety with larger meshes
+					positions [][3]float32
+					uvs       [][2]float32
+					normals   [][3]float32
+				)
 
-				for _, vertex := range subThing.Vertices {
-					positions = append(positions, [3]float32{vertex.X, vertex.Y, vertex.Z})
-					indices = append(indices, uint16(len(indices)))
+				// 1. First, populate the base attribute arrays
+				for i := range subMesh.Vertices {
+					v := subMesh.Vertices[i]
+					n := subMesh.Normals[i]
+					u := subMesh.UVs[i]
+
+					positions = append(positions, [3]float32{v.X, v.Y, v.Z})
+					normals = append(normals, [3]float32{n.X, n.Y, n.Z})
+					uvs = append(uvs, [2]float32{u.U, u.V})
 				}
 
-				for _, normal := range subThing.Normals {
-					normals = append(normals, [3]float32{normal.X, normal.Y, normal.Z})
+				// 2. Unwind the strip into indices
+				// Start from index 2 because a triangle needs 3 vertices
+				for i := 2; i < len(subMesh.Vertices); i++ {
+					// The ADC bit on the CURRENT vertex determines if the
+					// triangle ending at this vertex is drawn.
+					if subMesh.Normals[i].ADCBitSet {
+						v0, v1, v2 := uint32(i-2), uint32(i-1), uint32(i)
+
+						// Check for degenerate triangles (common in PS2 strips)
+						// if v0 == v1 || v1 == v2 || v0 == v2 {
+						// 	continue
+						// }
+
+						// Handle Winding Order: Flip every other triangle
+						if i%2 == 0 {
+							indices = append(indices, v0, v1, v2)
+						} else {
+							indices = append(indices, v1, v0, v2)
+						}
+					} else {
+						// fmt.Println("OH NO!")
+					}
 				}
 
-				for _, uv := range subThing.UVs {
-					uvs = append(uvs, [2]float32{uv.U, uv.V})
+				if len(indices) == 0 {
+					continue
 				}
 
 				prim := &gltf.Primitive{
@@ -294,7 +322,8 @@ func (b *Builder) addNode(node *ObfNode) int {
 						gltf.TEXCOORD_0: modeler.WriteTextureCoord(b.doc, uvs),
 						gltf.NORMAL:     modeler.WriteNormal(b.doc, normals),
 					},
-					Mode: gltf.PrimitiveTriangleStrip,
+					// Change mode to Triangles since we have unwound the strip
+					Mode: gltf.PrimitiveTriangles,
 					// Mode: gltf.PrimitiveLines,
 					// add texture
 				}
