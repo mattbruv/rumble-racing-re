@@ -159,15 +159,17 @@ func NodeToJson(node *ObfNode) *ObfNodeJson {
 func (o *Obf) DumpAllVifText() string {
 	var texts []string
 	for _, chunk := range o.RawObfChunks {
-		texts = append(texts, hex.Dump(chunk.ELTL.Raw.Payload))
 		if chunk.ELDA != nil {
-			text, err := chunk.ELDA.DumpVifText()
+			text, err := chunk.ELDA.DumpVifText(chunk.ELHE)
+			if text != "" {
+				texts = append(texts, hex.Dump(chunk.ELTL.Raw.Payload))
+			}
 			if err == nil {
 				texts = append(texts, text)
 			}
 		}
 	}
-	return strings.Join(texts, "\n\n")
+	return strings.TrimSpace(strings.Join(texts, "\n\n"))
 }
 
 func buildTextureMetadata(elhe *ELHE_Header, eltl *ELTL_TextureList, elda *ELDA_Data) TextureMeta {

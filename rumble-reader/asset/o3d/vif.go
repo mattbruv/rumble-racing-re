@@ -84,6 +84,7 @@ type V4_8Entry struct {
 	V2    uint8
 	V3    uint8
 	V4    uint8
+	Draw  bool
 	Debug string
 }
 
@@ -295,12 +296,14 @@ func (elda *ELDA_Data) ParseVif() (*ParsedVif, error) {
 					if err := binary.Read(reader, binary.LittleEndian, &bytesEntry); err != nil {
 						return nil, err
 					}
+					draw := (bytesEntry[2] & 0b1) == 0b1
 					unpack.V4_8 = append(unpack.V4_8, V4_8Entry{
 						V1:    bytesEntry[0],
 						V2:    bytesEntry[1],
 						V3:    bytesEntry[2],
 						V4:    bytesEntry[3],
-						Debug: fmt.Sprintf("offset: %d, row regs: %v mask: 0x%08X", entryOffset, state.rowRegisters, state.maskRegister),
+						Draw:  draw,
+						Debug: fmt.Sprintf("draw?: %v offset: %d, row regs: %v mask: 0x%08X", draw, entryOffset, state.rowRegisters, state.maskRegister),
 					})
 				}
 			}
@@ -346,7 +349,10 @@ func getUnpackInfo(command byte, immediate uint16) unpackInfo {
 	}
 }
 
-func (elda *ELDA_Data) DumpVifText() (string, error) {
+func (elda *ELDA_Data) DumpVifText(elhe *ELHE_Header) (string, error) {
+	if elhe.Raw.Offset != 3805848 {
+		return "", nil
+	}
 	vif, err := elda.ParseVif()
 	if err != nil {
 		return "", err
@@ -355,6 +361,7 @@ func (elda *ELDA_Data) DumpVifText() (string, error) {
 	var sb strings.Builder
 	sb.WriteString("VIF Commands Dump\n")
 	sb.WriteString("=================\n\n")
+	sb.WriteString(fmt.Sprintf("Header Offset: %d\n\n", elhe.Raw.Offset))
 
 	for i, cmd := range vif.Commands {
 		sb.WriteString(fmt.Sprintf("Command %d: %s (Opcode: 0x%02X, Num: %d, Immediate: 0x%04X)\n",
