@@ -2,6 +2,7 @@ package o3d
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"rumble-reader/asset"
@@ -88,6 +89,7 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 				panic("ELHE NOT NIL")
 			}
 			if chunk.MagicString() != "ELHE" {
+				fmt.Println(hex.Dump(chunk.Payload))
 				panic("NOT AN ELHE!")
 			}
 

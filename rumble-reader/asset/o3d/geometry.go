@@ -1,8 +1,6 @@
 package o3d
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type Vertex struct {
 	X float32
@@ -11,6 +9,8 @@ type Vertex struct {
 }
 
 type Normal struct {
+	ADCBitSet bool
+
 	X float32
 	Y float32
 	Z float32
@@ -23,24 +23,21 @@ type UV struct {
 
 type Mesh struct {
 	// The material to apply to this geometry
-	Texture   TextureEntry
-	SubMeshes []SubMesh
-}
-
-type SubMesh struct {
+	Texture  TextureEntry
 	Vertices []Vertex
 	Normals  []Normal
 	UVs      []UV
 }
 
+type SubMesh struct {
+}
+
 type Geometry struct {
-	Meshes []Mesh
+	Mesh Mesh
 }
 
 func (vif *ParsedVif) GetGeometry(textures TextureMeta) (*Geometry, error) {
-	meshMap := make(map[uint32]*Mesh)
-
-	// Filter: collect all UNPACK commands of type V3_32, V2_32, or V4_8
+	// Filter: collect all UNPACK commands of interest
 	var filtered []VifCommand
 	for _, cmd := range vif.Commands {
 		if cmd.Kind == VifCommandUNPACK {
@@ -50,95 +47,47 @@ func (vif *ParsedVif) GetGeometry(textures TextureMeta) (*Geometry, error) {
 			}
 		}
 	}
-
-	// Process in groups of three
 	if len(filtered)%3 != 0 {
 		return nil, fmt.Errorf("filtered unpack commands count %d not divisible by 3", len(filtered))
 	}
 
+	single := &Mesh{
+		Vertices: []Vertex{},
+		Normals:  []Normal{},
+		UVs:      []UV{},
+	}
+
 	for i := 0; i < len(filtered); i += 3 {
-		cmdA := filtered[i]
-		cmdB := filtered[i+1]
-		cmdC := filtered[i+2]
-
-		typeA := cmdA.Unpack.Type
-		typeB := cmdB.Unpack.Type
-		typeC := cmdC.Unpack.Type
-
-		// Assert that num matches across all three commands
-		if cmdA.Num != cmdB.Num || cmdB.Num != cmdC.Num {
-			panic(fmt.Sprintf("num mismatch in triple: %d, %d, %d", cmdA.Num, cmdB.Num, cmdC.Num))
-		}
-
-		// Validate pattern and determine data layout
-		if typeA != UnpackTypeV3_32 || (typeB != UnpackTypeV3_32 && typeB != UnpackTypeV2_32) || (typeC != UnpackTypeV2_32 && typeC != UnpackTypeV4_8) {
-			panic(fmt.Sprintf("unknown pattern: %s, %s, %s", typeA, typeB, typeC))
-		}
-
-		if !((typeA == UnpackTypeV3_32 && typeB == UnpackTypeV3_32 && typeC == UnpackTypeV2_32) ||
-			(typeA == UnpackTypeV3_32 && typeB == UnpackTypeV2_32 && typeC == UnpackTypeV4_8)) {
-			panic(fmt.Sprintf("unknown pattern: %s, %s, %s", typeA, typeB, typeC))
-		}
-
-		// Identify Mesh (by Texture)
-		groupOffset := cmdA.Unpack.Offset
-		var assignedTexture *TextureEntry
-		for j := range textures.TextureEnties {
-			texOff := uint64(textures.TextureEnties[j].ELDAOffset)
-			if texOff <= groupOffset {
-				if assignedTexture == nil || uint64(assignedTexture.ELDAOffset) < texOff {
-					assignedTexture = &textures.TextureEnties[j]
-				}
-			}
-		}
-		if assignedTexture == nil {
-			return nil, fmt.Errorf("no texture for offset %d", groupOffset)
-		}
-
-		// Get/Create Mesh
-		texKey := assignedTexture.ELDAOffset
-		if _, ok := meshMap[texKey]; !ok {
-			meshMap[texKey] = &Mesh{Texture: *assignedTexture}
-		}
-		parentMesh := meshMap[texKey]
-
-		// Extract data into a SubMesh
-		sub := SubMesh{}
+		cmdA, cmdB, cmdC := filtered[i], filtered[i+1], filtered[i+2]
+		typeA, typeB, typeC := cmdA.Unpack.Type, cmdB.Unpack.Type, cmdC.Unpack.Type
 
 		if typeA == UnpackTypeV3_32 && typeB == UnpackTypeV3_32 && typeC == UnpackTypeV2_32 {
-			// Pattern: (normal, vertex, uv)
-			for _, v := range cmdA.Unpack.V3_32 {
-				sub.Normals = append(sub.Normals, Normal{X: v.V1, Y: v.V2, Z: v.V3})
+			for j := uint8(0); j < cmdA.Num; j++ {
+				vNorm := cmdA.Unpack.V3_32[j]
+				vVert := cmdB.Unpack.V3_32[j]
+				vUV := cmdC.Unpack.V2_32[j]
+				single.Normals = append(single.Normals, Normal{X: vNorm.V1, Y: vNorm.V2, Z: vNorm.V3, ADCBitSet: vNorm.ADCBitSet})
+				single.Vertices = append(single.Vertices, Vertex{X: vVert.V1, Y: vVert.V2, Z: vVert.V3})
+				single.UVs = append(single.UVs, UV{U: vUV.V1, V: vUV.V2})
 			}
-			for _, v := range cmdB.Unpack.V3_32 {
-				sub.Vertices = append(sub.Vertices, Vertex{X: v.V1, Y: v.V2, Z: v.V3})
-			}
-			for _, v := range cmdC.Unpack.V2_32 {
-				sub.UVs = append(sub.UVs, UV{U: v.V1, V: v.V2})
+		} else if typeA == UnpackTypeV3_32 && typeB == UnpackTypeV2_32 && typeC == UnpackTypeV4_8 {
+			for j := uint8(0); j < cmdA.Num; j++ {
+				vVert := cmdA.Unpack.V3_32[j]
+				vUV := cmdB.Unpack.V2_32[j]
+				vNorm := cmdC.Unpack.V4_8[j]
+				single.Vertices = append(single.Vertices, Vertex{X: vVert.V1, Y: vVert.V2, Z: vVert.V3})
+				single.UVs = append(single.UVs, UV{U: vUV.V1, V: vUV.V2})
+				single.Normals = append(single.Normals, Normal{
+					X:         float32(vNorm.V1) / 255.0,
+					Y:         float32(vNorm.V2) / 255.0,
+					Z:         float32(vNorm.V3) / 255.0,
+					ADCBitSet: vNorm.ADCBitSet,
+				})
 			}
 		} else {
-			// Pattern: (vertex, uv, normal)
-			for _, v := range cmdA.Unpack.V3_32 {
-				sub.Vertices = append(sub.Vertices, Vertex{X: v.V1, Y: v.V2, Z: v.V3})
-			}
-			for _, v := range cmdB.Unpack.V2_32 {
-				sub.UVs = append(sub.UVs, UV{U: v.V1, V: v.V2})
-			}
-			for _, v := range cmdC.Unpack.V4_8 {
-				sub.Normals = append(sub.Normals, Normal{X: float32(v.V1) / 255.0, Y: float32(v.V2) / 255.0, Z: float32(v.V3) / 255.0})
-			}
-		}
-
-		parentMesh.SubMeshes = append(parentMesh.SubMeshes, sub)
-	}
-
-	// Reassemble into ordered Geometry
-	var finalMeshes []Mesh
-	for _, tex := range textures.TextureEnties {
-		if m, ok := meshMap[tex.ELDAOffset]; ok {
-			finalMeshes = append(finalMeshes, *m)
+			return nil, fmt.Errorf("found an invalid triplet at offset %d: (%s, %s, %s)", cmdA.Unpack.Offset, typeA, typeB, typeC)
 		}
 	}
 
-	return &Geometry{Meshes: finalMeshes}, nil
+	return &Geometry{Mesh: *single}, nil
 }

@@ -22,7 +22,7 @@ var obfCmd = &cobra.Command{
 			panic(err)
 		}
 
-		obf, err := o3d.ParseObf(data)
+		obf, err := o3d.ParseObf(data, "TEST_OBF")
 
 		bytes := o3d.BuildGtlf(obf)
 		os.WriteFile("./MAP_TEST.gltf", bytes, 0644)

@@ -67,6 +67,8 @@ type V4_32Entry struct {
 }
 
 type V3_32Entry struct {
+	ADCBitSet bool
+
 	V1    float32
 	V2    float32
 	V3    float32
@@ -80,11 +82,13 @@ type V2_32Entry struct {
 }
 
 type V4_8Entry struct {
-	V1    uint8
-	V2    uint8
-	V3    uint8
-	V4    uint8
-	Debug string
+	V1 uint8
+	V2 uint8
+	V3 uint8
+	V4 uint8
+
+	ADCBitSet bool
+	Debug     string
 }
 
 type UnpackData struct {
@@ -261,11 +265,13 @@ func (elda *ELDA_Data) ParseVif() (*ParsedVif, error) {
 					if err := binary.Read(reader, binary.LittleEndian, &raw3); err != nil {
 						return nil, err
 					}
+					draw := (raw3 & 0b1) == 0b1
 					unpack.V3_32 = append(unpack.V3_32, V3_32Entry{
-						V1:    math.Float32frombits(raw1),
-						V2:    math.Float32frombits(raw2),
-						V3:    math.Float32frombits(raw3),
-						Debug: fmt.Sprintf("offset: %d, row regs: %v mask: 0x%08X", entryOffset, state.rowRegisters, state.maskRegister),
+						V1:        math.Float32frombits(raw1),
+						V2:        math.Float32frombits(raw2),
+						V3:        math.Float32frombits(raw3),
+						ADCBitSet: draw,
+						Debug:     fmt.Sprintf("draw: %v, offset: %d, row regs: %v mask: 0x%08X", draw, entryOffset, state.rowRegisters, state.maskRegister),
 					})
 				}
 
@@ -295,12 +301,14 @@ func (elda *ELDA_Data) ParseVif() (*ParsedVif, error) {
 					if err := binary.Read(reader, binary.LittleEndian, &bytesEntry); err != nil {
 						return nil, err
 					}
+					draw := (bytesEntry[2] & 0b1) == 0b1
 					unpack.V4_8 = append(unpack.V4_8, V4_8Entry{
-						V1:    bytesEntry[0],
-						V2:    bytesEntry[1],
-						V3:    bytesEntry[2],
-						V4:    bytesEntry[3],
-						Debug: fmt.Sprintf("offset: %d, row regs: %v mask: 0x%08X", entryOffset, state.rowRegisters, state.maskRegister),
+						V1:        bytesEntry[0],
+						V2:        bytesEntry[1],
+						V3:        bytesEntry[2],
+						V4:        bytesEntry[3],
+						ADCBitSet: draw,
+						Debug:     fmt.Sprintf("draw: %v offset: %d, row regs: %v mask: 0x%08X", draw, entryOffset, state.rowRegisters, state.maskRegister),
 					})
 				}
 			}
@@ -346,7 +354,10 @@ func getUnpackInfo(command byte, immediate uint16) unpackInfo {
 	}
 }
 
-func (elda *ELDA_Data) DumpVifText() (string, error) {
+func (elda *ELDA_Data) DumpVifText(elhe *ELHE_Header) (string, error) {
+	// if elhe.Raw.Offset != 3805848 {
+	// 	return "", nil
+	// }
 	vif, err := elda.ParseVif()
 	if err != nil {
 		return "", err
@@ -355,6 +366,7 @@ func (elda *ELDA_Data) DumpVifText() (string, error) {
 	var sb strings.Builder
 	sb.WriteString("VIF Commands Dump\n")
 	sb.WriteString("=================\n\n")
+	sb.WriteString(fmt.Sprintf("Header Offset: %d\n\n", elhe.Raw.Offset))
 
 	for i, cmd := range vif.Commands {
 		sb.WriteString(fmt.Sprintf("Command %d: %s (Opcode: 0x%02X, Num: %d, Immediate: 0x%04X)\n",

@@ -58,7 +58,7 @@ type ObfNode struct {
 	Child       *ObfNode // 0x28
 }
 
-func ParseObf(buf []byte) (*Obf, error) {
+func ParseObf(buf []byte, resourceName string) (*Obf, error) {
 
 	// Skip past the .Obf header, like the game does
 	obfBytes := buf[0x18:]
@@ -78,12 +78,12 @@ func ParseObf(buf []byte) (*Obf, error) {
 
 	obfAsset.RawObfChunks = chunks
 
-	buildTree(obfAsset.RootNode, 0, chunks)
+	buildTree(obfAsset.RootNode, 0, chunks, resourceName)
 
 	return &obfAsset, nil
 }
 
-func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
+func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk, resourceName string) int {
 	node.RawChunk = data[currDataIndex]
 
 	node.Metadata.X = node.RawChunk.ELHE.X
@@ -107,7 +107,9 @@ func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
 	geometry, err := vif.GetGeometry(node.Metadata.TextureMetadata)
 
 	if err != nil {
-		panic(err)
+		fmt.Printf("ERROR: %s - %v\n", resourceName, err)
+		// panic(err)
+		return 0
 	}
 
 	node.Geometry = geometry
@@ -135,7 +137,7 @@ func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
 			lastChild = childNode
 			node.LastChild = childNode
 
-			childNodeCount := buildTree(childNode, nextDataIndex, data)
+			childNodeCount := buildTree(childNode, nextDataIndex, data, resourceName)
 			nextDataIndex += childNodeCount
 			nodeCount += childNodeCount
 		}
@@ -159,15 +161,17 @@ func NodeToJson(node *ObfNode) *ObfNodeJson {
 func (o *Obf) DumpAllVifText() string {
 	var texts []string
 	for _, chunk := range o.RawObfChunks {
-		texts = append(texts, hex.Dump(chunk.ELTL.Raw.Payload))
 		if chunk.ELDA != nil {
-			text, err := chunk.ELDA.DumpVifText()
+			text, err := chunk.ELDA.DumpVifText(chunk.ELHE)
+			if text != "" {
+				texts = append(texts, hex.Dump(chunk.ELTL.Raw.Payload))
+			}
 			if err == nil {
 				texts = append(texts, text)
 			}
 		}
 	}
-	return strings.Join(texts, "\n\n")
+	return strings.TrimSpace(strings.Join(texts, "\n\n"))
 }
 
 func buildTextureMetadata(elhe *ELHE_Header, eltl *ELTL_TextureList, elda *ELDA_Data) TextureMeta {
@@ -214,7 +218,11 @@ func (b *Builder) ensureTexture(textureId int) (int, error) {
 	imageIdx := len(b.doc.Images)
 	b.doc.Images = append(b.doc.Images, &gltf.Image{
 		// URI: fmt.Sprintf("./txf/texture_%d.png", textureId),
-		URI: fmt.Sprintf("../OUT-FEB-7/SE1 - True Grits/txf/texture_%d.png", textureId),
+		// URI: fmt.Sprintf("../txf/texture_%d.png", textureId),
+		// URI: fmt.Sprintf("../OUT-FEB-7/MP1 - Touch And Go/txf/texture_%d.png", textureId),
+		URI: fmt.Sprintf("../OUT-FEB-7/GLBLDATA/txf/texture_%d.png", textureId),
+		// OUT-FEB-7/SE1 - True Grits/o3d/9_ESOURCES-SE_HAYBALE.O3D.o3d
+		// URI: fmt.Sprintf("../OUT-FEB-7/SE1 - True Grits/txf/texture_%d.png", textureId),
 	})
 
 	// Sampler
@@ -259,69 +267,100 @@ func (b *Builder) addNode(node *ObfNode) int {
 	b.doc.Nodes = append(b.doc.Nodes, gltfNode)
 
 	// add geometry
-	if node != nil && node.RawChunk.ELDA.Raw.Size > 8 {
+	if node != nil && node.Geometry != nil && node.RawChunk.ELDA.Raw.Size > 8 {
 		mesh := &gltf.Mesh{}
-
 		meshIndex := len(b.doc.Meshes)
 		b.doc.Meshes = append(b.doc.Meshes, mesh)
 
-		for _, thing := range node.Geometry.Meshes {
-			for _, subThing := range thing.SubMeshes {
-				var indices []uint16
-				var positions [][3]float32
-				var uvs [][2]float32
-				var normals [][3]float32
+		// Now iterating over Meshes (which represent one Texture each)
+		var (
+			indices   []uint32
+			positions [][3]float32
+			uvs       [][2]float32
+			normals   [][3]float32
+		)
 
-				for _, vertex := range subThing.Vertices {
-					positions = append(positions, [3]float32{vertex.X, vertex.Y, vertex.Z})
-					indices = append(indices, uint16(len(indices)))
-				}
+		fmt.Println("ALL VERTS: ")
+		// 1. Populate the attribute arrays for the entire texture group
+		for i := range node.Geometry.Mesh.Vertices {
 
-				for _, normal := range subThing.Normals {
-					normals = append(normals, [3]float32{normal.X, normal.Y, normal.Z})
-				}
+			v := node.Geometry.Mesh.Vertices[i]
+			n := node.Geometry.Mesh.Normals[i]
+			u := node.Geometry.Mesh.UVs[i]
+			fmt.Println("index:", i, "adc:", n.ADCBitSet, v.X, v.Y, v.Z)
 
-				for _, uv := range subThing.UVs {
-					uvs = append(uvs, [2]float32{uv.U, uv.V})
-				}
+			positions = append(positions, [3]float32{v.X, v.Y, v.Z})
+			normals = append(normals, [3]float32{n.X, n.Y, n.Z})
+			uvs = append(uvs, [2]float32{u.U, u.V})
+		}
 
-				prim := &gltf.Primitive{
-					Indices: gltf.Index(modeler.WriteIndices(b.doc, indices)),
-					Attributes: gltf.PrimitiveAttributes{
-						gltf.POSITION:   modeler.WritePosition(b.doc, positions),
-						gltf.TEXCOORD_0: modeler.WriteTextureCoord(b.doc, uvs),
-						gltf.NORMAL:     modeler.WriteNormal(b.doc, normals),
-					},
-					Mode: gltf.PrimitiveTriangleStrip,
-					// Mode: gltf.PrimitiveLines,
-					// add texture
-				}
-
-				// Attach material/texture
-				if thing.Texture.TextureId != -1 {
-					matIdx, err := b.ensureTexture(thing.Texture.TextureId)
-					if err != nil {
-						log.Printf("warn: texture %d: %v", thing.Texture.TextureId, err)
-					} else {
-						prim.Material = gltf.Index(matIdx)
-					}
-				}
-
-				mesh.Primitives = append(mesh.Primitives, prim)
+		for i := 2; i < len(node.Geometry.Mesh.Vertices); i++ {
+			if !node.Geometry.Mesh.Normals[i].ADCBitSet {
+				continue
+			}
+			v0, v1, v2 := uint32(i-2), uint32(i-1), uint32(i)
+			if i%2 == 0 {
+				indices = append(indices, v0, v1, v2)
+			} else {
+				indices = append(indices, v1, v0, v2)
 			}
 		}
+		fmt.Printf("total indices: %d\n", len(indices))
+
+		fmt.Println("TRIANGLES")
+
+		for i := 0; i < len(indices); i += 3 {
+			end := i + 3
+			if end > len(indices) {
+				end = len(indices)
+			}
+			tri := indices[i:end]
+
+			fmt.Println("TRI #", i/3, tri)
+			for _, idx := range tri {
+				vert := node.Geometry.Mesh.Vertices[idx]
+				fmt.Print("(")
+				fmt.Print(vert.X, vert.Y, vert.Z)
+				fmt.Print(") ")
+			}
+			fmt.Println()
+			fmt.Println()
+		}
+		// for _, thing := range indices {
+		// 	fmt.Println(thing)
+		// }
+
+		// 3. Create one primitive for this texture
+		prim := &gltf.Primitive{
+			Indices: gltf.Index(modeler.WriteIndices(b.doc, indices)),
+			Attributes: gltf.PrimitiveAttributes{
+				gltf.POSITION:   modeler.WritePosition(b.doc, positions),
+				gltf.TEXCOORD_0: modeler.WriteTextureCoord(b.doc, uvs),
+				gltf.NORMAL:     modeler.WriteNormal(b.doc, normals),
+			},
+			Mode: gltf.PrimitiveTriangles,
+		}
+
+		// Attach material
+		if node.Geometry.Mesh.Texture.TextureId != -1 {
+			matIdx, err := b.ensureTexture(node.Geometry.Mesh.Texture.TextureId)
+			if err != nil {
+				log.Printf("warn: texture %d: %v", node.Geometry.Mesh.Texture.TextureId, err)
+			} else {
+				prim.Material = gltf.Index(matIdx)
+			}
+		}
+
+		mesh.Primitives = append(mesh.Primitives, prim)
 
 		gltfNode.Mesh = &meshIndex
 	}
 
 	// iterate children via linked list
 	child := node.LastChild
-
 	for child != nil {
 		childIndex := b.addNode(child)
 		gltfNode.Children = append(gltfNode.Children, childIndex)
-
-		// move to sibling
 		child = child.PrevSibling
 	}
 

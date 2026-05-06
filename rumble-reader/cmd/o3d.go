@@ -15,9 +15,16 @@ var o3dCmd = &cobra.Command{
 	Long:  `test o3d parsing`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
+		// data, err := os.ReadFile("../OUT-FEB-7/MP1 - Touch And Go/o3d/42_-RESOURCES-NASRUM.O3D.o3d")
+		// data, err := os.ReadFile("../OUT-FEB-7/MP1 - Touch And Go/o3d/40_-RESOURCES-RUMR.O3D.o3d")
+		// data, err := os.ReadFile("../OUT-FEB-7/MP1 - Touch And Go/o3d/38_-RESOURCES-RUMM.O3D.o3d")
+		data, err := os.ReadFile("../OUT-FEB-7/MP1 - Touch And Go/o3d/36_-RESOURCES-RUML.O3D.o3d")
+		// data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/9_ESOURCES-SE_HAYBALE.O3D.o3d")
+
 		// data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/19_ESOURCES-GSTARTPOLE.O3D.o3d")
 		// data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/23_SOURCES-SE_CHICKENA.O3D.o3d")
-		data, err := os.ReadFile("../OUT-FEB-7/FE2/o3d/1000_S-SPLINEMAPS-TRKDA1.O3D.o3d")
+		// data, err := os.ReadFile("../OUT-FEB-7/MP1 - Touch And Go/o3d/29_-RESOURCES-GCBAR01.O3D.o3d")
+		// data, err := os.ReadFile("../OUT-FEB-7/FE2/o3d/1000_S-SPLINEMAPS-TRKDA1.O3D.o3d")
 		// data, err := os.ReadFile("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d")
 		// data, err := os.ReadFile("../eagle.o3d")
 
@@ -34,7 +41,7 @@ var o3dCmd = &cobra.Command{
 			os.WriteFile("./CHICKEN_RAW.obf", obf.RawBytes, 0644)
 
 			vifText := obf.DumpAllVifText()
-			vifFileName := fmt.Sprintf("CHICKEN_vif_dump_%d.txt", obf_index)
+			vifFileName := fmt.Sprintf("DEBUG_vif_dump_%d.txt", obf_index)
 
 			for _, file := range o3dData.GetConvertedFiles("idk") {
 				os.WriteFile(fmt.Sprintf("./%s", file.FullFileName), file.Data, 0644)

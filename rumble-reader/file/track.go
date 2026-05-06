@@ -205,9 +205,9 @@ func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error
 	case "Cact":
 		return asset.ParseActor(data)
 	// case "obf ":
-	// 	return o3d.ParseObf(data)
+	// 	return o3d.ParseObf(data, t.FileName+resource.ResourceName)
 	// case "o3d ":
-	// 	return o3d.ParseO3D(data, *header, resource.ResourceName)
+	// 	return o3d.ParseO3D(data, *header, t.FileName+resource.ResourceName)
 	case "txf ", "txf2":
 		name := fmt.Sprintf("%d_%s", resource.ResourceIndex, resource.ResourceName)
 		return txf.ParseTXF(data, *header, name)

@@ -52,7 +52,7 @@ func (o *O3D) GetConvertedFiles(name string) []asset.ConvertedAssetFile {
 }
 
 func (o *Obf) GetType() string {
-	return "o3d"
+	return "obf"
 }
 
 func (o *Obf) RawData() []byte {

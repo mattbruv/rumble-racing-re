@@ -47,7 +47,7 @@ func ParseO3D(buf []byte, header shoc.SHDR, resName string) (*O3D, error) {
 			}
 		case "Obf ":
 			{
-				obf, err := ParseObf(chunk.Payload)
+				obf, err := ParseObf(chunk.Payload, o3dAsset.resourceName)
 				if err != nil {
 					return nil, err
 				}
