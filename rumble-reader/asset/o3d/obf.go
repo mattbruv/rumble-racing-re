@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/qmuntal/gltf"
@@ -251,7 +250,6 @@ func (b *Builder) ensureTexture(textureId int) (int, error) {
 	return materialIdx, nil
 }
 
-// returns index of node in gltf document
 func (b *Builder) addNode(node *ObfNode) int {
 	gltfNode := &gltf.Node{
 		Name: fmt.Sprintf("%d", node.Metadata.HeaderOffset),
@@ -260,70 +258,71 @@ func (b *Builder) addNode(node *ObfNode) int {
 	index := len(b.doc.Nodes)
 	b.doc.Nodes = append(b.doc.Nodes, gltfNode)
 
-	// add geometry
+	// geometry
 	if node != nil && node.RawChunk.ELDA.Raw.Size > 8 {
-		mesh := &gltf.Mesh{}
 
-		meshIndex := len(b.doc.Meshes)
-		b.doc.Meshes = append(b.doc.Meshes, mesh)
+		for i, strip := range node.Geometry.Strips {
 
-		for _, thing := range node.Geometry.Meshes {
-			for _, subThing := range thing.SubMeshes {
-				var indices []uint16
-				var positions [][3]float32
-				var uvs [][2]float32
-				var normals [][3]float32
+			mesh := &gltf.Mesh{}
+			meshIndex := len(b.doc.Meshes)
+			b.doc.Meshes = append(b.doc.Meshes, mesh)
 
-				for _, vertex := range subThing.Vertices {
-					positions = append(positions, [3]float32{vertex.X, vertex.Y, vertex.Z})
-					indices = append(indices, uint16(len(indices)))
-				}
+			var indices []uint16
+			var positions [][3]float32
+			var uvs [][2]float32
+			var normals [][3]float32
 
-				for _, normal := range subThing.Normals {
-					normals = append(normals, [3]float32{normal.X, normal.Y, normal.Z})
-				}
-
-				for _, uv := range subThing.UVs {
-					uvs = append(uvs, [2]float32{uv.U, uv.V})
-				}
-
-				prim := &gltf.Primitive{
-					Indices: gltf.Index(modeler.WriteIndices(b.doc, indices)),
-					Attributes: gltf.PrimitiveAttributes{
-						gltf.POSITION:   modeler.WritePosition(b.doc, positions),
-						gltf.TEXCOORD_0: modeler.WriteTextureCoord(b.doc, uvs),
-						gltf.NORMAL:     modeler.WriteNormal(b.doc, normals),
-					},
-					Mode: gltf.PrimitiveTriangleStrip,
-					// Mode: gltf.PrimitiveLines,
-					// add texture
-				}
-
-				// Attach material/texture
-				if thing.Texture.TextureId != -1 {
-					matIdx, err := b.ensureTexture(thing.Texture.TextureId)
-					if err != nil {
-						log.Printf("warn: texture %d: %v", thing.Texture.TextureId, err)
-					} else {
-						prim.Material = gltf.Index(matIdx)
-					}
-				}
-
-				mesh.Primitives = append(mesh.Primitives, prim)
+			for _, v := range strip.Vertices {
+				positions = append(positions, [3]float32{v.X, v.Y, v.Z})
+				indices = append(indices, uint16(len(indices)))
 			}
-		}
 
-		gltfNode.Mesh = &meshIndex
+			for _, n := range strip.Normals {
+				normals = append(normals, [3]float32{n.X, n.Y, n.Z})
+			}
+
+			for _, uv := range strip.UVs {
+				uvs = append(uvs, [2]float32{uv.U, uv.V})
+			}
+
+			prim := &gltf.Primitive{
+				Indices: gltf.Index(modeler.WriteIndices(b.doc, indices)),
+				Attributes: gltf.PrimitiveAttributes{
+					gltf.POSITION:   modeler.WritePosition(b.doc, positions),
+					gltf.TEXCOORD_0: modeler.WriteTextureCoord(b.doc, uvs),
+					gltf.NORMAL:     modeler.WriteNormal(b.doc, normals),
+				},
+				Mode: gltf.PrimitiveTriangleStrip,
+			}
+
+			// texture
+			if strip.Texture.TextureId != -1 {
+				matIdx, err := b.ensureTexture(strip.Texture.TextureId)
+				if err == nil {
+					prim.Material = gltf.Index(matIdx)
+				}
+			}
+
+			mesh.Primitives = append(mesh.Primitives, prim)
+
+			// node per strip
+			stripNode := &gltf.Node{
+				Name: fmt.Sprintf("strip_%d", i),
+				Mesh: &meshIndex,
+			}
+
+			stripNodeIndex := len(b.doc.Nodes)
+			b.doc.Nodes = append(b.doc.Nodes, stripNode)
+
+			gltfNode.Children = append(gltfNode.Children, stripNodeIndex)
+		}
 	}
 
-	// iterate children via linked list
+	// children (unchanged hierarchy traversal)
 	child := node.LastChild
-
 	for child != nil {
 		childIndex := b.addNode(child)
 		gltfNode.Children = append(gltfNode.Children, childIndex)
-
-		// move to sibling
 		child = child.PrevSibling
 	}
 
