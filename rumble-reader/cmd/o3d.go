@@ -16,8 +16,8 @@ var o3dCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		// data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/19_ESOURCES-GSTARTPOLE.O3D.o3d")
-		data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/23_SOURCES-SE_CHICKENA.O3D.o3d")
-		// data, err := os.ReadFile("../OUT-FEB-7/FE2/o3d/1000_S-SPLINEMAPS-TRKDA1.O3D.o3d")
+		// data, err := os.ReadFile("../OUT-FEB-7/SE1 - True Grits/o3d/23_SOURCES-SE_CHICKENA.O3D.o3d")
+		data, err := os.ReadFile("../OUT-FEB-7/FE2/o3d/1000_S-SPLINEMAPS-TRKDA1.O3D.o3d")
 		// data, err := os.ReadFile("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d")
 		// data, err := os.ReadFile("../eagle.o3d")
 

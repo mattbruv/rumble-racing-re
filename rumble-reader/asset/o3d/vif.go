@@ -263,13 +263,13 @@ func (elda *ELDA_Data) ParseVif() (*ParsedVif, error) {
 					if err := binary.Read(reader, binary.LittleEndian, &raw3); err != nil {
 						return nil, err
 					}
-					draw := (raw3 & 0b1) == 0b0
+					draw := (raw3 & 0b1) == 0b1
 					unpack.V3_32 = append(unpack.V3_32, V3_32Entry{
 						V1:    math.Float32frombits(raw1),
 						V2:    math.Float32frombits(raw2),
 						V3:    math.Float32frombits(raw3),
 						Draw:  draw,
-						Debug: fmt.Sprintf("byte %x: , draw?: %v, offset: %d, row regs: %v mask: 0x%08X", raw3, draw, entryOffset, state.rowRegisters, state.maskRegister),
+						Debug: fmt.Sprintf("byte: %x, draw: %v, offset: %d, row regs: %v mask: 0x%08X", raw3, draw, entryOffset, state.rowRegisters, state.maskRegister),
 					})
 				}
 
