@@ -41,7 +41,7 @@ const (
 
 type Quadword [16]byte
 
-type ParsedVif struct {
+type ParsedELDAVif struct {
 	Commands []VifCommand
 }
 
@@ -118,7 +118,7 @@ type unpackInfo struct {
 	performUnpackWriteMasking bool
 }
 
-func (elda *ELDA_Data) ParseVif() (*ParsedVif, error) {
+func (elda *ELDA_Data) ParseVif() (*ParsedELDAVif, error) {
 	if len(elda.Raw.Payload) < 8 {
 		return nil, fmt.Errorf("ELDA payload too small for VIF data")
 	}
@@ -322,7 +322,7 @@ func (elda *ELDA_Data) ParseVif() (*ParsedVif, error) {
 		commands = append(commands, cmd)
 	}
 
-	return &ParsedVif{
+	return &ParsedELDAVif{
 		Commands: commands,
 	}, nil
 }

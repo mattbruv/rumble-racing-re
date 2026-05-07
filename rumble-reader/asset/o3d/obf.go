@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/qmuntal/gltf"
@@ -50,7 +49,7 @@ type NodeMetadata struct {
 type ObfNode struct {
 	RawChunk ObfChunk
 	Metadata NodeMetadata
-	Geometry *Geometry
+	Geometry *ELDA_Geometry
 
 	Parent      *ObfNode // 0x1C
 	LastChild   *ObfNode // 0x20
@@ -104,7 +103,7 @@ func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
 	// Build texture metadata from ELTL/ELDA data
 	node.Metadata.TextureMetadata = buildTextureMetadata(node.RawChunk.ELHE, node.RawChunk.ELTL, node.RawChunk.ELDA)
 
-	geometry, err := vif.GetGeometry(node.Metadata.TextureMetadata)
+	geometry, err := vif.GetELDAGeometry(node.Metadata.TextureMetadata)
 
 	if err != nil {
 		panic(err)
@@ -267,7 +266,7 @@ func (b *Builder) addNode(node *ObfNode) int {
 		b.doc.Meshes = append(b.doc.Meshes, mesh)
 
 		// Now iterating over Meshes (which represent one Texture each)
-		for _, thing := range node.Geometry.Meshes {
+		for _, triangleStrip := range node.Geometry.Strips {
 			var (
 				indices   []uint32
 				positions [][3]float32
@@ -276,10 +275,10 @@ func (b *Builder) addNode(node *ObfNode) int {
 			)
 
 			// 1. Populate the attribute arrays for the entire texture group
-			for i := range thing.Vertices {
-				v := thing.Vertices[i]
-				n := thing.Normals[i]
-				u := thing.UVs[i]
+			for i := range triangleStrip.Vertices {
+				v := triangleStrip.Vertices[i]
+				n := triangleStrip.Normals[i]
+				u := triangleStrip.UVs[i]
 
 				positions = append(positions, [3]float32{v.X, v.Y, v.Z})
 				normals = append(normals, [3]float32{n.X, n.Y, n.Z})
@@ -288,10 +287,10 @@ func (b *Builder) addNode(node *ObfNode) int {
 
 			// 2. Unwind the strips into indices using ADC bits
 			// We iterate through all vertices in this texture group
-			for i := 2; i < len(thing.Vertices); i++ {
+			for i := 0; i < len(triangleStrip.Vertices); i++ {
 				// In PS2 VIF, the ADC bit is usually a "Draw Flag".
 				// If bit is set, the triangle formed by (i-2, i-1, i) is valid.
-				if thing.Normals[i].ADCBitSet {
+				if triangleStrip.Normals[i].ADCBitSet {
 					v0, v1, v2 := uint32(i-2), uint32(i-1), uint32(i)
 
 					// Handle Winding Order for Triangle Strips
@@ -320,14 +319,14 @@ func (b *Builder) addNode(node *ObfNode) int {
 			}
 
 			// Attach material
-			if thing.Texture.TextureId != -1 {
-				matIdx, err := b.ensureTexture(thing.Texture.TextureId)
-				if err != nil {
-					log.Printf("warn: texture %d: %v", thing.Texture.TextureId, err)
-				} else {
-					prim.Material = gltf.Index(matIdx)
-				}
-			}
+			// if triangleStrip.Texture.TextureId != -1 {
+			// 	matIdx, err := b.ensureTexture(triangleStrip.Texture.TextureId)
+			// 	if err != nil {
+			// 		log.Printf("warn: texture %d: %v", triangleStrip.Texture.TextureId, err)
+			// 	} else {
+			// 		prim.Material = gltf.Index(matIdx)
+			// 	}
+			// }
 
 			mesh.Primitives = append(mesh.Primitives, prim)
 		}

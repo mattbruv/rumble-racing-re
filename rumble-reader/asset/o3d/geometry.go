@@ -23,9 +23,9 @@ type UV struct {
 	V float32
 }
 
-type Mesh struct {
+type TriangleStrip struct {
 	// The material to apply to this geometry
-	Texture  TextureEntry
+	// Texture  TextureEntry
 	Vertices []Vertex
 	Normals  []Normal
 	UVs      []UV
@@ -34,12 +34,12 @@ type Mesh struct {
 type SubMesh struct {
 }
 
-type Geometry struct {
-	Meshes []Mesh
+type ELDA_Geometry struct {
+	Strips []TriangleStrip
 }
 
-func (vif *ParsedVif) GetGeometry(textures TextureMeta) (*Geometry, error) {
-	meshMap := make(map[uint32]*Mesh)
+func (vif *ParsedELDAVif) GetELDAGeometry(textures TextureMeta) (*ELDA_Geometry, error) {
+	stripMap := make(map[uint32]*TriangleStrip)
 
 	// Filter: collect all UNPACK commands of interest
 	var filtered []VifCommand
@@ -78,16 +78,16 @@ func (vif *ParsedVif) GetGeometry(textures TextureMeta) (*Geometry, error) {
 
 		// 2. Get/Create the flat Mesh for this texture
 		texKey := assignedTexture.ELDAOffset
-		if _, ok := meshMap[texKey]; !ok {
-			meshMap[texKey] = &Mesh{
-				Texture: *assignedTexture,
+		if _, ok := stripMap[texKey]; !ok {
+			stripMap[texKey] = &TriangleStrip{
+				// Texture: *assignedTexture,
 				// Ensure your Mesh struct has these flat slices now
 				Vertices: []Vertex{},
 				Normals:  []Normal{},
 				UVs:      []UV{},
 			}
 		}
-		m := meshMap[texKey]
+		m := stripMap[texKey]
 
 		// 3. Append data directly to the Mesh's main arrays
 		if typeA == UnpackTypeV3_32 && typeB == UnpackTypeV3_32 && typeC == UnpackTypeV2_32 {
@@ -121,12 +121,12 @@ func (vif *ParsedVif) GetGeometry(textures TextureMeta) (*Geometry, error) {
 	}
 
 	// 4. Final Assembly
-	var finalMeshes []Mesh
+	var finalStrips []TriangleStrip
 	for _, tex := range textures.TextureEnties {
-		if m, ok := meshMap[tex.ELDAOffset]; ok {
-			finalMeshes = append(finalMeshes, *m)
+		if m, ok := stripMap[tex.ELDAOffset]; ok {
+			finalStrips = append(finalStrips, *m)
 		}
 	}
 
-	return &Geometry{Meshes: finalMeshes}, nil
+	return &ELDA_Geometry{Strips: finalStrips}, nil
 }
