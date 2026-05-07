@@ -354,9 +354,6 @@ func getUnpackInfo(command byte, immediate uint16) unpackInfo {
 }
 
 func (elda *ELDA_Data) DumpVifText(elhe *ELHE_Header) (string, error) {
-	if elhe.Raw.Offset != 3805848 {
-		return "", nil
-	}
 	vif, err := elda.ParseVif()
 	if err != nil {
 		return "", err
