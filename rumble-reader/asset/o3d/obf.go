@@ -250,51 +250,32 @@ func (b *Builder) ensureTexture(textureId int) (int, error) {
 	return materialIdx, nil
 }
 
-// returns index of node in gltf document
 func (b *Builder) addNode(node *ObfNode) int {
 	gltfNode := &gltf.Node{
 		Name: fmt.Sprintf("%d", node.Metadata.HeaderOffset),
 	}
-
 	index := len(b.doc.Nodes)
 	b.doc.Nodes = append(b.doc.Nodes, gltfNode)
 
-	// add geometry
 	if node != nil && node.RawChunk.ELDA.Raw.Size > 8 {
-		mesh := &gltf.Mesh{}
-		meshIndex := len(b.doc.Meshes)
-		b.doc.Meshes = append(b.doc.Meshes, mesh)
-
-		// Now iterating over Meshes (which represent one Texture each)
-		for _, triangleStrip := range node.Geometry.Strips {
+		for stripIdx, triangleStrip := range node.Geometry.Strips {
 			var (
 				indices   []uint32
 				positions [][3]float32
 				uvs       [][2]float32
 				normals   [][3]float32
 			)
-
-			// 1. Populate the attribute arrays for the entire texture group
 			for i := range triangleStrip.Vertices {
 				v := triangleStrip.Vertices[i]
 				n := triangleStrip.Normals[i]
 				u := triangleStrip.UVs[i]
-
 				positions = append(positions, [3]float32{v.X, v.Y, v.Z})
 				normals = append(normals, [3]float32{n.X, n.Y, n.Z})
 				uvs = append(uvs, [2]float32{u.U, u.V})
 			}
-
-			// 2. Unwind the strips into indices using ADC bits
-			// We iterate through all vertices in this texture group
 			for i := 0; i < len(triangleStrip.Vertices); i++ {
-				// In PS2 VIF, the ADC bit is usually a "Draw Flag".
-				// If bit is set, the triangle formed by (i-2, i-1, i) is valid.
 				if triangleStrip.Normals[i].ADCBitSet {
 					v0, v1, v2 := uint32(i-2), uint32(i-1), uint32(i)
-
-					// Handle Winding Order for Triangle Strips
-					// Most PS2 strips flip winding every vertex
 					if i%2 == 0 {
 						indices = append(indices, v0, v1, v2)
 					} else {
@@ -302,12 +283,10 @@ func (b *Builder) addNode(node *ObfNode) int {
 					}
 				}
 			}
-
 			if len(indices) == 0 {
 				continue
 			}
 
-			// 3. Create one primitive for this texture
 			prim := &gltf.Primitive{
 				Indices: gltf.Index(modeler.WriteIndices(b.doc, indices)),
 				Attributes: gltf.PrimitiveAttributes{
@@ -318,29 +297,28 @@ func (b *Builder) addNode(node *ObfNode) int {
 				Mode: gltf.PrimitiveTriangles,
 			}
 
-			// Attach material
-			// if triangleStrip.Texture.TextureId != -1 {
-			// 	matIdx, err := b.ensureTexture(triangleStrip.Texture.TextureId)
-			// 	if err != nil {
-			// 		log.Printf("warn: texture %d: %v", triangleStrip.Texture.TextureId, err)
-			// 	} else {
-			// 		prim.Material = gltf.Index(matIdx)
-			// 	}
-			// }
+			mesh := &gltf.Mesh{
+				Name:       fmt.Sprintf("%d_strip%d", node.Metadata.HeaderOffset, stripIdx),
+				Primitives: []*gltf.Primitive{prim},
+			}
+			b.doc.Meshes = append(b.doc.Meshes, mesh)
+			mi := len(b.doc.Meshes) - 1
 
-			mesh.Primitives = append(mesh.Primitives, prim)
+			stripNode := &gltf.Node{
+				Name: fmt.Sprintf("%d_strip%d", node.Metadata.HeaderOffset, stripIdx),
+				Mesh: &mi,
+			}
+			b.doc.Nodes = append(b.doc.Nodes, stripNode)
+			si := len(b.doc.Nodes) - 1
+			gltfNode.Children = append(gltfNode.Children, si)
 		}
-
-		gltfNode.Mesh = &meshIndex
 	}
 
-	// iterate children via linked list
 	child := node.LastChild
 	for child != nil {
 		childIndex := b.addNode(child)
 		gltfNode.Children = append(gltfNode.Children, childIndex)
 		child = child.PrevSibling
 	}
-
 	return index
 }
