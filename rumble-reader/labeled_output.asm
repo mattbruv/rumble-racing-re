@@ -782,15 +782,18 @@ Disassembly of section :
   1dd948:	3c 03 00 80 ff 02 00 40 	nop[e] 	nop
   1dd950:	3c 03 00 80 ff 02 00 00 	nop 	nop
   1dd958:	bc 06 06 80 ff 02 00 00 	nop 	xtop vi06
-  1dd960:	fe 33 8c 80 ff 02 00 00 	nop 	ilwr.y vi12,(vi06)y
-  1dd968:	fe 33 0d 81 ff 02 00 00 	nop 	ilwr.x vi13,(vi06)x
-  1dd970:	e0 30 04 10 ff 02 00 00 	nop 	iaddiu vi04,vi06,0xe0
-  1dd978:	e0 30 05 10 ff 02 00 00 	nop 	iaddiu vi05,vi06,0xe0
+  1dd960:	fe 33 8c 80 ff 02 00 00 	nop 	ilwr.y vi12,(vi06)y ; Y = number of header lines
+  1dd968:	fe 33 0d 81 ff 02 00 00 	nop 	ilwr.x vi13,(vi06)x ; X = number of triangle strips
+  1dd970:	e0 30 04 10 ff 02 00 00 	nop 	iaddiu vi04,vi06,0xe0 ; point to first vert. 224 bytes after first header
+  1dd978:	e0 30 05 10 ff 02 00 00 	nop 	iaddiu vi05,vi06,0xe0 ; point to first vert. 224 bytes after first header
   1dd980:	06 00 0c 50 ff 02 00 00 	nop 	ibeq vi12,vi00,0x1dd9b8 ; target: _$StartStrip
   1dd988:	01 30 06 10 ff 02 00 00 	nop 	iaddiu vi06,vi06,1
 ; --- .vu.84, _$NextHdrLine ---
+ ; Seems to just forward on the data here in the header.
+ ; The game monkey-patched in resolved texture addresses, so this makes sense I guess.
+ ; Not doing anything else other than forwarding this on?
   1dd990:	7c 33 fd 81 ff 02 00 00 	nop 	lqi.xyzw vf29xyzw,(vi06++)
-  1dd998:	f2 67 0c 80 ff 02 00 00 	nop 	iaddi vi12,vi12,-1
+  1dd998:	f2 67 0c 80 ff 02 00 00 	nop 	iaddi vi12,vi12,-1 ; go to next header line
   1dd9a0:	3c 03 00 80 ff 02 00 00 	nop 	nop
   1dd9a8:	fc 67 00 5a ff 02 00 00 	nop 	ibgtz vi12,0x1dd990 ; target: _$NextHdrLine
   1dd9b0:	7d eb e4 81 ff 02 00 00 	nop 	sqi.xyzw vf29xyzw,(vi04++)
