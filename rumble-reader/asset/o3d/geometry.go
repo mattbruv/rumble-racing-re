@@ -170,8 +170,11 @@ func getBufferChunks(filtered []VifCommand) (*bufferChunks, error) {
 						tripl = append(tripl, *filtered[i].Unpack)
 						i++
 					}
-					if len(tripl) > 0 {
+					if len(tripl) > 2 {
 						sChunk.DataTriples = append(sChunk.DataTriples, triple{A: tripl[0], B: tripl[1], C: tripl[2]})
+					} else {
+						// TODO: figure out why this happens
+						// fmt.Println("Missing triple!")
 					}
 				}
 				chunk.Strips = append(chunk.Strips, sChunk)

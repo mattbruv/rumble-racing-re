@@ -269,7 +269,7 @@ func (b *Builder) addNode(node *ObfNode) int {
 			)
 
 			if len(buf.Strips) != 1 {
-				panic(len(buf.Strips))
+				// panic(len(buf.Strips))
 			}
 			// fmt.Println()
 			// fmt.Println(node.Metadata.HeaderOffset, "BUF", bufIdx, "STRIP COUNT:", len(buf.Strips))

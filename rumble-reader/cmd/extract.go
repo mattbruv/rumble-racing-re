@@ -176,6 +176,7 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 			converted := false
 			if opts.convertAutomatically {
 				// only flag as converted if we have saved files
+				// fmt.Println(resName)
 				convertedFiles := theAsset.GetConvertedFiles(outFileName)
 				if len(convertedFiles) > 0 {
 					converted = true
