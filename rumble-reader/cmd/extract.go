@@ -152,7 +152,9 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 	for _, entry := range rlst.Entries {
 		theAsset, err := trackFile.GetResource(entry)
 		if err != nil {
-			return fmt.Errorf("failed to get resource: %w", err)
+			fmt.Println("failed to get resource:", entry.ResourceName, err)
+			// return fmt.Errorf("failed to get resource: %w", err)
+			continue
 		}
 
 		data := theAsset.RawData()
