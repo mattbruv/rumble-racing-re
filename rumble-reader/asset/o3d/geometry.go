@@ -9,7 +9,8 @@ type Vertex struct {
 }
 
 type Normal struct {
-	ADCBitSet bool
+	ADCBitSet      bool
+	IsFirstTwoVert bool
 
 	X float32
 	Y float32
@@ -99,20 +100,23 @@ func GetGeometry(commandStream []VifCommand) (*Geometry, error) {
 				switch {
 				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV3_32 && cmdC.Type == UnpackTypeV2_32:
 					for j := 0; j < len(cmdA.V3_32); j++ {
-						strip.Normals = append(strip.Normals, Normal{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3, ADCBitSet: cmdA.V3_32[j].ADCBitSet})
+						ignore := j == 0 || j == 1
+						strip.Normals = append(strip.Normals, Normal{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3, ADCBitSet: cmdA.V3_32[j].ADCBitSet, IsFirstTwoVert: ignore})
 						strip.Vertices = append(strip.Vertices, Vertex{X: cmdB.V3_32[j].V1, Y: cmdB.V3_32[j].V2, Z: cmdB.V3_32[j].V3})
 						strip.UVs = append(strip.UVs, UV{U: cmdC.V2_32[j].V1, V: cmdC.V2_32[j].V2})
 					}
 
 				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV2_32 && cmdC.Type == UnpackTypeV4_8:
 					for j := 0; j < len(cmdA.V3_32); j++ {
+						ignore := j == 0 || j == 1
 						strip.Vertices = append(strip.Vertices, Vertex{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3})
 						strip.UVs = append(strip.UVs, UV{U: cmdB.V2_32[j].V1, V: cmdB.V2_32[j].V2})
 						strip.Normals = append(strip.Normals, Normal{
-							X:         float32(cmdC.V4_8[j].V1) / 255.0,
-							Y:         float32(cmdC.V4_8[j].V2) / 255.0,
-							Z:         float32(cmdC.V4_8[j].V3) / 255.0,
-							ADCBitSet: cmdC.V4_8[j].ADCBitSet,
+							X:              float32(cmdC.V4_8[j].V1) / 255.0,
+							Y:              float32(cmdC.V4_8[j].V2) / 255.0,
+							Z:              float32(cmdC.V4_8[j].V3) / 255.0,
+							ADCBitSet:      cmdC.V4_8[j].ADCBitSet,
+							IsFirstTwoVert: ignore,
 						})
 					}
 				}

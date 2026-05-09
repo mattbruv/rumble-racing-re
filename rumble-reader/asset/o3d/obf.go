@@ -274,6 +274,7 @@ func (b *Builder) addNode(node *ObfNode) int {
 			// fmt.Println(node.Metadata.HeaderOffset, "BUF", bufIdx, "STRIP COUNT:", len(buf.Strips))
 			// Combine all strips in the buffer into one flat list,
 			for _, strip := range buf.Strips {
+				count := 0
 				// fmt.Println("VERTS:", len(strip.Vertices))
 				base := uint32(len(positions))
 
@@ -286,14 +287,15 @@ func (b *Builder) addNode(node *ObfNode) int {
 					uvs = append(uvs, [2]float32{u.U, u.V})
 				}
 
-				for i := 2; i < len(strip.Vertices); i++ {
+				for i := 0; i < len(strip.Vertices); i++ {
 					if strip.Normals[i].ADCBitSet {
 						v0, v1, v2 := base+uint32(i-2), base+uint32(i-1), base+uint32(i)
-						if i%2 == 0 {
+						if count%2 == 0 {
 							indices = append(indices, v0, v1, v2)
 						} else {
 							indices = append(indices, v1, v0, v2)
 						}
+						count++
 					}
 				}
 			}
