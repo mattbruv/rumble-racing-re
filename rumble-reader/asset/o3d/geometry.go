@@ -1,8 +1,6 @@
 package o3d
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type Vertex struct {
 	X float32
@@ -23,118 +21,165 @@ type UV struct {
 	V float32
 }
 
-type TriangleStrip struct {
-	// The material to apply to this geometry
-	// Texture  TextureEntry
+type Geometry struct {
+	Buffers []Buffer
+}
+
+type Strip struct {
+	TotalVertsInStrip int
+
 	Vertices []Vertex
 	Normals  []Normal
 	UVs      []UV
 }
 
-type SubMesh struct {
+type Buffer struct {
+	NumHeaderLines int
+	NumStrips      int
+	// TODO: Texture Info
+
+	Strips []Strip
 }
 
-type ELDA_Geometry struct {
-	Strips []TriangleStrip
+type bufferChunks struct {
+	BufferChunks []bufferChunk
+}
+type bufferChunk struct {
+	BufferHeader []V4_32Entry
+	Strips       []stripChunk
 }
 
-func (vif *ParsedELDAVif) GetELDAGeometry(textures TextureMeta) (*ELDA_Geometry, error) {
-	// stripMap := make(map[uint32]*TriangleStrip)
-	var strips []TriangleStrip
+type triple struct {
+	A UnpackData
+	B UnpackData
+	C UnpackData
+}
 
-	// Filter: collect all UNPACK commands of interest
+type stripChunk struct {
+	StripHeader V4_32Entry
+
+	// DataTriples stores groups of (A, B, C) unpacks belonging to this header
+	DataTriples []triple
+}
+
+func GetGeometry(commandStream []VifCommand) (*Geometry, error) {
 	var filtered []VifCommand
-	for _, cmd := range vif.Commands {
+	for _, cmd := range commandStream {
 		if cmd.Kind == VifCommandUNPACK {
-			switch cmd.Unpack.Type {
-			case UnpackTypeV3_32, UnpackTypeV2_32, UnpackTypeV4_8:
-				filtered = append(filtered, cmd)
-			}
+			filtered = append(filtered, cmd)
 		}
 	}
 
-	if len(filtered)%3 != 0 {
-		return nil, fmt.Errorf("filtered unpack commands count %d not divisible by 3", len(filtered))
+	chunks, err := getBufferChunks(filtered)
+	if err != nil {
+		return nil, err
 	}
 
-	for i := 0; i < len(filtered); i += 3 {
-		strip := TriangleStrip{
-			Vertices: []Vertex{},
-			Normals:  []Normal{},
-			UVs:      []UV{},
+	geometry := &Geometry{}
+
+	for _, bChunk := range chunks.BufferChunks {
+		buf := Buffer{
+			NumStrips:      int(bChunk.BufferHeader[0].V1),
+			NumHeaderLines: int(bChunk.BufferHeader[0].V2),
 		}
-		cmdA, cmdB, cmdC := filtered[i], filtered[i+1], filtered[i+2]
-		typeA, typeB, typeC := cmdA.Unpack.Type, cmdB.Unpack.Type, cmdC.Unpack.Type
 
-		// 1. Identify the Target Mesh (Texture Group)
-		// groupOffset := cmdA.Unpack.Offset
-		// var assignedTexture *TextureEntry
-		// for j := range textures.TextureEnties {
-		// 	texOff := uint64(textures.TextureEnties[j].ELDAOffset)
-		// 	if texOff <= groupOffset {
-		// 		if assignedTexture == nil || uint64(assignedTexture.ELDAOffset) < texOff {
-		// 			assignedTexture = &textures.TextureEnties[j]
-		// 		}
-		// 	}
-		// }
-
-		// if assignedTexture == nil {
-		// 	return nil, fmt.Errorf("no texture for offset %d", groupOffset)
-		// }
-
-		// 2. Get/Create the flat Mesh for this texture
-		// texKey := assignedTexture.ELDAOffset
-		// if _, ok := stripMap[texKey]; !ok {
-		// 	stripMap[texKey] = &TriangleStrip{
-		// 		// Texture: *assignedTexture,
-		// 		// Ensure your Mesh struct has these flat slices now
-		// 		Vertices: []Vertex{},
-		// 		Normals:  []Normal{},
-		// 		UVs:      []UV{},
-		// 	}
-		// }
-		// m := stripMap[texKey]
-
-		// 3. Append data directly to the Mesh's main arrays
-		if typeA == UnpackTypeV3_32 && typeB == UnpackTypeV3_32 && typeC == UnpackTypeV2_32 {
-			// Pattern: (normal, vertex, uv)
-			for j := uint8(0); j < cmdA.Num; j++ {
-				vNorm := cmdA.Unpack.V3_32[j]
-				vVert := cmdB.Unpack.V3_32[j]
-				vUV := cmdC.Unpack.V2_32[j]
-
-				strip.Normals = append(strip.Normals, Normal{X: vNorm.V1, Y: vNorm.V2, Z: vNorm.V3, ADCBitSet: vNorm.ADCBitSet})
-				strip.Vertices = append(strip.Vertices, Vertex{X: vVert.V1, Y: vVert.V2, Z: vVert.V3})
-				strip.UVs = append(strip.UVs, UV{U: vUV.V1, V: vUV.V2})
+		for _, sChunk := range bChunk.Strips {
+			strip := Strip{
+				TotalVertsInStrip: int(sChunk.StripHeader.V1 & 0x7fff),
 			}
+
+			// Process every triple associated with this strip header
+			for _, triple := range sChunk.DataTriples {
+				// if len(triple) < 3 {
+				// 	continue // Or handle unexpected partial data
+				// }
+
+				cmdA, cmdB, cmdC := triple.A, triple.B, triple.C
+
+				switch {
+				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV3_32 && cmdC.Type == UnpackTypeV2_32:
+					for j := 0; j < len(cmdA.V3_32); j++ {
+						strip.Normals = append(strip.Normals, Normal{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3, ADCBitSet: cmdA.V3_32[j].ADCBitSet})
+						strip.Vertices = append(strip.Vertices, Vertex{X: cmdB.V3_32[j].V1, Y: cmdB.V3_32[j].V2, Z: cmdB.V3_32[j].V3})
+						strip.UVs = append(strip.UVs, UV{U: cmdC.V2_32[j].V1, V: cmdC.V2_32[j].V2})
+					}
+
+				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV2_32 && cmdC.Type == UnpackTypeV4_8:
+					for j := 0; j < len(cmdA.V3_32); j++ {
+						strip.Vertices = append(strip.Vertices, Vertex{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3})
+						strip.UVs = append(strip.UVs, UV{U: cmdB.V2_32[j].V1, V: cmdB.V2_32[j].V2})
+						strip.Normals = append(strip.Normals, Normal{
+							X:         float32(cmdC.V4_8[j].V1) / 255.0,
+							Y:         float32(cmdC.V4_8[j].V2) / 255.0,
+							Z:         float32(cmdC.V4_8[j].V3) / 255.0,
+							ADCBitSet: cmdC.V4_8[j].ADCBitSet,
+						})
+					}
+				}
+			}
+			buf.Strips = append(buf.Strips, strip)
+		}
+		geometry.Buffers = append(geometry.Buffers, buf)
+	}
+
+	return geometry, nil
+}
+
+func getBufferChunks(filtered []VifCommand) (*bufferChunks, error) {
+	result := &bufferChunks{}
+	i := 0
+
+	for i < len(filtered) {
+		// Buffer Boundary: Two consecutive V4_32s
+		if i+1 < len(filtered) &&
+			filtered[i].Unpack.Type == UnpackTypeV4_32 &&
+			filtered[i+1].Unpack.Type == UnpackTypeV4_32 {
+
+			chunk := bufferChunk{
+				BufferHeader: filtered[i].Unpack.V4_32,
+			}
+			i++ // Advance past the buffer header
+
+			// Collect strips within this buffer
+			for i < len(filtered) {
+				// Stop if we hit the next buffer (two V4_32s)
+				if i+1 < len(filtered) &&
+					filtered[i].Unpack.Type == UnpackTypeV4_32 &&
+					filtered[i+1].Unpack.Type == UnpackTypeV4_32 {
+					break
+				}
+
+				// Expect a Strip Header
+				if filtered[i].Unpack.Type != UnpackTypeV4_32 {
+					return nil, fmt.Errorf("expected strip header at index %d", i)
+				}
+
+				sChunk := stripChunk{}
+				if len(filtered[i].Unpack.V4_32) > 0 {
+					sChunk.StripHeader = filtered[i].Unpack.V4_32[0]
+				}
+				i++
+
+				// Collect all following A, B, C triples until the next V4_32 header
+				for i < len(filtered) && filtered[i].Unpack.Type != UnpackTypeV4_32 {
+					tripl := make([]UnpackData, 0, 3)
+					for j := 0; j < 3 && i < len(filtered); j++ {
+						if filtered[i].Unpack.Type == UnpackTypeV4_32 {
+							break
+						}
+						tripl = append(tripl, *filtered[i].Unpack)
+						i++
+					}
+					if len(tripl) > 0 {
+						sChunk.DataTriples = append(sChunk.DataTriples, triple{A: tripl[0], B: tripl[1], C: tripl[2]})
+					}
+				}
+				chunk.Strips = append(chunk.Strips, sChunk)
+			}
+			result.BufferChunks = append(result.BufferChunks, chunk)
 		} else {
-			// Pattern: (vertex, uv, normal)
-			for j := uint8(0); j < cmdA.Num; j++ {
-				vVert := cmdA.Unpack.V3_32[j]
-				vUV := cmdB.Unpack.V2_32[j]
-				vNorm := cmdC.Unpack.V4_8[j]
-
-				strip.Vertices = append(strip.Vertices, Vertex{X: vVert.V1, Y: vVert.V2, Z: vVert.V3})
-				strip.UVs = append(strip.UVs, UV{U: vUV.V1, V: vUV.V2})
-				strip.Normals = append(strip.Normals, Normal{
-					X:         float32(vNorm.V1) / 255.0,
-					Y:         float32(vNorm.V2) / 255.0,
-					Z:         float32(vNorm.V3) / 255.0,
-					ADCBitSet: vNorm.ADCBitSet,
-				})
-			}
+			i++
 		}
-
-		strips = append(strips, strip)
 	}
-
-	// 4. Final Assembly
-	// var finalStrips []TriangleStrip
-	// for _, tex := range textures.TextureEnties {
-	// 	if m, ok := stripMap[tex.ELDAOffset]; ok {
-	// 		finalStrips = append(finalStrips, *m)
-	// 	}
-	// }
-
-	return &ELDA_Geometry{Strips: strips}, nil
+	return result, nil
 }

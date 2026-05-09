@@ -41,10 +41,6 @@ const (
 
 type Quadword [16]byte
 
-type ParsedELDAVif struct {
-	Commands []VifCommand
-}
-
 type VifCommand struct {
 	Kind      VifCommandKind
 	Opcode    uint8
@@ -118,7 +114,7 @@ type unpackInfo struct {
 	performUnpackWriteMasking bool
 }
 
-func (elda *ELDA_Data) ParseVif() (*ParsedELDAVif, error) {
+func (elda *ELDA_Data) ParseVif() (*[]VifCommand, error) {
 	if len(elda.Raw.Payload) < 8 {
 		return nil, fmt.Errorf("ELDA payload too small for VIF data")
 	}
@@ -322,9 +318,7 @@ func (elda *ELDA_Data) ParseVif() (*ParsedELDAVif, error) {
 		commands = append(commands, cmd)
 	}
 
-	return &ParsedELDAVif{
-		Commands: commands,
-	}, nil
+	return &commands, nil
 }
 
 func getUnpackInfo(command byte, immediate uint16) unpackInfo {
@@ -365,7 +359,7 @@ func (elda *ELDA_Data) DumpVifText(elhe *ELHE_Header) (string, error) {
 	sb.WriteString("=================\n\n")
 	sb.WriteString(fmt.Sprintf("Header Offset: %d\n\n", elhe.Raw.Offset))
 
-	for i, cmd := range vif.Commands {
+	for i, cmd := range *vif {
 		sb.WriteString(fmt.Sprintf("Command %d: %s (Opcode: 0x%02X, Num: %d, Immediate: 0x%04X)\n",
 			i, cmd.Kind, cmd.Opcode, cmd.Num, cmd.Immediate))
 

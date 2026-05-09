@@ -796,32 +796,34 @@ Disassembly of section :
   1dd998:	f2 67 0c 80 ff 02 00 00 	nop 	iaddi vi12,vi12,-1 ; go to next header line
   1dd9a0:	3c 03 00 80 ff 02 00 00 	nop 	nop
   1dd9a8:	fc 67 00 5a ff 02 00 00 	nop 	ibgtz vi12,0x1dd990 ; target: _$NextHdrLine
-  1dd9b0:	7d eb e4 81 ff 02 00 00 	nop 	sqi.xyzw vf29xyzw,(vi04++)
+  1dd9b0:	7d eb e4 81 ff 02 00 00 	nop 	sqi.xyzw vf29xyzw,(vi04++) ; why is it storing the last header quad here?
+  ; could this be setting the last header value to be the mask? Idk what this is doing
+  ; after header vi06 is pointing to single V4_32?
 ; --- .vu.85, _$StartStrip ---
-  1dd9b8:	01 30 fd 01 ff 02 00 00 	nop 	lq.xyzw vf29xyzw,1(vi06)
-  1dd9c0:	fe 33 0c 81 ff 02 00 00 	nop 	ilwr.x vi12,(vi06)x
+  1dd9b8:	01 30 fd 01 ff 02 00 00 	nop 	lq.xyzw vf29xyzw,1(vi06) ; load mask into f29?
+  1dd9c0:	fe 33 0c 81 ff 02 00 00 	nop 	ilwr.x vi12,(vi06)x ; load 32775(?)
   1dd9c8:	7c 33 f2 81 ff 02 00 00 	nop 	lqi.xyzw vf18xyzw,(vi06++)
-  1dd9d0:	ff 07 eb 11 ff 02 00 00 	nop 	iaddiu vi11,vi00,0x7fff
-  1dd9d8:	34 5b 0c 80 bf 21 e0 01 	mulaw.xyzw accxyzw,vf04xyzw,vf00w 	iand vi12,vi11,vi12
-  1dd9e0:	b0 30 0c 80 be 18 fd 01 	maddaz.xyzw accxyzw,vf03xyzw,vf29z 	iadd vi02,vi06,vi12
-  1dd9e8:	72 30 06 80 bd 10 fd 01 	madday.xyzw accxyzw,vf02xyzw,vf29y 	iaddi vi06,vi06,1
-  1dd9f0:	7c 33 fd 81 48 0e fd 01 	maddx.xyzw vf25xyzw,vf01xyzw,vf29x 	lqi.xyzw vf29xyzw,(vi06++)
-  1dd9f8:	f0 10 0c 80 ff 02 00 00 	nop 	iadd vi03,vi02,vi12
-  1dda00:	fd 63 fa 81 ff 02 00 00 	nop 	mfir.xyzw vf26xyzw,vi12
+  1dd9d0:	ff 07 eb 11 ff 02 00 00 	nop 	iaddiu vi11,vi00,0x7fff ; vi00 = always 0
+  1dd9d8:	34 5b 0c 80 bf 21 e0 01 	mulaw.xyzw accxyzw,vf04xyzw,vf00w 	iand vi12,vi11,vi12 ; x & 0x7fff = number of verts?
+  1dd9e0:	b0 30 0c 80 be 18 fd 01 	maddaz.xyzw accxyzw,vf03xyzw,vf29z 	iadd vi02,vi06,vi12 ; piont at just past last normal (Verts?)
+  1dd9e8:	72 30 06 80 bd 10 fd 01 	madday.xyzw accxyzw,vf02xyzw,vf29y 	iaddi vi06,vi06,1 ; skip mask command?
+  1dd9f0:	7c 33 fd 81 48 0e fd 01 	maddx.xyzw vf25xyzw,vf01xyzw,vf29x 	lqi.xyzw vf29xyzw,(vi06++) ; load first normal
+  1dd9f8:	f0 10 0c 80 ff 02 00 00 	nop 	iadd vi03,vi02,vi12 ; point at UVs?
+  1dda00:	fd 63 fa 81 ff 02 00 00 	nop 	mfir.xyzw vf26xyzw,vi12 ; load num verts into f26?
   1dda08:	7b 00 fe 01 3c d1 fa 01 	itof0.xyzw vf26xyzw,vf26xyzw 	lq.xyzw vf30xyzw,123(vi00)
   1dda10:	3c 03 00 80 a8 f7 1a 01 	add.x vf30x,vf30x,vf26x 	nop
   1dda18:	7b f0 e0 03 ff 02 00 00 	nop 	sq.xyzw vf30xyzw,123(vi00)
-  1dda20:	72 58 08 80 ff 02 00 00 	nop 	iaddi vi08,vi11,1
+  1dda20:	72 58 08 80 ff 02 00 00 	nop 	iaddi vi08,vi11,1 ; ADC/kick bit??
   1dda28:	bc 03 f9 81 bf 21 e0 01 	mulaw.xyzw accxyzw,vf04xyzw,vf00w 	div q,vf00w,vf00x
   1dda30:	3c cb fa 81 be 18 fd 01 	maddaz.xyzw accxyzw,vf03xyzw,vf29z 	move.xyzw vf26xyzw,vf25xyzw
   1dda38:	7d 93 e4 81 bd 10 fd 01 	madday.xyzw accxyzw,vf02xyzw,vf29y 	sqi.xyzw vf18xyzw,(vi04++)
   1dda40:	70 22 0c 80 48 0e fd 01 	maddx.xyzw vf25xyzw,vf01xyzw,vf29x 	iadd vi09,vi04,vi12
-  1dda48:	7c 1b ff 81 ff 02 00 00 	nop 	lqi.xyzw vf31xyzw,(vi03++)
+  1dda48:	7c 1b ff 81 ff 02 00 00 	nop 	lqi.xyzw vf31xyzw,(vi03++) ; read first UV?
   1dda50:	70 4a 0c 80 ff 02 00 00 	nop 	iadd vi09,vi09,vi12
-  1dda58:	7c 13 fe 81 ff 02 00 00 	nop 	lqi.xyzw vf30xyzw,(vi02++)
+  1dda58:	7c 13 fe 81 ff 02 00 00 	nop 	lqi.xyzw vf30xyzw,(vi02++) ; read first vert?
   1dda60:	70 4a 0c 80 ff 02 00 00 	nop 	iadd vi09,vi09,vi12
   1dda68:	32 4f 09 80 ff 02 00 00 	nop 	iaddi vi09,vi09,-4
-  1dda70:	7c 33 fd 81 ff 02 00 00 	nop 	lqi.xyzw vf29xyzw,(vi06++)
+  1dda70:	7c 33 fd 81 ff 02 00 00 	nop 	lqi.xyzw vf29xyzw,(vi06++) ; read first normal?
   1dda78:	72 00 01 80 ff 02 00 00 	nop 	iaddi vi01,vi00,1
 ; --- .vu.86, _$NextVertex ---
   1dda80:	fc fb 4a 80 1c d6 e0 01 	mulq.xyzw vf24xyzw,vf26xyzw,q 	mtir vi10,vf31z

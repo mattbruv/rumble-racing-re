@@ -49,7 +49,7 @@ type NodeMetadata struct {
 type ObfNode struct {
 	RawChunk ObfChunk
 	Metadata NodeMetadata
-	Geometry *ELDA_Geometry
+	Geometry *Geometry
 
 	Parent      *ObfNode // 0x1C
 	LastChild   *ObfNode // 0x20
@@ -103,7 +103,8 @@ func buildTree(node *ObfNode, currDataIndex int, data []ObfChunk) int {
 	// Build texture metadata from ELTL/ELDA data
 	node.Metadata.TextureMetadata = buildTextureMetadata(node.RawChunk.ELHE, node.RawChunk.ELTL, node.RawChunk.ELDA)
 
-	geometry, err := vif.GetELDAGeometry(node.Metadata.TextureMetadata)
+	// geometry, err := GetGeometry(node.Metadata.TextureMetadata)
+	geometry, err := GetGeometry(*vif)
 
 	if err != nil {
 		panic(err)
@@ -258,31 +259,50 @@ func (b *Builder) addNode(node *ObfNode) int {
 	b.doc.Nodes = append(b.doc.Nodes, gltfNode)
 
 	if node != nil && node.RawChunk.ELDA.Raw.Size > 8 {
-		for stripIdx, triangleStrip := range node.Geometry.Strips {
+		vertCount := 0 // maintain winding index across buffers..
+		for bufIdx, buf := range node.Geometry.Buffers {
 			var (
 				indices   []uint32
 				positions [][3]float32
 				uvs       [][2]float32
 				normals   [][3]float32
 			)
-			for i := range triangleStrip.Vertices {
-				v := triangleStrip.Vertices[i]
-				n := triangleStrip.Normals[i]
-				u := triangleStrip.UVs[i]
-				positions = append(positions, [3]float32{v.X, v.Y, v.Z})
-				normals = append(normals, [3]float32{n.X, n.Y, n.Z})
-				uvs = append(uvs, [2]float32{u.U, u.V})
+
+			if len(buf.Strips) != 1 {
+				panic(len(buf.Strips))
 			}
-			for i := 0; i < len(triangleStrip.Vertices); i++ {
-				if triangleStrip.Normals[i].ADCBitSet {
-					v0, v1, v2 := uint32(i-2), uint32(i-1), uint32(i)
-					if i%2 == 0 {
-						indices = append(indices, v0, v1, v2)
-					} else {
-						indices = append(indices, v1, v0, v2)
+			// fmt.Println()
+			// fmt.Println(node.Metadata.HeaderOffset, "BUF", bufIdx, "STRIP COUNT:", len(buf.Strips))
+			// Combine all strips in the buffer into one flat list,
+			// tracking the base vertex offset for index generation.
+			for _, strip := range buf.Strips {
+				// fmt.Println("VERTS:", len(strip.Vertices))
+				base := uint32(len(positions))
+
+				for i := range strip.Vertices {
+					v := strip.Vertices[i]
+					n := strip.Normals[i]
+					u := strip.UVs[i]
+					positions = append(positions, [3]float32{v.X, v.Y, v.Z})
+					normals = append(normals, [3]float32{n.X, n.Y, n.Z})
+					uvs = append(uvs, [2]float32{u.U, u.V})
+					// fmt.Println(bufIdx, stripIdx, i, v, n.ADCBitSet)
+				}
+
+				for i := 2; i < len(strip.Vertices); i++ {
+					if strip.Normals[i].ADCBitSet {
+						v0, v1, v2 := base+uint32(i-2), base+uint32(i-1), base+uint32(i)
+						if vertCount%2 == 0 {
+							indices = append(indices, v0, v1, v2)
+						} else {
+							indices = append(indices, v1, v0, v2)
+						}
+						// fmt.Println(vertCount, vertCount%2)
+						vertCount++
 					}
 				}
 			}
+
 			if len(indices) == 0 {
 				continue
 			}
@@ -296,21 +316,19 @@ func (b *Builder) addNode(node *ObfNode) int {
 				},
 				Mode: gltf.PrimitiveTriangles,
 			}
-
 			mesh := &gltf.Mesh{
-				Name:       fmt.Sprintf("%d_strip%d", node.Metadata.HeaderOffset, stripIdx),
+				Name:       fmt.Sprintf("%d_buf%d", node.Metadata.HeaderOffset, bufIdx),
 				Primitives: []*gltf.Primitive{prim},
 			}
 			b.doc.Meshes = append(b.doc.Meshes, mesh)
 			mi := len(b.doc.Meshes) - 1
-
-			stripNode := &gltf.Node{
-				Name: fmt.Sprintf("%d_strip%d", node.Metadata.HeaderOffset, stripIdx),
+			bufNode := &gltf.Node{
+				Name: fmt.Sprintf("%d_buf%d", node.Metadata.HeaderOffset, bufIdx),
 				Mesh: &mi,
 			}
-			b.doc.Nodes = append(b.doc.Nodes, stripNode)
-			si := len(b.doc.Nodes) - 1
-			gltfNode.Children = append(gltfNode.Children, si)
+			b.doc.Nodes = append(b.doc.Nodes, bufNode)
+			bi := len(b.doc.Nodes) - 1
+			gltfNode.Children = append(gltfNode.Children, bi)
 		}
 	}
 
