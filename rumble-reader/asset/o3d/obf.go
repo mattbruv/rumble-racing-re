@@ -287,10 +287,26 @@ func (b *Builder) addNode(node *ObfNode) int {
 					uvs = append(uvs, [2]float32{u.U, u.V})
 				}
 
-				for i := 0; i < len(strip.Vertices); i++ {
+				/*
+					isFlipped = false
+					for each vtx:
+					   if draw:
+					       if prev was not draw:
+					           isFlipped = false
+					       else:
+					           isFlipped = not isFlipped
+					       # add vertex
+				*/
+				isFlipped := true
+				for i := 2; i < len(strip.Vertices); i++ {
 					if strip.Normals[i].ADCBitSet {
+						if strip.Normals[i-1].ADCBitSet == false {
+							isFlipped = false
+						} else {
+							isFlipped = !isFlipped
+						}
 						v0, v1, v2 := base+uint32(i-2), base+uint32(i-1), base+uint32(i)
-						if count%2 == 0 {
+						if isFlipped {
 							indices = append(indices, v0, v1, v2)
 						} else {
 							indices = append(indices, v1, v0, v2)
