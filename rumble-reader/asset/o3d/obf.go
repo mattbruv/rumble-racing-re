@@ -259,7 +259,6 @@ func (b *Builder) addNode(node *ObfNode) int {
 	b.doc.Nodes = append(b.doc.Nodes, gltfNode)
 
 	if node != nil && node.RawChunk.ELDA.Raw.Size > 8 {
-		vertCount := 0 // maintain winding index across buffers..
 		for bufIdx, buf := range node.Geometry.Buffers {
 			var (
 				indices   []uint32
@@ -274,7 +273,6 @@ func (b *Builder) addNode(node *ObfNode) int {
 			// fmt.Println()
 			// fmt.Println(node.Metadata.HeaderOffset, "BUF", bufIdx, "STRIP COUNT:", len(buf.Strips))
 			// Combine all strips in the buffer into one flat list,
-			// tracking the base vertex offset for index generation.
 			for _, strip := range buf.Strips {
 				// fmt.Println("VERTS:", len(strip.Vertices))
 				base := uint32(len(positions))
@@ -286,19 +284,16 @@ func (b *Builder) addNode(node *ObfNode) int {
 					positions = append(positions, [3]float32{v.X, v.Y, v.Z})
 					normals = append(normals, [3]float32{n.X, n.Y, n.Z})
 					uvs = append(uvs, [2]float32{u.U, u.V})
-					// fmt.Println(bufIdx, stripIdx, i, v, n.ADCBitSet)
 				}
 
 				for i := 2; i < len(strip.Vertices); i++ {
 					if strip.Normals[i].ADCBitSet {
 						v0, v1, v2 := base+uint32(i-2), base+uint32(i-1), base+uint32(i)
-						if vertCount%2 == 0 {
+						if i%2 == 0 {
 							indices = append(indices, v0, v1, v2)
 						} else {
 							indices = append(indices, v1, v0, v2)
 						}
-						// fmt.Println(vertCount, vertCount%2)
-						vertCount++
 					}
 				}
 			}
