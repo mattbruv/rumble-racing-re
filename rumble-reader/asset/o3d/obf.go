@@ -260,86 +260,77 @@ func (b *Builder) addNode(node *ObfNode) int {
 
 	if node != nil && node.RawChunk.ELDA.Raw.Size > 8 {
 		for bufIdx, buf := range node.Geometry.Buffers {
-			var (
-				indices   []uint32
-				positions [][3]float32
-				uvs       [][2]float32
-				normals   [][3]float32
-			)
 
-			if len(buf.Primitives) != 1 {
-				// panic(len(buf.Strips))
-			}
-			// fmt.Println()
-			// fmt.Println(node.Metadata.HeaderOffset, "BUF", bufIdx, "STRIP COUNT:", len(buf.Strips))
-			// Combine all strips in the buffer into one flat list,
-			for _, strip := range buf.Primitives {
-				base := uint32(len(positions))
-				fmt.Println("TYPE:", strip.PrimType.String(), strip.PrimType, "VERTS:", len(strip.Vertices))
-
-				for i := range strip.Vertices {
-					v := strip.Vertices[i]
-					n := strip.Normals[i]
-					u := strip.UVs[i]
-					positions = append(positions, [3]float32{v.X, v.Y, v.Z})
-					normals = append(normals, [3]float32{n.X, n.Y, n.Z})
-					uvs = append(uvs, [2]float32{u.U, u.V})
-				}
-
-				/*
-					isFlipped = false
-					for each vtx:
-					   if draw:
-					       if prev was not draw:
-					           isFlipped = false
-					       else:
-					           isFlipped = not isFlipped
-					       # add vertex
-				*/
-				isFlipped := false
-				for i := 2; i < len(strip.Vertices); i++ {
-					if strip.Normals[i].ADCBitSet {
-						if strip.Normals[i-1].ADCBitSet == false {
-							isFlipped = false
-						} else {
-							isFlipped = !isFlipped
-						}
-						v0, v1, v2 := base+uint32(i-2), base+uint32(i-1), base+uint32(i)
-						if isFlipped {
-							indices = append(indices, v0, v1, v2)
-						} else {
-							indices = append(indices, v1, v0, v2)
-						}
-					}
-				}
-			}
-
-			if len(indices) == 0 {
-				continue
-			}
-
-			prim := &gltf.Primitive{
-				Indices: gltf.Index(modeler.WriteIndices(b.doc, indices)),
-				Attributes: gltf.PrimitiveAttributes{
-					gltf.POSITION:   modeler.WritePosition(b.doc, positions),
-					gltf.TEXCOORD_0: modeler.WriteTextureCoord(b.doc, uvs),
-					gltf.NORMAL:     modeler.WriteNormal(b.doc, normals),
-				},
-				Mode: gltf.PrimitiveTriangles,
-			}
-			mesh := &gltf.Mesh{
-				Name:       fmt.Sprintf("%d_buf%d", node.Metadata.HeaderOffset, bufIdx),
-				Primitives: []*gltf.Primitive{prim},
-			}
-			b.doc.Meshes = append(b.doc.Meshes, mesh)
-			mi := len(b.doc.Meshes) - 1
 			bufNode := &gltf.Node{
 				Name: fmt.Sprintf("%d_buf%d", node.Metadata.HeaderOffset, bufIdx),
-				Mesh: &mi,
 			}
 			b.doc.Nodes = append(b.doc.Nodes, bufNode)
-			bi := len(b.doc.Nodes) - 1
-			gltfNode.Children = append(gltfNode.Children, bi)
+			bufNodeIdx := len(b.doc.Nodes) - 1
+			gltfNode.Children = append(gltfNode.Children, bufNodeIdx)
+
+			for stripIdx, strip := range buf.Primitives {
+				for dataIdx, data := range strip.Data {
+					var (
+						indices   []uint32
+						positions [][3]float32
+						uvs       [][2]float32
+						normals   [][3]float32
+					)
+					fmt.Println("TYPE:", strip.PrimType.String(), strip.PrimType, "DATA LEN:", len(data.Vertices))
+
+					for i := range data.Vertices {
+						v := data.Vertices[i]
+						n := data.Normals[i]
+						u := data.UVs[i]
+						positions = append(positions, [3]float32{v.X, v.Y, v.Z})
+						normals = append(normals, [3]float32{n.X, n.Y, n.Z})
+						uvs = append(uvs, [2]float32{u.U, u.V})
+					}
+
+					isFlipped := false
+					for i := 2; i < len(data.Vertices); i++ {
+						if data.Normals[i].ADCBitSet {
+							if data.Normals[i-1].ADCBitSet == false {
+								isFlipped = false
+							} else {
+								isFlipped = !isFlipped
+							}
+							v0, v1, v2 := uint32(i-2), uint32(i-1), uint32(i)
+							if isFlipped {
+								indices = append(indices, v0, v1, v2)
+							} else {
+								indices = append(indices, v1, v0, v2)
+							}
+						}
+					}
+
+					prim := &gltf.Primitive{
+						Indices: gltf.Index(modeler.WriteIndices(b.doc, indices)),
+						Attributes: gltf.PrimitiveAttributes{
+							gltf.POSITION:   modeler.WritePosition(b.doc, positions),
+							gltf.TEXCOORD_0: modeler.WriteTextureCoord(b.doc, uvs),
+							gltf.NORMAL:     modeler.WriteNormal(b.doc, normals),
+						},
+						Mode: gltf.PrimitiveTriangles,
+					}
+
+					meshName := fmt.Sprintf("%d_buf%d_strip%d_data%d", node.Metadata.HeaderOffset, bufIdx, stripIdx, dataIdx)
+					mesh := &gltf.Mesh{
+						Name:       meshName,
+						Primitives: []*gltf.Primitive{prim},
+					}
+					b.doc.Meshes = append(b.doc.Meshes, mesh)
+					mi := len(b.doc.Meshes) - 1
+
+					dataNode := &gltf.Node{
+						Name: meshName,
+						Mesh: &mi,
+					}
+					b.doc.Nodes = append(b.doc.Nodes, dataNode)
+					di := len(b.doc.Nodes) - 1
+					bufNode.Children = append(bufNode.Children, di)
+				}
+			}
 		}
 	}
 

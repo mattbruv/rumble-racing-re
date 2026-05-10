@@ -9,8 +9,8 @@ type Vertex struct {
 }
 
 type Normal struct {
-	ADCBitSet      bool
-	IsFirstTwoVert bool
+	ADCBitSet     bool
+	StartSubStrip bool
 
 	X float32
 	Y float32
@@ -47,7 +47,10 @@ const (
 type Primitive struct {
 	TotalVertsInPrimitive int
 	PrimType              PrimitiveType
+	Data                  []PrimData
+}
 
+type PrimData struct {
 	Vertices []Vertex
 	Normals  []Normal
 	UVs      []UV
@@ -107,6 +110,7 @@ func GetGeometry(commandStream []VifCommand) (*Geometry, error) {
 			strip := Primitive{
 				TotalVertsInPrimitive: int(sChunk.GIFTag.V1 & 0x7fff),
 				PrimType:              PrimitiveType(uint8((sChunk.GIFTag.V2 & (0b111 << 15) >> 15))),
+				Data:                  []PrimData{},
 			}
 
 			// Process every triple associated with this strip header
@@ -116,30 +120,32 @@ func GetGeometry(commandStream []VifCommand) (*Geometry, error) {
 				// }
 
 				cmdA, cmdB, cmdC := triple.A, triple.B, triple.C
+				var data PrimData
 
 				switch {
 				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV3_32 && cmdC.Type == UnpackTypeV2_32:
 					for j := 0; j < len(cmdA.V3_32); j++ {
-						ignore := j == 0 || j == 1
-						strip.Normals = append(strip.Normals, Normal{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3, ADCBitSet: cmdA.V3_32[j].ADCBitSet, IsFirstTwoVert: ignore})
-						strip.Vertices = append(strip.Vertices, Vertex{X: cmdB.V3_32[j].V1, Y: cmdB.V3_32[j].V2, Z: cmdB.V3_32[j].V3})
-						strip.UVs = append(strip.UVs, UV{U: cmdC.V2_32[j].V1, V: cmdC.V2_32[j].V2})
+						reset := j == 0
+						data.Normals = append(data.Normals, Normal{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3, ADCBitSet: cmdA.V3_32[j].ADCBitSet, StartSubStrip: reset})
+						data.Vertices = append(data.Vertices, Vertex{X: cmdB.V3_32[j].V1, Y: cmdB.V3_32[j].V2, Z: cmdB.V3_32[j].V3})
+						data.UVs = append(data.UVs, UV{U: cmdC.V2_32[j].V1, V: cmdC.V2_32[j].V2})
 					}
 
 				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV2_32 && cmdC.Type == UnpackTypeV4_8:
 					for j := 0; j < len(cmdA.V3_32); j++ {
-						ignore := j == 0 || j == 1
-						strip.Vertices = append(strip.Vertices, Vertex{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3})
-						strip.UVs = append(strip.UVs, UV{U: cmdB.V2_32[j].V1, V: cmdB.V2_32[j].V2})
-						strip.Normals = append(strip.Normals, Normal{
-							X:              float32(cmdC.V4_8[j].V1) / 255.0,
-							Y:              float32(cmdC.V4_8[j].V2) / 255.0,
-							Z:              float32(cmdC.V4_8[j].V3) / 255.0,
-							ADCBitSet:      cmdC.V4_8[j].ADCBitSet,
-							IsFirstTwoVert: ignore,
+						reset := j == 0
+						data.Vertices = append(data.Vertices, Vertex{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3})
+						data.UVs = append(data.UVs, UV{U: cmdB.V2_32[j].V1, V: cmdB.V2_32[j].V2})
+						data.Normals = append(data.Normals, Normal{
+							X:             float32(cmdC.V4_8[j].V1) / 255.0,
+							Y:             float32(cmdC.V4_8[j].V2) / 255.0,
+							Z:             float32(cmdC.V4_8[j].V3) / 255.0,
+							ADCBitSet:     cmdC.V4_8[j].ADCBitSet,
+							StartSubStrip: reset,
 						})
 					}
 				}
+				strip.Data = append(strip.Data, data)
 			}
 			buf.Primitives = append(buf.Primitives, strip)
 		}
