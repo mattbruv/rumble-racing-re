@@ -51,6 +51,7 @@ type Primitive struct {
 }
 
 type PrimData struct {
+	Offset   uint32
 	Vertices []Vertex
 	Normals  []Normal
 	UVs      []UV
@@ -124,6 +125,7 @@ func GetGeometry(commandStream []VifCommand) (*Geometry, error) {
 
 				switch {
 				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV3_32 && cmdC.Type == UnpackTypeV2_32:
+					data.Offset = uint32(cmdA.Offset)
 					for j := 0; j < len(cmdA.V3_32); j++ {
 						reset := j == 0
 						data.Normals = append(data.Normals, Normal{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3, ADCBitSet: cmdA.V3_32[j].ADCBitSet, StartSubStrip: reset})
@@ -132,6 +134,7 @@ func GetGeometry(commandStream []VifCommand) (*Geometry, error) {
 					}
 
 				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV2_32 && cmdC.Type == UnpackTypeV4_8:
+					data.Offset = uint32(cmdA.Offset)
 					for j := 0; j < len(cmdA.V3_32); j++ {
 						reset := j == 0
 						data.Vertices = append(data.Vertices, Vertex{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3})

@@ -269,7 +269,7 @@ func (b *Builder) addNode(node *ObfNode) int {
 			gltfNode.Children = append(gltfNode.Children, bufNodeIdx)
 
 			for stripIdx, strip := range buf.Primitives {
-				for dataIdx, data := range strip.Data {
+				for _, data := range strip.Data {
 					var (
 						indices   []uint32
 						positions [][3]float32
@@ -314,7 +314,7 @@ func (b *Builder) addNode(node *ObfNode) int {
 						Mode: gltf.PrimitiveTriangles,
 					}
 
-					meshName := fmt.Sprintf("%d_buf%d_strip%d_data%d", node.Metadata.HeaderOffset, bufIdx, stripIdx, dataIdx)
+					meshName := fmt.Sprintf("%d_buf%d_strip%d_data%d", node.Metadata.HeaderOffset, bufIdx, stripIdx, data.Offset)
 					mesh := &gltf.Mesh{
 						Name:       meshName,
 						Primitives: []*gltf.Primitive{prim},
