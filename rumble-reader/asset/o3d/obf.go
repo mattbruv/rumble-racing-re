@@ -274,9 +274,8 @@ func (b *Builder) addNode(node *ObfNode) int {
 			// fmt.Println(node.Metadata.HeaderOffset, "BUF", bufIdx, "STRIP COUNT:", len(buf.Strips))
 			// Combine all strips in the buffer into one flat list,
 			for _, strip := range buf.Strips {
-				count := 0
-				// fmt.Println("VERTS:", len(strip.Vertices))
 				base := uint32(len(positions))
+				fmt.Println("TYPE:", strip.PrimType, "VERTS:", len(strip.Vertices))
 
 				for i := range strip.Vertices {
 					v := strip.Vertices[i]
@@ -297,7 +296,7 @@ func (b *Builder) addNode(node *ObfNode) int {
 					           isFlipped = not isFlipped
 					       # add vertex
 				*/
-				isFlipped := true
+				isFlipped := false
 				for i := 2; i < len(strip.Vertices); i++ {
 					if strip.Normals[i].ADCBitSet {
 						if strip.Normals[i-1].ADCBitSet == false {
@@ -311,7 +310,6 @@ func (b *Builder) addNode(node *ObfNode) int {
 						} else {
 							indices = append(indices, v1, v0, v2)
 						}
-						count++
 					}
 				}
 			}

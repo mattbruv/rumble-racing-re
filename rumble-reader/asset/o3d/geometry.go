@@ -26,8 +26,16 @@ type Geometry struct {
 	Buffers []Buffer
 }
 
+type PrimitiveType uint8
+
+const (
+	Triangle      PrimitiveType = 0b011
+	TriangleStrip PrimitiveType = 0b100
+)
+
 type Strip struct {
 	TotalVertsInStrip int
+	PrimType          PrimitiveType
 
 	Vertices []Vertex
 	Normals  []Normal
@@ -57,7 +65,7 @@ type triple struct {
 }
 
 type stripChunk struct {
-	StripHeader V4_32Entry
+	GIFTag V4_32Entry
 
 	// DataTriples stores groups of (A, B, C) unpacks belonging to this header
 	DataTriples []triple
@@ -86,7 +94,8 @@ func GetGeometry(commandStream []VifCommand) (*Geometry, error) {
 
 		for _, sChunk := range bChunk.Strips {
 			strip := Strip{
-				TotalVertsInStrip: int(sChunk.StripHeader.V1 & 0x7fff),
+				TotalVertsInStrip: int(sChunk.GIFTag.V1 & 0x7fff),
+				PrimType:          PrimitiveType(uint8((sChunk.GIFTag.V2 & (0b111 << 15) >> 15))),
 			}
 
 			// Process every triple associated with this strip header
@@ -160,7 +169,7 @@ func getBufferChunks(filtered []VifCommand) (*bufferChunks, error) {
 
 				sChunk := stripChunk{}
 				if len(filtered[i].Unpack.V4_32) > 0 {
-					sChunk.StripHeader = filtered[i].Unpack.V4_32[0]
+					sChunk.GIFTag = filtered[i].Unpack.V4_32[0]
 				}
 				i++
 

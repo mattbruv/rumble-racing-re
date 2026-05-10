@@ -21,7 +21,7 @@ var o3dCmd = &cobra.Command{
 		// data, err := os.ReadFile("../OUT-FEB-7/GLBLDATA/o3d/5005_PS2-OBJECTS-BAD_GAS.O3D.o3d")
 		// data, err := os.ReadFile("../OUT-FEB-7/MP1 - Touch And Go/o3d/29_-RESOURCES-GCBAR01.O3D.o3d")
 		data, err := os.ReadFile("../OUT-FEB-7/GLBLDATA/o3d/5050_ECTS-DEBRIS-FENCE02.O3D.o3d")
-		//../OUT-FEB-7/GLBLDATA/o3d/5050_ECTS-DEBRIS-FENCE02.O3D.o3d
+		// ../OUT-FEB-7/GLBLDATA/o3d/5050_ECTS-DEBRIS-FENCE02.O3D.o3d
 		// data, err := os.ReadFile("../OUT-FEB-7/FE2/o3d/1000_S-SPLINEMAPS-TRKDA1.O3D.o3d")
 		// data, err := os.ReadFile("../OUT-FEB-7/MP1 - Touch And Go/o3d/36_-RESOURCES-RUML.O3D.o3d")
 		// data, err := os.ReadFile("../OUT-FEB-7/GLBLDATA/o3d/5001_BJECTS-TWISTERPART1.O3D.o3d")
