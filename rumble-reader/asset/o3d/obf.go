@@ -275,7 +275,7 @@ func (b *Builder) addNode(node *ObfNode) int {
 			// Combine all strips in the buffer into one flat list,
 			for _, strip := range buf.Primitives {
 				base := uint32(len(positions))
-				fmt.Println("TYPE:", strip.PrimType, "VERTS:", len(strip.Vertices))
+				fmt.Println("TYPE:", strip.PrimType.String(), strip.PrimType, "VERTS:", len(strip.Vertices))
 
 				for i := range strip.Vertices {
 					v := strip.Vertices[i]

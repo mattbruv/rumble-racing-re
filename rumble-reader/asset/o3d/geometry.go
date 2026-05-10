@@ -28,6 +28,17 @@ type Geometry struct {
 
 type PrimitiveType uint8
 
+func (t *PrimitiveType) String() string {
+	switch *t {
+	case Triangle:
+		return "Triangle"
+	case TriangleStrip:
+		return "TriangleStrip"
+	default:
+		panic("Unhandled type")
+	}
+}
+
 const (
 	Triangle      PrimitiveType = 0b011
 	TriangleStrip PrimitiveType = 0b100
