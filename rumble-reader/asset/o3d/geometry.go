@@ -33,9 +33,9 @@ const (
 	TriangleStrip PrimitiveType = 0b100
 )
 
-type Strip struct {
-	TotalVertsInStrip int
-	PrimType          PrimitiveType
+type Primitive struct {
+	TotalVertsInPrimitive int
+	PrimType              PrimitiveType
 
 	Vertices []Vertex
 	Normals  []Normal
@@ -47,7 +47,7 @@ type Buffer struct {
 	NumStrips      int
 	// TODO: Texture Info
 
-	Strips []Strip
+	Primitives []Primitive
 }
 
 type bufferChunks struct {
@@ -93,9 +93,9 @@ func GetGeometry(commandStream []VifCommand) (*Geometry, error) {
 		}
 
 		for _, sChunk := range bChunk.Strips {
-			strip := Strip{
-				TotalVertsInStrip: int(sChunk.GIFTag.V1 & 0x7fff),
-				PrimType:          PrimitiveType(uint8((sChunk.GIFTag.V2 & (0b111 << 15) >> 15))),
+			strip := Primitive{
+				TotalVertsInPrimitive: int(sChunk.GIFTag.V1 & 0x7fff),
+				PrimType:              PrimitiveType(uint8((sChunk.GIFTag.V2 & (0b111 << 15) >> 15))),
 			}
 
 			// Process every triple associated with this strip header
@@ -130,7 +130,7 @@ func GetGeometry(commandStream []VifCommand) (*Geometry, error) {
 					}
 				}
 			}
-			buf.Strips = append(buf.Strips, strip)
+			buf.Primitives = append(buf.Primitives, strip)
 		}
 		geometry.Buffers = append(geometry.Buffers, buf)
 	}

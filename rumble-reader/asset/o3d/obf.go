@@ -267,13 +267,13 @@ func (b *Builder) addNode(node *ObfNode) int {
 				normals   [][3]float32
 			)
 
-			if len(buf.Strips) != 1 {
+			if len(buf.Primitives) != 1 {
 				// panic(len(buf.Strips))
 			}
 			// fmt.Println()
 			// fmt.Println(node.Metadata.HeaderOffset, "BUF", bufIdx, "STRIP COUNT:", len(buf.Strips))
 			// Combine all strips in the buffer into one flat list,
-			for _, strip := range buf.Strips {
+			for _, strip := range buf.Primitives {
 				base := uint32(len(positions))
 				fmt.Println("TYPE:", strip.PrimType, "VERTS:", len(strip.Vertices))
 
