@@ -152,7 +152,9 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 	for _, entry := range rlst.Entries {
 		theAsset, err := trackFile.GetResource(entry)
 		if err != nil {
-			return fmt.Errorf("failed to get resource: %w", err)
+			fmt.Println("failed to get resource:", entry.ResourceName, err)
+			// return fmt.Errorf("failed to get resource: %w", err)
+			continue
 		}
 
 		data := theAsset.RawData()
@@ -176,6 +178,10 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 			converted := false
 			if opts.convertAutomatically {
 				// only flag as converted if we have saved files
+				// fmt.Println(outFilePath, resName)
+				// if strings.Contains(outFileName, "DIAMOND") {
+				// 	continue
+				// }
 				convertedFiles := theAsset.GetConvertedFiles(outFileName)
 				if len(convertedFiles) > 0 {
 					converted = true
