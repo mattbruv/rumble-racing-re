@@ -271,35 +271,43 @@ func (b *Builder) addNode(node *ObfNode) int {
 			for stripIdx, strip := range buf.Primitives {
 				for _, data := range strip.Data {
 					var (
-						indices   []uint32
-						positions [][3]float32
-						uvs       [][2]float32
-						normals   [][3]float32
+						indices []uint32
+						verts   [][3]float32
+						uvs     [][2]float32
+						normals [][3]float32
 					)
-					fmt.Println("TYPE:", strip.PrimType.String(), strip.PrimType, "DATA LEN:", len(data.Vertices))
+					fmt.Println(data.Offset, "TYPE:", strip.PrimType.String(), strip.PrimType, "DATA LEN:", len(data.Vertices))
 
 					for i := range data.Vertices {
+						fmt.Println(i, data.Vertices[i])
 						v := data.Vertices[i]
 						n := data.Normals[i]
 						u := data.UVs[i]
-						positions = append(positions, [3]float32{v.X, v.Y, v.Z})
-						normals = append(normals, [3]float32{n.X, n.Y, n.Z})
+						VY := v.Y //* -1
+						NY := n.Y //* -1
+						verts = append(verts, [3]float32{v.X, VY, v.Z})
+						normals = append(normals, [3]float32{n.X, NY, n.Z})
 						uvs = append(uvs, [2]float32{u.U, u.V})
 					}
 
-					isFlipped := false
+					// isFlipped := false
 					for i := 2; i < len(data.Vertices); i++ {
 						if data.Normals[i].ADCBitSet {
-							if data.Normals[i-1].ADCBitSet == false {
-								isFlipped = false
-							} else {
-								isFlipped = !isFlipped
-							}
-							v0, v1, v2 := uint32(i-2), uint32(i-1), uint32(i)
-							if isFlipped {
-								indices = append(indices, v0, v1, v2)
-							} else {
-								indices = append(indices, v1, v0, v2)
+							// if data.Normals[i-1].ADCBitSet == false {
+							// 	isFlipped = false
+							// } else {
+							// 	isFlipped = !isFlipped
+							// }
+							a, b, c := uint32(i-2), uint32(i-1), uint32(i)
+							// indices = append(indices, a, b, c)
+							if i-2 == 0 {
+								if i%2 == 0 {
+									fmt.Println(i, a, b, c, verts[a], verts[b], verts[c])
+									indices = append(indices, a, b, c)
+								} else {
+									fmt.Println(i, b, a, c, verts[a], verts[b], verts[c])
+									indices = append(indices, b, a, c)
+								}
 							}
 						}
 					}
@@ -307,7 +315,7 @@ func (b *Builder) addNode(node *ObfNode) int {
 					prim := &gltf.Primitive{
 						Indices: gltf.Index(modeler.WriteIndices(b.doc, indices)),
 						Attributes: gltf.PrimitiveAttributes{
-							gltf.POSITION:   modeler.WritePosition(b.doc, positions),
+							gltf.POSITION:   modeler.WritePosition(b.doc, verts),
 							gltf.TEXCOORD_0: modeler.WriteTextureCoord(b.doc, uvs),
 							gltf.NORMAL:     modeler.WriteNormal(b.doc, normals),
 						},
