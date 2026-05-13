@@ -1,12 +1,11 @@
 # Rumble Racing Reverse Engineering
 
-This repository hosts my notes and tools for reverse engineering the file formats for [Rumble Racing](https://en.wikipedia.org/wiki/Rumble_Racing) (2001, PS2).
+This repository hosts my notes and tools for reverse engineering the file formats for [Rumble Racing](https://en.wikipedia.org/wiki/Rumble_Racing) (2001, PS2). [Rumble Reader](./rumble-reader/) is a program I'm writing in Go as I work on reverse engineering the file formats. The ultimate goal is to be able to parse, export, and preserve the 3D game maps to display them in [noclip.website](https://noclip.website)
 
-[Rumble Reader](./rumble-reader/) is a program I'm writing in Go as I work on reverse engineering the file formats. The ultimate goal is to be able to parse, export, and preserve the 3D game maps to display them in [noclip.website](https://noclip.website)
+![](./docs/images/true-grits.png)
+*The textured mesh for the map "True Grits" in Blender*
 
-![](./docs/images/cars.png)
-
-## File Formats
+## Main File Formats
 
 There are three main file types seen in the game's data: `.TRK`, `.AV`. and `.LSC`.
 
@@ -18,9 +17,9 @@ Reading [this reddit post](https://www.reddit.com/r/ffmpeg/comments/1heju1a/help
 
 ### `.AV`
 
-Probably stands for 'Audio/Video'.
+Stands for 'Audio/Video'.
 Has a similar layout to `.TRK`, but with different top-level chunks/FourCC codes.
-People have already put effort into reverse engineering this filetype, I am not the first one.
+People have already put effort into reverse engineering this filetype, I am not the first person to look at the audio files in this game.
 
 [vgmstream](https://github.com/vgmstream/vgmstream) contributor [bnnm](https://github.com/bnnm) added support for this filetype in [this PR](https://github.com/vgmstream/vgmstream/pull/1304).
 
@@ -32,10 +31,8 @@ As a result, vgmstream can read and play these files in your browser:
 
 ### `.TRK`
 
-Probably stands for 'Track'.
-`.TRK` files seem to contain all of the unique map data for each track. Internal map names seemed to be grouped by similarity. Internal name mappings can be seen below. Each internal map has a `.TRK`, `.AV`, and `.LSC` file. `FE` is a special case, as it seems to be globally used assets.
-
-![](./docs/images/true-grits.png)
+Stands for 'Track'.
+`.TRK` files contain all of the unique map data for each track. Internal map names seemed to be grouped by similarity. Internal name mappings can be seen below. Each internal map has a `.TRK`, `.AV`, and `.LSC` file.
 
 | Internal | Meaning           | Name              |
 | -------- | ----------------- | ----------------- |
@@ -58,37 +55,12 @@ Probably stands for 'Track'.
 
 ![](./docs/images/tracks.png)
 
-`.TRK` and `.AV` files are a special binary format created by EA games. They are seemingly optimized and aligned for compression and for quickly streaming data from disc to PS2 RAM.
+`.TRK` and `.AV` files are a special binary format created by EA games. They are optimized and aligned for compression and for quickly streaming data from disc to PS2 RAM.
 
-It seems like these files all follow the same pattern. They are a essentially a sequential list of binary blobs, which I am calling `Chunk`s.
-Each chunk consists of
-
-1. A [FourCC](https://en.wikipedia.org/wiki/FourCC) little-endian `u32` header identifying its type.
-2. Followed by a `u32` which is the size of the entire chunk
-3. Followed by the chunk's data
-
-Currently the chunks do not appear to be nested or recursive, but rather sequential.
-
-`.TRK` files seem to have 3 distinct top-level chunks: `CTRL`, `FILL`, and `SHOC`.
-
-- `CTRL` chunks seem to set a few variables that the program uses when reading further chunks. (needs investigation)
-  - Each `.TRK` file begins with a `CTRL` chunk.
-  - Each `.TRK` file has only one `CTRL` chunk.
-  - Always 4 bytes of data
-- `FILL` chunks are used as dummy filler data to split and align chunks data to `0x6000` boundaries.
-  - Algins next chunk to `0x6000`
-  - Each `FILL` chunk's data in all `.TRK` files is all zeroed out.
-- `SHOC` chunks seem to store all of the important data. Each `SHOC` contains a sub-type, one of `SHDR`, `SDAT`, or `Rdat`.
-  - `SHDR` (probably header data)
-  - `SDAT` uncompressed, raw data
-  - `Rdat` compressed data. Working on reverse engineering the compression algorithm [here](./rumble-reader/chunk/shoc/decompress.go).
-
-Each SHOC entry contains some data which makes up a game asset.
-I am currently working through understanding how `SHOC`s are related to each other, and how to pull out this data.
+It would be too much information for this README to write how these files are structured and how the assets are stored.
+Once this project is live on noclip and I have finished that goal, I will work on writing a PDF which will document the structure and layout of these files, along with any other relevant details, so that anyone in the future who is curious about the low level details will have a good resource.
 
 ## Game Assets
-
-![](./docs/images/darwin.png)
 
 The game asset FourCC types are listed here as follows, along with the address of the function that processes this data:
 
@@ -119,15 +91,15 @@ The game asset FourCC types are listed here as follows, along with the address o
 | `Cnet` | ❔     | Network Data (paths?)                                                                                     | 0017e080               | 00183900            |
 | `sfn`  |        | Font ([Arial](https://en.wikipedia.org/wiki/Arial), [Lucida](https://en.wikipedia.org/wiki/Lucida), etc.) | 0012b920               | 0012f050            |
 | `gmd`  |        | Track Data                                                                                                | 00160da0               | 00162ca0            |
-| `Obf`  |        | Track Mesh                                                                                                | 00160de0               | 00162ce0            |
+| `Obf`  | ✅      | Track Mesh                                                                                                | 00160de0               | 00162ce0            |
 | `txf`  | ✅     | Texture / Texture Group Data                                                                              | 001644f0,<br>00121230, | 001667c0            |
 | `Ctos` | ❔     | Voice-over Group Data?                                                                                    | 00125a10               | 00129160            |
 | `Cfun` | ❔     | CtrlFct (Control Function?)                                                                               | 001272e0               | 0012a9a0            |
 | `Csac` | ❔     | SupAct (actor system?)                                                                                    | 00127550               | 0012ac10            |
 | `RPNS` | ❔     | RPNstrings                                                                                                | 0016c590               | 0016ee90            |
-| `Cact` | ❔     | Game Actor instance                                                                                       | 0016c3a0               | 0016ec60            |
+| `Cact` | ✅     | Game Actor instance                                                                                       | 0016c3a0               | 0016ec60            |
 | `o3da` |        | Object3D Data Array                                                                                       | 0016a2a0               | 0016cb40            |
-| `o3d`  |        | Object3D Data                                                                                             | 0016a0e0               | 0016c950            |
+| `o3d`  | ✅      | Object3D Data                                                                                             | 0016a0e0               | 0016c950            |
 | `Cctr` | ❔     | Game Status Control?                                                                                      | 00121230               | 00128504            |
 | `RLst` | ✅     | Record Debug Resources List                                                                               | 00121230               | 00126c60            |
 | `rscE` | ❔     |                                                                                                           | 00121230               | 001284c4            |

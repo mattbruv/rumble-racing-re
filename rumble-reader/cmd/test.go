@@ -16,7 +16,7 @@ var testCmd = &cobra.Command{
 	Long:  `test tfx parsing`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		data, err := os.ReadFile("../test.txf")
+		data, err := os.ReadFile("../OUT-FEB-7/SE2 - Over Easy/txf/1_-RESOURCES-TRACK.TXF.txf")
 		// data, err := os.ReadFile("../testbad.txf")
 
 		if err != nil {
@@ -34,9 +34,12 @@ var testCmd = &cobra.Command{
 			textures := txf.GetTextures()
 
 			for _, tx := range textures {
-				// fmt.Println(tx.Name)
-				for f, texFile := range tx.Files {
-					name := fmt.Sprintf("../test/%s_%d_%dx%d.png", tx.Name, f, texFile.Width, texFile.Height)
+				// if tx.Name != "texture_6144" {
+				// 	// fmt.Println(tx.Files[0].Image.Pix)
+				// 	// continue
+				// }
+				for _, texFile := range tx.Files {
+					name := fmt.Sprintf("../test/%s.png", tx.Name)
 					outFile, err := os.Create(name)
 					if err != nil {
 						panic(err)
