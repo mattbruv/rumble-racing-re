@@ -290,5 +290,13 @@ func extract16bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8
 	G := uint8((g5 * 255) / 31)
 	B := uint8((b5 * 255) / 31)
 	A := uint8(255)
+
+	// TODO: understand why the alpha a1 isn't working..
+	// This is a total hack that treats pure black pixels as fully transparent.
+	// This seems to work OK so far, but surely this isn't technically correct.
+	if R == 0 && G == 0 && B == 0 {
+		A = 0
+	}
+
 	return R, G, B, A
 }

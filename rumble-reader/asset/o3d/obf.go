@@ -239,6 +239,8 @@ func (b *Builder) ensureTexture(textureId int) (int, error) {
 	materialIdx := len(b.doc.Materials)
 	b.doc.Materials = append(b.doc.Materials, &gltf.Material{
 		DoubleSided: true,
+		AlphaMode:   gltf.AlphaMask,
+		AlphaCutoff: gltf.Float(0.5),
 		PBRMetallicRoughness: &gltf.PBRMetallicRoughness{
 			BaseColorTexture: &gltf.TextureInfo{
 				Index: textureIdx,
