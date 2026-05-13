@@ -1,6 +1,10 @@
-module rumble-reader
+module rumble-reader-cli
 
 go 1.25.1
+
+require rumble-reader v0.0.0
+
+replace rumble-reader => ./core
 
 require github.com/spf13/cobra v1.10.1
 

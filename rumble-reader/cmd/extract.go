@@ -137,7 +137,7 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 	}
 
 	subDir := filepath.Join(opts.outputDir, baseName)
-	//			find ../OUT ../DATA-FEB-7 -type f -name "*.o3d" -exec stat -f "%z %N" {} \; | sort -n | head -5
+	//			find ../../OUT ../../DATA-FEB-7 -type f -name "*.o3d" -exec stat -f "%z %N" {} \; | sort -n | head -5
 
 	trackFile := file.ReadTrackFile(path)
 	rlst, _ := trackFile.GetResourceList()
