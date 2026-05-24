@@ -11,16 +11,22 @@ type O3D struct {
 	rawData      []byte
 	resourceName string
 	shocHeader   shoc.SHDR
+	IsAnimated   bool
 
 	Gmds []*Gmd
 	Obfs []*Obf
 }
 
-func ParseO3D(buf []byte, header shoc.SHDR, resName string) (*O3D, error) {
+func (o *O3D) Name() string {
+	return o.resourceName
+}
+
+func ParseO3D(isAnimated bool, buf []byte, header shoc.SHDR, resName string) (*O3D, error) {
 	o3dAsset := O3D{
 		rawData:      buf,
 		resourceName: resName,
 		shocHeader:   header,
+		IsAnimated:   isAnimated,
 		Gmds:         []*Gmd{},
 		Obfs:         []*Obf{},
 	}
@@ -62,6 +68,20 @@ func ParseO3D(buf []byte, header shoc.SHDR, resName string) (*O3D, error) {
 			{
 				// Part chunks don't seem to have much of anything relevant
 				// so skip past them for now.
+				continue
+			}
+		case "o3da":
+			{
+				// TODO: figure out if there's anything relevant here.
+				// This probably has information like # of anims,
+				// and maybe frequencey of animation?
+				// Skip for now
+				continue
+			}
+		case "ExpF":
+			{
+				// TODO: figure out if this is relevant.
+				// Skip for now
 				continue
 			}
 		default:

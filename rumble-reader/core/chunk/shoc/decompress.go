@@ -4,10 +4,6 @@ import (
 	"fmt"
 )
 
-// Decompress implements the algorithm derived from the decompiled routine you provided.
-// It aims to reproduce the original micro-semantics (word-copy vs byte-copy, overlapping copy direction, reverse branch).
-// src: compressed input bytes
-// outSize: expected maximum output size (if >0, decompression stops when out reaches outSize)
 func Decompress(src []byte, outSize int) ([]byte, error) {
 	var (
 		i   = 0               // input index (pointer into src)
@@ -151,8 +147,6 @@ func Decompress(src []byte, outSize int) ([]byte, error) {
 						writeIdx--
 						readIdx--
 						dst = append(dst, dst[readIdx])
-						// shrink counters
-						words = words
 					}
 					// copy words backward
 					for w := 0; w < words; w++ {
@@ -229,10 +223,4 @@ func Decompress(src []byte, outSize int) ([]byte, error) {
 			}
 		}
 	}
-
-	// finish
-	if outSize > 0 && len(dst) > outSize {
-		dst = dst[:outSize]
-	}
-	return dst, nil
 }

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"rumble-reader-cli/convert"
 	"rumble-reader/file"
 	"rumble-reader/helpers"
 	"strings"
@@ -137,10 +138,10 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 	}
 
 	subDir := filepath.Join(opts.outputDir, baseName)
-	//			find ../OUT ../DATA-FEB-7 -type f -name "*.o3d" -exec stat -f "%z %N" {} \; | sort -n | head -5
+	//			find ../../OUT ../../DATA-FEB-7 -type f -name "*.o3d" -exec stat -f "%z %N" {} \; | sort -n | head -5
 
 	trackFile := file.ReadTrackFile(path)
-	rlst, _ := trackFile.GetResourceList()
+	rlst := trackFile.GetResourceList()
 
 	if err := os.MkdirAll(subDir, 0755); err != nil {
 		return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
@@ -177,13 +178,15 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 			// write out all of those files instead of the raw file.
 			converted := false
 			if opts.convertAutomatically {
-				// only flag as converted if we have saved files
+				// only flag as convertedFiles if we have saved files
 				// fmt.Println(outFilePath, resName)
 				// if strings.Contains(outFileName, "DIAMOND") {
 				// 	continue
 				// }
-				convertedFiles := theAsset.GetConvertedFiles(outFileName)
+				convertedFiles := convert.ConvertAsset(theAsset, outFileName)
+
 				if len(convertedFiles) > 0 {
+
 					converted = true
 
 					for _, conv := range convertedFiles {

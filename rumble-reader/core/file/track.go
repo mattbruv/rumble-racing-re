@@ -19,7 +19,7 @@ type TrackFile struct {
 	TopLevelChunks []chunk.TopLevelChunk
 }
 
-func readTrackFile(file io.ReadSeeker) []chunk.TopLevelChunk {
+func ReadTrackChunks(file io.ReadSeeker) []chunk.TopLevelChunk {
 
 	var chunks []chunk.TopLevelChunk
 
@@ -69,7 +69,7 @@ func ReadTrackFile(filename string) TrackFile {
 
 	// fmt.Printf("File: %s\nSize: %d bytes\n\n", info.Name(), info.Size())
 
-	chunks := readTrackFile(file)
+	chunks := ReadTrackChunks(file)
 
 	return TrackFile{
 		FileName:       info.Name(),
@@ -78,7 +78,7 @@ func ReadTrackFile(filename string) TrackFile {
 	}
 }
 
-func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
+func (t TrackFile) GetResourceList() *asset.RLst {
 
 	// FE2 has multiple resource lists.
 	// Let's just combine them and treat it as one giant list for now.
@@ -101,7 +101,7 @@ func (t TrackFile) GetResourceList() (*asset.RLst, bool) {
 		newList.Entries = append(newList.Entries, rList.Entries...)
 	}
 
-	return &newList, false
+	return &newList
 }
 
 func (t TrackFile) getHeadersForType(assetType string) []shoc.SHDR {
@@ -208,7 +208,9 @@ func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error
 	case "obf ":
 		return o3d.ParseObf(data)
 	case "o3d ":
-		return o3d.ParseO3D(data, *header, resource.ResourceName)
+		return o3d.ParseO3D(false, data, *header, resource.ResourceName)
+	case "o3da":
+		return o3d.ParseO3D(true, data, *header, resource.ResourceName)
 	case "txf ", "txf2":
 		name := fmt.Sprintf("%d_%s", resource.ResourceIndex, resource.ResourceName)
 		return txf.ParseTXF(data, *header, name)

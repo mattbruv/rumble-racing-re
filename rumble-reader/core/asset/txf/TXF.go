@@ -1,12 +1,9 @@
 package txf
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"image/png"
-	"rumble-reader/asset"
 	"rumble-reader/chunk/shoc"
 )
 
@@ -134,32 +131,4 @@ func (g *TXF) RawData() []byte {
 
 func (g *TXF) Header() shoc.SHDR {
 	return g.shocHeader
-}
-
-func (t *TXF) GetConvertedFiles(name string) []asset.ConvertedAssetFile {
-
-	var out []asset.ConvertedAssetFile
-
-	for _, texture := range t.GetTextures() {
-		for _, f := range texture.Files {
-			var buf bytes.Buffer
-			if err := png.Encode(&buf, f.Image); err != nil {
-				panic(err)
-			}
-
-			mipmap := ""
-			if f.IsMipMap {
-				mipmap = "-mipmap"
-			}
-
-			// name := fmt.Sprintf("%s-%s-%dx%d%s.png", t.resourceName, texture.Name, f.Width, f.Height, mipmap)
-			name := fmt.Sprintf("%s%s.png", texture.Name, mipmap)
-			out = append(out, asset.ConvertedAssetFile{
-				FullFileName: name,
-				Data:         buf.Bytes(),
-			})
-		}
-	}
-
-	return out
 }

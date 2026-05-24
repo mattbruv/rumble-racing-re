@@ -1,6 +1,6 @@
 package main
 
-import "rumble-reader/cmd"
+import "rumble-reader-cli/cmd"
 
 func main() {
 	cmd.Execute()

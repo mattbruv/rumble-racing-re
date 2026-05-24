@@ -1,8 +1,6 @@
 package asset
 
 import (
-	"encoding/json"
-	"fmt"
 	"rumble-reader/chunk/shoc"
 	"strconv"
 )
@@ -28,17 +26,6 @@ func (t *TxtR) RawData() []byte {
 
 func (t *TxtR) Header() shoc.SHDR {
 	return t.header
-}
-
-func (t *TxtR) GetConvertedFiles(name string) []ConvertedAssetFile {
-	fileName := fmt.Sprintf("TextResource-%d.json", t.header.AssetIndex)
-	b, _ := json.MarshalIndent(t.TextEntries, "", "  ")
-	outFile := ConvertedAssetFile{
-		FullFileName: fileName,
-		Data:         b,
-	}
-
-	return []ConvertedAssetFile{outFile}
 }
 
 // ParseTxtR parses a byte buffer containing multiple null-terminated strings.

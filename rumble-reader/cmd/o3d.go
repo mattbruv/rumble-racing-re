@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"rumble-reader-cli/convert"
 	"rumble-reader/asset/o3d"
 	"rumble-reader/chunk/shoc"
 
@@ -33,7 +34,7 @@ var o3dCmd = &cobra.Command{
 
 		// fmt.Println(hex.Dump(data))
 
-		o3dData, err := o3d.ParseO3D(data, shoc.SHDR{}, "test")
+		o3dData, err := o3d.ParseO3D(false, data, shoc.SHDR{}, "test")
 
 		for obf_index, obf := range o3dData.Obfs {
 
@@ -42,7 +43,7 @@ var o3dCmd = &cobra.Command{
 			vifText := obf.DumpAllVifText()
 			vifFileName := fmt.Sprintf("CHICKEN_vif_dump_%d.txt", obf_index)
 
-			for _, file := range o3dData.GetConvertedFiles("idk") {
+			for _, file := range convert.ConvertO3DAsset(o3dData, "idk") {
 				os.WriteFile(fmt.Sprintf("./%s", file.FullFileName), file.Data, 0644)
 			}
 

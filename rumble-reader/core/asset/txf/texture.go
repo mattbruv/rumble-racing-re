@@ -16,8 +16,9 @@ type TextureFile struct {
 }
 
 type Texture struct {
-	Name  string
-	Files []TextureFile
+	Name      string
+	TextureId uint16
+	Files     []TextureFile
 }
 
 func (txf *TXF) GetTextures() []Texture {
@@ -127,7 +128,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			}
 		default:
 			// fmt.Println(zthe.TexelStorageFormat)
-			panic("Oh shit oh fuck unhandled!")
+			panic("unhandled!")
 		}
 
 		height := txImage.BlockHeightPixels
@@ -146,7 +147,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 		case PSMT4:
 			colorSize /= 2 // but if using half the bits, the size is half
 		default:
-			panic("Fuck!")
+			panic("Something went wrong!")
 		}
 
 		if int(start)+int(colorSize) > len(txf.textureData.RawData) {
@@ -160,7 +161,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			var colorIndex uint32
 			switch zthe.TexelStorageFormat {
 			case PSMT8:
-				// panic("FUCK")
+				// panic("Something went wrong")
 				// just a normal byte
 				colorIndex = uint32(data[pxIndex])
 			case PSMT4:
@@ -208,7 +209,6 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 
 			switch clutHeader.PixelFormat {
 			case PSMCT16:
-				// panic("FUCK")
 				R, G, B, A = extract16bitRGBA(finalPixel) // 255uint8(a1 * 255)
 			case PSMCT32:
 				// fmt.Println(hex.Dump(paletteDataUnswizzled))
@@ -217,7 +217,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 				// fmt.Println(len(txf.clutHeader.Entries))
 				R, G, B, A = extract32bitRGBA(finalPixel)
 			default:
-				panic("oh fuck!")
+				panic("Something went wrong!")
 			}
 
 			x := pxIndex % int(width)
@@ -233,16 +233,13 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 			Image:    img,
 			IsMipMap: k > 0,
 		})
-
-		// fmt.Println(hex.Dump(zthe.RawData))
-
-		break // TODO: remove me, don't care about mipmaps right now
 	}
 
 	textures = append(textures, Texture{
-		// Name:  fmt.Sprintf("id_%d_%d_%d_%d", zthe.SomeBullshit, ztheIndex, textureIndex, clhe_index),
-		Name:  fmt.Sprintf("texture_%d", zthe.TextureId),
-		Files: mipMaps,
+		// Name:  fmt.Sprintf("id_%d_%d_%d_%d", zthe.Something, ztheIndex, textureIndex, clhe_index),
+		Name:      fmt.Sprintf("texture_%d", zthe.TextureId),
+		TextureId: zthe.TextureId,
+		Files:     mipMaps,
 	})
 
 	return textures
@@ -250,7 +247,7 @@ func extractTexturesFromZTHE(txf *TXF, clutHeader CLHEEntry, zthe ZTHETexture, z
 
 func extract32bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8) {
 	if len(finalPixel.Bytes) != 4 {
-		panic("You fucked up.")
+		panic("You messed up.")
 	}
 	// TODO: might need to swap this?
 	// word := binary.LittleEndian.Uint32(finalPixel.Bytes)
@@ -276,7 +273,7 @@ func extract32bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8
 
 func extract16bitRGBA(finalPixel helpers.PixelBytes) (uint8, uint8, uint8, uint8) {
 	if len(finalPixel.Bytes) != 2 {
-		panic("You fucked up 16bit RGBA")
+		panic("You messed up 16bit RGBA")
 	}
 	px := binary.LittleEndian.Uint16(finalPixel.Bytes)
 

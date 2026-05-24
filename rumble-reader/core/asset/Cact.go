@@ -2,8 +2,6 @@ package asset
 
 import (
 	"encoding/binary"
-	"encoding/json"
-	"fmt"
 	"math"
 	"math/rand/v2"
 )
@@ -17,6 +15,10 @@ type Actor struct {
 	Y float32
 	Z float32
 
+	XBytes []byte
+	YBytes []byte
+	ZBytes []byte
+
 	ScaleX float32
 	ScaleY float32
 	ScaleZ float32
@@ -25,7 +27,7 @@ type Actor struct {
 	AngleY float32
 	AngleZ float32
 
-	ModelIndex uint32
+	O3DResourceIndex uint32
 }
 
 func ParseActor(buf []byte) (*Actor, error) {
@@ -43,9 +45,17 @@ func ParseActor(buf []byte) (*Actor, error) {
 
 	actor.ActorType = header[4]
 
-	actor.X = math.Float32frombits(binary.LittleEndian.Uint32(header[8 : 8+4]))
-	actor.Y = math.Float32frombits(binary.LittleEndian.Uint32(header[8+4 : 8+4+4]))
-	actor.Z = math.Float32frombits(binary.LittleEndian.Uint32(header[8+8 : 8+4+8]))
+	xBytes := header[8 : 8+4]
+	yBytes := header[8+4 : 8+4+4]
+	zBytes := header[8+8 : 8+4+8]
+
+	actor.X = math.Float32frombits(binary.LittleEndian.Uint32(xBytes))
+	actor.Y = math.Float32frombits(binary.LittleEndian.Uint32(yBytes))
+	actor.Z = math.Float32frombits(binary.LittleEndian.Uint32(zBytes))
+
+	actor.XBytes = xBytes
+	actor.YBytes = yBytes
+	actor.ZBytes = zBytes
 
 	ScaleX := int16(binary.LittleEndian.Uint16(header[0x1E : 0x1E+2]))
 	ScaleY := int16(binary.LittleEndian.Uint16(header[0x20 : 0x20+2]))
@@ -65,7 +75,7 @@ func ParseActor(buf []byte) (*Actor, error) {
 
 	resource := chunks[1]
 
-	actor.ModelIndex = binary.LittleEndian.Uint32(resource.Payload[0x10 : 0x10+4])
+	actor.O3DResourceIndex = binary.LittleEndian.Uint32(resource.Payload[0x10 : 0x10+4])
 
 	return &actor, nil
 }
@@ -76,17 +86,6 @@ func (t *Actor) GetType() string {
 
 func (t *Actor) RawData() []byte {
 	return t.rawData
-}
-
-func (t *Actor) GetConvertedFiles(name string) []ConvertedAssetFile {
-	fileName := fmt.Sprintf("%s.json", name)
-	b, _ := json.MarshalIndent(t, "", "  ")
-	outFile := ConvertedAssetFile{
-		FullFileName: fileName,
-		Data:         b,
-	}
-
-	return []ConvertedAssetFile{outFile}
 }
 
 // Vibe slop, if something about scale factor is broken, investigate this.

@@ -16,7 +16,7 @@ func GetTestFiles() []TestTrack {
 
 	for i := range helpers.TrackData {
 		prefix := "LOC" + helpers.TrackData[i].InternalName[0:2] + "/"
-		tracks[i].Track = file.ReadTrackFile("../../data/" + prefix + helpers.TrackData[i].InternalName + ".TRK")
+		tracks[i].Track = file.ReadTrackFile("../../../data/" + prefix + helpers.TrackData[i].InternalName + ".TRK")
 		tracks[i].Data = helpers.TrackData[i]
 	}
 

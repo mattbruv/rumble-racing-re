@@ -1,3 +1,5 @@
+*.wasm
+*.gltf
 loading-screens/*
 data/*
 data-feb-7/*

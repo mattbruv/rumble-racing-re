@@ -56,7 +56,7 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 		copy(magic[:], data[offset:offset+4])
 
 		size := binary.LittleEndian.Uint32(data[offset+4 : offset+8])
-		// fmt.Println("FUCKIN OFFSET: ", offset, "SIZE:", size)
+		// fmt.Println("OFFSET: ", offset, "SIZE:", size)
 
 		// if size < 8 {
 		// 	return nil, fmt.Errorf("invalid chunk size %d for %q", size, magic)
@@ -83,7 +83,8 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 
 		chunkTypeCheck := chunkIndex % 3
 
-		if chunkTypeCheck == 0 {
+		switch chunkTypeCheck {
+		case 0:
 			if currentObfChunk.ELHE != nil {
 				panic("ELHE NOT NIL")
 			}
@@ -93,12 +94,11 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 
 			elhe, err := parseELHE(chunk)
 			if err != nil {
-				panic("FUCK!")
+				panic("Something went wrong!")
 			}
 			currentObfChunk.ELHE = elhe
 
-		} else if chunkTypeCheck == 1 {
-
+		case 1:
 			if currentObfChunk.ELTL != nil {
 				panic("ELTL NOT NIL")
 			}
@@ -108,11 +108,11 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 
 			eltl, err := parseELTL(chunk)
 			if err != nil {
-				panic("FUCK!")
+				panic("Something went wrong!")
 			}
 			currentObfChunk.ELTL = eltl
 
-		} else if chunkTypeCheck == 2 {
+		case 2:
 			if currentObfChunk.ELDA != nil {
 				panic("ELDA NOT NIL")
 			}
@@ -122,7 +122,7 @@ func parseObfChunks(data []byte) ([]ObfChunk, error) {
 
 			elda, err := parseELDA(chunk)
 			if err != nil {
-				panic("FUCK!")
+				panic("Something went wrong!")
 			}
 			currentObfChunk.ELDA = elda
 		}

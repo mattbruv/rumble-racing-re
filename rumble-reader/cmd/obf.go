@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
+	"rumble-reader-cli/convert"
 	"rumble-reader/asset/o3d"
 
 	"github.com/spf13/cobra"
@@ -24,11 +24,11 @@ var obfCmd = &cobra.Command{
 
 		obf, err := o3d.ParseObf(data)
 
-		bytes := o3d.BuildGtlf(obf)
+		bytes := convert.BuildGtlf(obf)
 		os.WriteFile("./MAP_TEST.gltf", bytes, 0644)
 
 		vifText := obf.DumpAllVifText()
-		vifFileName := fmt.Sprintf("MAP_vif_dump_%d.txt")
+		vifFileName := "MAP_vif_dump.txt"
 		os.WriteFile(vifFileName, []byte(vifText), 0644)
 
 		// obj := o3d.NodeToJson(obf.RootNode)
