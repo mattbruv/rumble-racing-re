@@ -27,9 +27,9 @@ var obfCmd = &cobra.Command{
 		bytes := convert.BuildGtlf(obf)
 		os.WriteFile("./MAP_TEST.gltf", bytes, 0644)
 
-		vifText := obf.DumpAllVifText()
-		vifFileName := "MAP_vif_dump.txt"
-		os.WriteFile(vifFileName, []byte(vifText), 0644)
+		// vifText := obf.DumpAllVifText()
+		// vifFileName := "MAP_vif_dump.txt"
+		// os.WriteFile(vifFileName, []byte(vifText), 0644)
 
 		// obj := o3d.NodeToJson(obf.RootNode)
 		// b, err := json.MarshalIndent(obj, "", "  ")

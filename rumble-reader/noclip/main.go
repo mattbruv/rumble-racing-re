@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"image/png"
 	"rumble-reader-noclip/helpers"
 	"rumble-reader/asset"
 	"rumble-reader/asset/o3d"
@@ -18,7 +17,7 @@ import (
 
 func main() {
 	js.Global().Set("parseTrackFile", js.FuncOf(parseTrackFile))
-	select {} // keep alive
+	select {}
 }
 
 func parseTrackFile(this js.Value, args []js.Value) any {
@@ -30,7 +29,6 @@ func parseTrackFile(this js.Value, args []js.Value) any {
 
 	js.CopyBytesToGo(data, uint8Arr)
 
-	// now data is a real go []byte
 	fmt.Println("Got bytes:", len(data))
 
 	result := processTrackFile(data, isGlobalFile.Bool())
@@ -83,6 +81,8 @@ type ActorData struct {
 type TextureData struct {
 	TextureId uint16
 	PngBytes  []byte
+	Width     uint16
+	Height    uint16
 }
 
 func processTrackFile(rawData []byte, isGlobalFile bool) RumbleRacingTrackFile {
@@ -137,7 +137,6 @@ func processTrackFile(rawData []byte, isGlobalFile bool) RumbleRacingTrackFile {
 		switch thing := resource.(type) {
 		case *asset.Actor:
 			{
-				// fmt.Println("ACTOR FOUND:", thing.ActorType, thing.X, thing.Y, thing.Z)
 				// we only care about actors that have models for now..
 				if thing.O3DResourceIndex > 0 {
 					out.Actors = append(out.Actors, ActorData{
@@ -146,12 +145,6 @@ func processTrackFile(rawData []byte, isGlobalFile bool) RumbleRacingTrackFile {
 						X:                thing.X,
 						Y:                thing.Y,
 						Z:                thing.Z,
-						ScaleX:           thing.ScaleX,
-						ScaleY:           thing.ScaleY,
-						ScaleZ:           thing.ScaleZ,
-						AngleX:           thing.AngleX,
-						AngleY:           thing.AngleY,
-						AngleZ:           thing.AngleZ,
 						O3DResourceIndex: thing.O3DResourceIndex,
 					})
 				}
@@ -184,11 +177,12 @@ func processTrackFile(rawData []byte, isGlobalFile bool) RumbleRacingTrackFile {
 		case *txf.TXF:
 			{
 				for _, tex := range thing.GetTextures() {
-					var buf bytes.Buffer
-					png.Encode(&buf, tex.Files[0].Image)
+					img := tex.Files[0] // highest detailed mipmap
 					out.Textures = append(out.Textures, TextureData{
 						TextureId: tex.TextureId,
-						PngBytes:  buf.Bytes(),
+						PngBytes:  img.Image.Pix,
+						Width:     img.Width,
+						Height:    img.Height,
 					})
 				}
 			}
