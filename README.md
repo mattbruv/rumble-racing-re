@@ -3,7 +3,32 @@
 This repository hosts my notes and tools for reverse engineering the file formats for [Rumble Racing](https://en.wikipedia.org/wiki/Rumble_Racing) (2001, PS2). [Rumble Reader](./rumble-reader/) is a program I'm writing in Go as I work on reverse engineering the file formats. The ultimate goal is to be able to parse, export, and preserve the 3D game maps to display them in [noclip.website](https://noclip.website)
 
 ![](./docs/images/true-grits.png)
-*The textured mesh for the map "True Grits" in Blender*
+_The textured mesh for the map "True Grits" in Blender_
+
+## How To Extract Game Assets
+
+### Prerequisites
+
+You will first need to install [Go](https://go.dev/).
+Then, you will need to mount the original Rumble Racing disc and extract the raw data files.
+The PS2 disc will contain folders titled `LOCBB`, `LOCDA`, etc., extract and save all of this raw data in a folder somewhere.
+
+1. `cd` into the `rumble-reader` directory
+2. Run `go run . extract -i ../DATA_DIR -o ../OUT_DIR`
+   - `-i` is the path to the input directory (raw data)
+   - `-o` is the path to the output directory (converted assets)
+
+The `extract` command will recursively look through all sub-directories for any .AV or .TRK file and extract + convert their assets and save the new files in the specified output directory.
+
+Textures will be automatically converted to `.png` files, and 3D models will automatically be converted to `.gltf` files which can be imported into 3D modeling software like Blender.
+
+For converting audio files, see the README section below for [.AV files](#av).
+
+## Note:
+
+I have only made a tool for reading and extracting game assets.
+I have not worked on any tool for converting assets back into raw formats that the game can understand (i.e. modding tools).
+While it should be possible to write such a program, it is not the focus of this project.
 
 ## Main File Formats
 
@@ -91,7 +116,7 @@ The game asset FourCC types are listed here as follows, along with the address o
 | `Cnet` | ❔     | Network Data (paths?)                                                                                     | 0017e080               | 00183900            |
 | `sfn`  |        | Font ([Arial](https://en.wikipedia.org/wiki/Arial), [Lucida](https://en.wikipedia.org/wiki/Lucida), etc.) | 0012b920               | 0012f050            |
 | `gmd`  |        | Track Data                                                                                                | 00160da0               | 00162ca0            |
-| `Obf`  | ✅      | Track Mesh                                                                                                | 00160de0               | 00162ce0            |
+| `Obf`  | ✅     | Track Mesh                                                                                                | 00160de0               | 00162ce0            |
 | `txf`  | ✅     | Texture / Texture Group Data                                                                              | 001644f0,<br>00121230, | 001667c0            |
 | `Ctos` | ❔     | Voice-over Group Data?                                                                                    | 00125a10               | 00129160            |
 | `Cfun` | ❔     | CtrlFct (Control Function?)                                                                               | 001272e0               | 0012a9a0            |
@@ -99,7 +124,7 @@ The game asset FourCC types are listed here as follows, along with the address o
 | `RPNS` | ❔     | RPNstrings                                                                                                | 0016c590               | 0016ee90            |
 | `Cact` | ✅     | Game Actor instance                                                                                       | 0016c3a0               | 0016ec60            |
 | `o3da` |        | Object3D Data Array                                                                                       | 0016a2a0               | 0016cb40            |
-| `o3d`  | ✅      | Object3D Data                                                                                             | 0016a0e0               | 0016c950            |
+| `o3d`  | ✅     | Object3D Data                                                                                             | 0016a0e0               | 0016c950            |
 | `Cctr` | ❔     | Game Status Control?                                                                                      | 00121230               | 00128504            |
 | `RLst` | ✅     | Record Debug Resources List                                                                               | 00121230               | 00126c60            |
 | `rscE` | ❔     |                                                                                                           | 00121230               | 001284c4            |
