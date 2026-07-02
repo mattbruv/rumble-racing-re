@@ -7,6 +7,8 @@ import (
 
 type TrackData struct {
 	rawData []byte
+
+	SunI SunI
 }
 
 func (t *TrackData) GetType() string {
@@ -30,7 +32,11 @@ func ParseTrackData(buf []byte) (*TrackData, error) {
 	}
 
 	for _, chunk := range chunks {
-		fmt.Println("MAGIC:", chunk.MagicString())
+		switch chunk.MagicString() {
+		case "SunI":
+			trackData.SunI = ParseSunI(chunk.Payload)
+		}
+		fmt.Println(chunk.MagicString())
 	}
 
 	return &trackData, nil
