@@ -31,7 +31,6 @@ func ParseTrackData(buf []byte) (*TrackData, error) {
 
 	for _, chunk := range chunks {
 		fmt.Println("MAGIC:", chunk.MagicString())
-
 	}
 
 	return &trackData, nil
