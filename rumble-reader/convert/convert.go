@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"rumble-reader/asset"
 	"rumble-reader/asset/o3d"
+	"rumble-reader/asset/track"
 	"rumble-reader/asset/txf"
 )
 
@@ -39,6 +40,10 @@ func ConvertAsset(theAsset asset.Asset, outFileName string) []ConvertedAssetFile
 	case *txf.TXF:
 		{
 			return ConvertTXFAsset(x, outFileName)
+		}
+	case *track.TrackData:
+		{
+			return ConvertTrackData(x, outFileName)
 		}
 	}
 
