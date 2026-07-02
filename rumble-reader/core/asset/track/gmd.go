@@ -1,6 +1,9 @@
 package track
 
-import "fmt"
+import (
+	"fmt"
+	"rumble-reader/asset"
+)
 
 type TrackData struct {
 	rawData []byte
@@ -20,13 +23,16 @@ func ParseTrackData(buf []byte) (*TrackData, error) {
 	}
 
 	fmt.Println("PARSE ME")
+	chunks, err := asset.ParseChunks(buf)
 
-	// chunks, err := asset.ParseChunks(buf)
+	if err != nil {
+		return nil, err
+	}
 
-	// if err != nil {
-	// 	return nil, err
-	// 	// panic(err)
-	// }
+	for _, chunk := range chunks {
+		fmt.Println("MAGIC:", chunk.MagicString())
+
+	}
 
 	return &trackData, nil
 }
