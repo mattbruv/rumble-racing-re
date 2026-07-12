@@ -11,13 +11,6 @@ func Decompress(src []byte, outSize int) ([]byte, error) {
 		n   = len(src)
 	)
 
-	readU8 := func(idx int) byte {
-		if idx < 0 || idx >= n {
-			return 0
-		}
-		return src[idx]
-	}
-
 	for {
 		if outSize > 0 && len(dst) >= outSize {
 			if len(dst) > outSize {
@@ -34,8 +27,8 @@ func Decompress(src []byte, outSize int) ([]byte, error) {
 			continue
 		}
 
-		b0 := readU8(i)
-		b1 := readU8(i + 1)
+		b0 := src[i]
+		b1 := src[i+1]
 		control := uint16(b0)<<8 | uint16(b1)
 		i += 2
 
@@ -75,7 +68,7 @@ func Decompress(src []byte, outSize int) ([]byte, error) {
 			if i >= n {
 				return nil, fmt.Errorf("unexpected end of input while reading extended length at input %d", i)
 			}
-			ext := int(readU8(i))
+			ext := int(src[i])
 			i++
 			length = ext + 7
 		}
