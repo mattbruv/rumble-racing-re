@@ -12,6 +12,7 @@ type JsonBuffer struct {
 	Vertices    [][3]float32
 	UVs         [][2]float32
 	Normals     [][3]float32
+	Colors      [][4]float32
 	Indices     []uint32
 }
 
@@ -33,6 +34,7 @@ func BuildObfNode(node *o3d.ObfNode) *ObfJsonNode {
 				positions [][3]float32
 				uvs       [][2]float32
 				normals   [][3]float32
+				colors    [][4]float32
 			)
 
 			for _, strip := range buf.Primitives {
@@ -40,17 +42,29 @@ func BuildObfNode(node *o3d.ObfNode) *ObfJsonNode {
 
 				for i := range strip.Vertices {
 					v := strip.Vertices[i]
-					n := strip.Normals[i]
 					u := strip.UVs[i]
 					positions = append(positions, [3]float32{v.X, v.Y, v.Z})
-					normals = append(normals, [3]float32{n.X, n.Y, n.Z})
 					uvs = append(uvs, [2]float32{u.U, u.V})
+
+					if i < len(strip.Normals) {
+						n := strip.Normals[i]
+						normals = append(normals, [3]float32{n.X, n.Y, n.Z})
+					} else {
+						normals = append(normals, [3]float32{0, 0, 1})
+					}
+
+					if i < len(strip.Colors) {
+						c := strip.Colors[i]
+						colors = append(colors, [4]float32{c.R, c.G, c.B, c.A})
+					} else {
+						colors = append(colors, [4]float32{1, 1, 1, 1})
+					}
 				}
 
 				isFlipped := false
 				for i := 2; i < len(strip.Vertices); i++ {
-					if strip.Normals[i].ADCBitSet {
-						if !strip.Normals[i-1].ADCBitSet {
+					if strip.Vertices[i].ADCBitSet {
+						if !strip.Vertices[i-1].ADCBitSet {
 							isFlipped = false
 						} else {
 							isFlipped = !isFlipped
@@ -76,6 +90,7 @@ func BuildObfNode(node *o3d.ObfNode) *ObfJsonNode {
 				Vertices:    positions,
 				UVs:         uvs,
 				Normals:     normals,
+				Colors:      colors,
 				Indices:     indices,
 			})
 		}

@@ -30,6 +30,20 @@ func BuildGtlf(obf *o3d.Obf) []byte {
 	return buf.Bytes()
 }
 
+func colorToBytes(c o3d.Color) [4]uint8 {
+	to8 := func(f float32) uint8 {
+		v := f * 255.0
+		if v < 0 {
+			v = 0
+		}
+		if v > 255 {
+			v = 255
+		}
+		return uint8(v + 0.5)
+	}
+	return [4]uint8{to8(c.R), to8(c.G), to8(c.B), to8(c.A)}
+}
+
 func (b *Builder) ensureTexture(textureId int) (int, error) {
 	if idx, ok := b.textureCache[textureId]; ok {
 		return idx, nil
@@ -87,10 +101,13 @@ func (b *Builder) addNode(node *o3d.ObfNode) int {
 	if node != nil && node.RawChunk.ELDA.Raw.Size > 8 {
 		for bufIdx, buf := range node.Geometry.Buffers {
 			var (
-				indices   []uint32
-				positions [][3]float32
-				uvs       [][2]float32
-				normals   [][3]float32
+				indices    []uint32
+				positions  [][3]float32
+				uvs        [][2]float32
+				normals    [][3]float32
+				colors     [][4]uint8
+				hasNormals bool
+				hasColors  bool
 			)
 
 			// fmt.Println()
@@ -100,13 +117,27 @@ func (b *Builder) addNode(node *o3d.ObfNode) int {
 				base := uint32(len(positions))
 				// fmt.Println("TYPE:", strip.PrimType.String(), strip.PrimType, "VERTS:", len(strip.Vertices))
 
+				hasNormals = hasNormals || len(strip.Normals) > 0
+				hasColors = hasColors || len(strip.Colors) > 0
+
 				for i := range strip.Vertices {
 					v := strip.Vertices[i]
-					n := strip.Normals[i]
 					u := strip.UVs[i]
 					positions = append(positions, [3]float32{v.X, v.Y, v.Z})
-					normals = append(normals, [3]float32{n.X, n.Y, n.Z})
 					uvs = append(uvs, [2]float32{u.U, u.V})
+
+					if i < len(strip.Normals) {
+						n := strip.Normals[i]
+						normals = append(normals, [3]float32{n.X, n.Y, n.Z})
+					} else {
+						normals = append(normals, [3]float32{0, 0, 1})
+					}
+
+					if i < len(strip.Colors) {
+						colors = append(colors, colorToBytes(strip.Colors[i]))
+					} else {
+						colors = append(colors, [4]uint8{255, 255, 255, 255})
+					}
 				}
 
 				/*
@@ -121,8 +152,8 @@ func (b *Builder) addNode(node *o3d.ObfNode) int {
 				*/
 				isFlipped := false
 				for i := 2; i < len(strip.Vertices); i++ {
-					if strip.Normals[i].ADCBitSet {
-						if strip.Normals[i-1].ADCBitSet == false {
+					if strip.Vertices[i].ADCBitSet {
+						if strip.Vertices[i-1].ADCBitSet == false {
 							isFlipped = false
 						} else {
 							isFlipped = !isFlipped
@@ -146,9 +177,15 @@ func (b *Builder) addNode(node *o3d.ObfNode) int {
 				Attributes: gltf.PrimitiveAttributes{
 					gltf.POSITION:   modeler.WritePosition(b.doc, positions),
 					gltf.TEXCOORD_0: modeler.WriteTextureCoord(b.doc, uvs),
-					gltf.NORMAL:     modeler.WriteNormal(b.doc, normals),
 				},
 				Mode: gltf.PrimitiveTriangles,
+			}
+
+			if hasNormals {
+				prim.Attributes[gltf.NORMAL] = modeler.WriteNormal(b.doc, normals)
+			}
+			if hasColors {
+				prim.Attributes[gltf.COLOR_0] = modeler.WriteColor(b.doc, colors)
 			}
 
 			if buf.TextureId >= 0 {

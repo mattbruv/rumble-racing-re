@@ -3,14 +3,14 @@ package o3d
 import "fmt"
 
 type Vertex struct {
+	ADCBitSet bool
+
 	X float32
 	Y float32
 	Z float32
 }
 
 type Normal struct {
-	ADCBitSet bool
-
 	X float32
 	Y float32
 	Z float32
@@ -19,6 +19,13 @@ type Normal struct {
 type UV struct {
 	U float32
 	V float32
+}
+
+type Color struct {
+	R float32
+	G float32
+	B float32
+	A float32
 }
 
 type Geometry struct {
@@ -50,6 +57,7 @@ type Primitive struct {
 	Vertices []Vertex
 	Normals  []Normal
 	UVs      []UV
+	Colors   []Color
 }
 
 type Buffer struct {
@@ -121,22 +129,19 @@ func GetGeometry(commandStream []VifCommand, textures TextureMeta) (*Geometry, e
 
 				switch {
 				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV3_32 && cmdC.Type == UnpackTypeV2_32:
-					for j := 0; j < len(cmdA.V3_32); j++ {
-						strip.Normals = append(strip.Normals, Normal{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3, ADCBitSet: cmdA.V3_32[j].ADCBitSet})
-						strip.Vertices = append(strip.Vertices, Vertex{X: cmdB.V3_32[j].V1, Y: cmdB.V3_32[j].V2, Z: cmdB.V3_32[j].V3})
+					count := min(len(cmdA.V3_32), len(cmdB.V3_32), len(cmdC.V2_32))
+					for j := 0; j < count; j++ {
+						strip.Normals = append(strip.Normals, Normal{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3})
+						strip.Vertices = append(strip.Vertices, Vertex{X: cmdB.V3_32[j].V1, Y: cmdB.V3_32[j].V2, Z: cmdB.V3_32[j].V3, ADCBitSet: cmdA.V3_32[j].ADCBitSet})
 						strip.UVs = append(strip.UVs, UV{U: cmdC.V2_32[j].V1, V: cmdC.V2_32[j].V2})
 					}
 
 				case cmdA.Type == UnpackTypeV3_32 && cmdB.Type == UnpackTypeV2_32 && cmdC.Type == UnpackTypeV4_8:
-					for j := 0; j < len(cmdA.V3_32); j++ {
-						strip.Vertices = append(strip.Vertices, Vertex{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3})
+					count := min(len(cmdA.V3_32), len(cmdB.V2_32), len(cmdC.V4_8))
+					for j := 0; j < count; j++ {
+						strip.Vertices = append(strip.Vertices, Vertex{X: cmdA.V3_32[j].V1, Y: cmdA.V3_32[j].V2, Z: cmdA.V3_32[j].V3, ADCBitSet: cmdC.V4_8[j].ADCBitSet})
 						strip.UVs = append(strip.UVs, UV{U: cmdB.V2_32[j].V1, V: cmdB.V2_32[j].V2})
-						strip.Normals = append(strip.Normals, Normal{
-							X:         float32(cmdC.V4_8[j].V1) / 255.0,
-							Y:         float32(cmdC.V4_8[j].V2) / 255.0,
-							Z:         float32(cmdC.V4_8[j].V3) / 255.0,
-							ADCBitSet: cmdC.V4_8[j].ADCBitSet,
-						})
+						strip.Colors = append(strip.Colors, colorFromV4_8(cmdC.V4_8[j]))
 					}
 				}
 			}
@@ -146,6 +151,22 @@ func GetGeometry(commandStream []VifCommand, textures TextureMeta) (*Geometry, e
 	}
 
 	return geometry, nil
+}
+
+func colorFromV4_8(e V4_8Entry) Color {
+	scale := func(v uint8) float32 {
+		f := float32(v) / 128.0
+		if f > 1.0 {
+			return 1.0
+		}
+		return f
+	}
+	return Color{
+		R: scale(e.V1),
+		G: scale(e.V2),
+		B: scale(e.V3 &^ 0b1),
+		A: scale(e.V4),
+	}
 }
 
 func getBufferChunks(filtered []VifCommand) (*bufferChunks, error) {
