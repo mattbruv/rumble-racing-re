@@ -43,7 +43,7 @@ var o3dCmd = &cobra.Command{
 			// vifText := obf.DumpAllVifText()
 			// vifFileName := fmt.Sprintf("CHICKEN_vif_dump_%d.txt", obf_index)
 
-			for _, file := range convert.ConvertO3DAsset(o3dData, "idk", convert.DefaultTextureURI) {
+			for _, file := range convert.ConvertO3DAsset(o3dData, o3dData.Name(), convert.DefaultTextureURI) {
 				os.WriteFile(fmt.Sprintf("./%s", file.FullFileName), file.Data, 0644)
 			}
 

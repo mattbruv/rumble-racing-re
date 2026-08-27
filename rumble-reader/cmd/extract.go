@@ -60,12 +60,18 @@ func extractData(opts ExtractSettings) error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
+	runLog, err := newExtractLog(opts.outputDir)
+	if err != nil {
+		return err
+	}
+	defer runLog.close()
+
 	fmt.Println("🏁 Go, go, go! 🚦")
 	start := time.Now()
 
 	var wg sync.WaitGroup
 
-	err := filepath.WalkDir(opts.inputDir, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(opts.inputDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -78,7 +84,13 @@ func extractData(opts ExtractSettings) error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				processTrackFile(d, opts, path)
+				defer runLog.recoverPanic(d.Name())
+
+				if err := processTrackFile(d, opts, path, runLog); err != nil {
+					runLog.note(d.Name(), "stopped early: %v", err)
+					return
+				}
+
 				res := fmt.Sprintf("Finished %s in %f seconds!", d.Name(), time.Since(start).Seconds())
 				fmt.Println(res)
 			}()
@@ -88,7 +100,13 @@ func extractData(opts ExtractSettings) error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				processAvFile(d, opts, path)
+				defer runLog.recoverPanic(d.Name())
+
+				if err := processAvFile(d, opts, path); err != nil {
+					runLog.note(d.Name(), "stopped early: %v", err)
+					return
+				}
+
 				res := fmt.Sprintf("Finished %s in %f seconds!", d.Name(), time.Since(start).Seconds())
 				fmt.Println(res)
 			}()
@@ -99,20 +117,24 @@ func extractData(opts ExtractSettings) error {
 
 	wg.Wait()
 
-	if err == nil {
-		res := fmt.Sprintf("🏁 Finished extracting data in %f seconds! 🏆", time.Since(start).Seconds())
-		fmt.Println(res)
+	if err != nil {
+		runLog.note(opts.inputDir, "failed to walk input directory: %v", err)
+		return err
 	}
 
-	return err
+	res := fmt.Sprintf("🏁 Finished extracting data in %f seconds! 🏆", time.Since(start).Seconds())
+	fmt.Println(res)
+	fmt.Println(runLog.summarize())
+
+	return nil
 }
 
-func processAvFile(d fs.DirEntry, opts ExtractSettings, path string) (error, bool) {
+func processAvFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 	baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
 	subDir := filepath.Join(opts.outputDir, baseName)
 
 	if err := os.MkdirAll(subDir, 0755); err != nil {
-		return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err), true
+		return fmt.Errorf("failed to create subdirectory %s: %w", subDir, err)
 	}
 
 	avFile := file.ReadAVFile(path)
@@ -125,13 +147,13 @@ func processAvFile(d fs.DirEntry, opts ExtractSettings, path string) (error, boo
 
 		if err := os.WriteFile(outFilePath, audioFile.RawVagData, 0644); err != nil {
 			fmt.Println("NAME BYTES: ", hex.Dump([]byte(audioFile.Name)))
-			return fmt.Errorf("failed to write file %s: %w", outFilePath, err), true
+			return fmt.Errorf("failed to write file %s: %w", outFilePath, err)
 		}
 	}
-	return nil, false
+	return nil
 }
 
-func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
+func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string, runLog *extractLog) error {
 	baseName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
 
 	if actualName, found := getTrackName(baseName); found {
@@ -156,8 +178,7 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 	for _, entry := range rlst.Entries {
 		theAsset, err := textures.getResource(trackFile, entry)
 		if err != nil {
-			fmt.Println("failed to get resource:", entry.ResourceName, err)
-			// return fmt.Errorf("failed to get resource: %w", err)
+			runLog.note(d.Name(), "failed to get resource %s: %v", entry.ResourceName, err)
 			continue
 		}
 
@@ -168,9 +189,6 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 				outFolder = filepath.Join(subDir, theAsset.GetType())
 			}
 
-			// Texture ids are only unique within a single txf resource
-			// each car texture in GLBLDATA is #2048, so give each resource its own
-			// folder instead of overwriting each other.
 			if _, isTexture := theAsset.(*txf.TXF); isTexture {
 				outFolder = filepath.Join(outFolder, resourceSlug(entry))
 			}
@@ -242,11 +260,11 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 	rlstJson, err := json.MarshalIndent(rlst, "", "  ")
 
 	if err != nil {
-		panic("Error serializing JSON")
+		return fmt.Errorf("failed to serialize resource list: %w", err)
 	}
 
 	if err := os.WriteFile(outFilePath, rlstJson, 0644); err != nil {
-		panic("Error writing resource file")
+		return fmt.Errorf("failed to write %s: %w", outFilePath, err)
 	}
 	return nil
 }

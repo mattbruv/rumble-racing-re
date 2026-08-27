@@ -34,6 +34,10 @@ func buildTextureIndex(trackFile file.TrackFile, rlst *asset.RLst, createSubFold
 	}
 
 	for _, entry := range rlst.Entries {
+		if !isTextureResource(entry) {
+			continue
+		}
+
 		theAsset, err := trackFile.GetResource(entry)
 		if err != nil {
 			continue
@@ -89,6 +93,10 @@ func (t *textureIndex) resolverFor(entry asset.ResourceEntry) convert.TextureRes
 
 		return fmt.Sprintf("%s%s/texture_%d.png", t.txfPrefix, match.folder, textureId)
 	}
+}
+
+func isTextureResource(entry asset.ResourceEntry) bool {
+	return entry.TypeTag == "txf " || entry.TypeTag == "txf2"
 }
 
 func resourceKey(entry asset.ResourceEntry) string {

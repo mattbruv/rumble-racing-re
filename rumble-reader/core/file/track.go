@@ -199,6 +199,11 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error) {
 	// fmt.Println("attempting to get", resource.ResourceName, resource.TypeTag, "at resource index", resource.ResourceIndex)
 	header := t.getHeaderForResource(resource)
+
+	if header == nil {
+		return nil, fmt.Errorf("no %s header found for resource %d", resource.TypeTag, resource.ResourceIndex)
+	}
+
 	data := t.getDataForHeader(*header)
 	switch resource.TypeTag {
 	case "TxtR":

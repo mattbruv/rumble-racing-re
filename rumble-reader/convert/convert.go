@@ -14,8 +14,6 @@ type ConvertedAssetFile struct {
 	Data         []byte
 }
 
-// TextureResolver maps a texture id referenced by a model to the URI of the
-// converted image, relative to the folder the model is written to.
 type TextureResolver func(textureId int) string
 
 func DefaultTextureURI(textureId int) string {
