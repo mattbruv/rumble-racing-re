@@ -10,15 +10,21 @@ import (
 )
 
 type Builder struct {
-	doc          *gltf.Document
-	textureCache map[int]int
+	doc            *gltf.Document
+	textureCache   map[int]int
+	resolveTexture TextureResolver
 }
 
-func BuildGtlf(obf *o3d.Obf) []byte {
+func BuildGtlf(obf *o3d.Obf, resolveTexture TextureResolver) []byte {
+	if resolveTexture == nil {
+		resolveTexture = DefaultTextureURI
+	}
+
 	builder := Builder{
 		doc: gltf.NewDocument(),
 
-		textureCache: make(map[int]int),
+		textureCache:   make(map[int]int),
+		resolveTexture: resolveTexture,
 	}
 
 	builder.addNode(obf.RootNode)
@@ -52,8 +58,7 @@ func (b *Builder) ensureTexture(textureId int) (int, error) {
 	// URI reference — no embedding
 	imageIdx := len(b.doc.Images)
 	b.doc.Images = append(b.doc.Images, &gltf.Image{
-		URI: fmt.Sprintf("../txf/texture_%d.png", textureId),
-		// URI: fmt.Sprintf("../OUT-FEB-7/SE1 - True Grits/txf/texture_%d.png", textureId),
+		URI: b.resolveTexture(textureId),
 	})
 
 	// Sampler

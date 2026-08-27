@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"rumble-reader-cli/convert"
+	"rumble-reader/asset/txf"
 	"rumble-reader/file"
 	"rumble-reader/helpers"
 	"strings"
@@ -150,8 +151,10 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 
 	fmt.Println("Extracting", trackFile.FileName, "| Assets:", rlst.Count)
 
+	textures := buildTextureIndex(trackFile, rlst, opts.createSubFolders)
+
 	for _, entry := range rlst.Entries {
-		theAsset, err := trackFile.GetResource(entry)
+		theAsset, err := textures.getResource(trackFile, entry)
 		if err != nil {
 			fmt.Println("failed to get resource:", entry.ResourceName, err)
 			// return fmt.Errorf("failed to get resource: %w", err)
@@ -160,18 +163,24 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 
 		data := theAsset.RawData()
 		if len(data) > 0 {
+			outFolder = subDir
 			if opts.createSubFolders {
 				outFolder = filepath.Join(subDir, theAsset.GetType())
-				if err := os.MkdirAll(outFolder, 0755); err != nil {
-					return fmt.Errorf("failed to create subfolder %s: %w", outFolder, err)
-				}
 			}
 
-			resName := strings.ReplaceAll(entry.ResourceName, "/", "-")
-			resName = strings.ReplaceAll(resName, ":", "-")
+			// Texture ids are only unique within a single txf resource
+			// each car texture in GLBLDATA is #2048, so give each resource its own
+			// folder instead of overwriting each other.
+			if _, isTexture := theAsset.(*txf.TXF); isTexture {
+				outFolder = filepath.Join(outFolder, resourceSlug(entry))
+			}
+
+			if err := os.MkdirAll(outFolder, 0755); err != nil {
+				return fmt.Errorf("failed to create subfolder %s: %w", outFolder, err)
+			}
 
 			// Append the type as file suffix/extension
-			outFileName := fmt.Sprintf("%d_%s.%s", entry.ResourceIndex, resName, theAsset.GetType())
+			outFileName := fmt.Sprintf("%d_%s.%s", entry.ResourceIndex, sanitizeResourceName(entry.ResourceName), theAsset.GetType())
 			outFilePath := filepath.Join(outFolder, outFileName)
 
 			// if the asset can be converted, and we want to convert it,
@@ -183,7 +192,7 @@ func processTrackFile(d fs.DirEntry, opts ExtractSettings, path string) error {
 				// if strings.Contains(outFileName, "DIAMOND") {
 				// 	continue
 				// }
-				convertedFiles := convert.ConvertAsset(theAsset, outFileName)
+				convertedFiles := convert.ConvertAsset(theAsset, outFileName, textures.resolverFor(entry))
 
 				if len(convertedFiles) > 0 {
 

@@ -14,7 +14,19 @@ type ConvertedAssetFile struct {
 	Data         []byte
 }
 
-func ConvertAsset(theAsset asset.Asset, outFileName string) []ConvertedAssetFile {
+// TextureResolver maps a texture id referenced by a model to the URI of the
+// converted image, relative to the folder the model is written to.
+type TextureResolver func(textureId int) string
+
+func DefaultTextureURI(textureId int) string {
+	return fmt.Sprintf("../txf/texture_%d.png", textureId)
+}
+
+func ConvertAsset(theAsset asset.Asset, outFileName string, resolveTexture TextureResolver) []ConvertedAssetFile {
+	if resolveTexture == nil {
+		resolveTexture = DefaultTextureURI
+	}
+
 	switch x := theAsset.(type) {
 	case *asset.Actor:
 		{
@@ -26,7 +38,7 @@ func ConvertAsset(theAsset asset.Asset, outFileName string) []ConvertedAssetFile
 		}
 	case *o3d.O3D:
 		{
-			return ConvertO3DAsset(x, outFileName)
+			return ConvertO3DAsset(x, outFileName, resolveTexture)
 		}
 	case *asset.GenericAsset:
 		{
@@ -34,7 +46,7 @@ func ConvertAsset(theAsset asset.Asset, outFileName string) []ConvertedAssetFile
 		}
 	case *o3d.Obf:
 		{
-			return ConvertOBFAsset(x, outFileName)
+			return ConvertOBFAsset(x, outFileName, resolveTexture)
 		}
 	case *txf.TXF:
 		{

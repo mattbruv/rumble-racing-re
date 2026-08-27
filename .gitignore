@@ -1,6 +1,9 @@
 *.wasm
 *.gltf
 loading-screens/*
+DATA_NASCAR/*
+OUT_NASCAR/*
+dumps/
 data/*
 data-feb-7/*
 data-mar/*

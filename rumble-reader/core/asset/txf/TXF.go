@@ -129,3 +129,15 @@ func (g *TXF) RawData() []byte {
 func (g *TXF) Header() shoc.SHDR {
 	return g.shocHeader
 }
+
+func (g *TXF) TextureIDs() []uint16 {
+	var ids []uint16
+
+	for _, zthe := range g.textureHeaders {
+		for _, tex := range zthe.Textures {
+			ids = append(ids, tex.TextureId)
+		}
+	}
+
+	return ids
+}

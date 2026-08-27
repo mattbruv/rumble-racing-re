@@ -24,7 +24,7 @@ var obfCmd = &cobra.Command{
 
 		obf, err := o3d.ParseObf(data)
 
-		bytes := convert.BuildGtlf(obf)
+		bytes := convert.BuildGtlf(obf, convert.DefaultTextureURI)
 		os.WriteFile("./MAP_TEST.gltf", bytes, 0644)
 
 		// vifText := obf.DumpAllVifText()
