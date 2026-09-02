@@ -193,7 +193,7 @@ func (t TrackFile) getDataForHeader(header shoc.SHDR) []byte {
 		}
 	}
 
-	return assetData
+	return assetData[0:header.TotalDataSize]
 }
 
 func (t TrackFile) GetResource(resource asset.ResourceEntry) (asset.Asset, error) {
